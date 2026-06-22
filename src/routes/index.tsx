@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { ThemeToggle } from '~/components/ThemeToggle'
 
 export const Route = createFileRoute('/')({
   component: Landing,
@@ -16,6 +17,7 @@ function Landing() {
           <span className="text-white/30">/</span>
           <span className="text-sm text-white/70">Robotics</span>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle className="h-8 w-8 grid place-items-center border border-white/20 text-white/70 hover:text-white hover:bg-white/10 text-sm" />
             <Link to="/login" className="text-sm text-white/80 hover:text-white px-3">
               Log in
             </Link>

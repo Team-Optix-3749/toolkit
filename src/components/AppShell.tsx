@@ -2,6 +2,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useAuth } from '~/lib/auth'
 import { isAdmin, ROLE_LABEL, type Role } from '~/lib/rbac'
+import { ThemeToggle } from './ThemeToggle'
 
 const NAV: [string, string][] = [
   ['/dashboard', 'Dashboard'],
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link to="/profile" className="hidden sm:inline font-mono text-xs text-white/70 hover:text-white">
               {profile?.display_name || 'profile'}
             </Link>
+            <ThemeToggle className="h-8 w-8 grid place-items-center border border-white/20 text-white/70 hover:text-white hover:bg-white/10 text-sm" />
             <button
               onClick={() => signOut()}
               className="border border-white/20 hover:bg-white/10 text-[11px] font-mono uppercase tracking-[0.08em] px-3 py-1.5"

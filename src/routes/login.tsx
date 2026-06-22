@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '~/lib/auth'
 import { isApproved } from '~/lib/rbac'
 import { label, input, btn } from '~/lib/ui'
+import { ThemeToggle } from '~/components/ThemeToggle'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -63,15 +64,18 @@ export function AuthShell({ title, children }: { title: string; children: React.
   return (
     <div className="min-h-screen grid place-items-center bg-canvas px-4">
       <div className="w-full max-w-sm">
-        <Link to="/" className="flex items-center gap-2.5 mb-5">
-          <div className="w-8 h-8 bg-brand text-white grid place-items-center font-mono font-semibold">
-            O
-          </div>
-          <div className="leading-tight">
-            <div className="font-semibold tracking-tight">Optix</div>
-            <div className="text-xs text-ink-soft">Robotics</div>
-          </div>
-        </Link>
+        <div className="flex items-center mb-5">
+          <Link to="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-brand text-white grid place-items-center font-mono font-semibold">
+              O
+            </div>
+            <div className="leading-tight">
+              <div className="font-semibold tracking-tight">Optix</div>
+              <div className="text-xs text-ink-soft">Robotics</div>
+            </div>
+          </Link>
+          <ThemeToggle className="ml-auto h-8 w-8 grid place-items-center border border-line bg-panel text-ink-soft hover:text-ink text-sm" />
+        </div>
         <div className="bg-panel border border-line">
           <div className="px-5 py-3 border-b border-line">
             <h1 className="text-sm font-semibold">{title}</h1>
