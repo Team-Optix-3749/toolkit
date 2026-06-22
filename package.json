@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite dev --port 5176",
     "build": "vite build",
+    "postbuild": "node scripts/postbuild.mjs",
     "start": "node .output/server/index.mjs",
     "serve": "vite preview",
     "icons": "node scripts/gen-icons.mjs"

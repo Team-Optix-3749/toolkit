@@ -3,5 +3,5 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/client",
-  "rewrites": [{ "source": "/(.*)", "destination": "/_shell.html" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
