@@ -1,6 +1,7 @@
 // Shared Tailwind class strings.
 export const card = 'bg-panel border border-line'
-export const cardHead = 'px-5 py-3 border-b border-line flex items-center justify-between'
+export const cardHead =
+  'px-5 py-3 border-b border-line flex items-center justify-between gap-2 flex-wrap'
 export const cardTitle = 'text-[12px] font-mono uppercase tracking-[0.08em] text-ink-soft'
 export const label = 'block text-[11px] font-mono uppercase tracking-[0.08em] text-ink-soft mb-1.5'
 export const input =

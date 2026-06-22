@@ -38,5 +38,18 @@ html.dark {
   }
   body {
     @apply bg-canvas text-ink font-sans;
+    overflow-x: hidden;
+  }
+}
+
+/* Mobile: let wide data tables scroll inside their card instead of
+   overflowing the screen. Desktop keeps normal full-width tables. */
+@media (max-width: 640px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
   }
 }
