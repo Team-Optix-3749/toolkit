@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Light (default) */
+  --color-canvas: #f0efeb;
+  --color-panel: #ffffff;
+  --color-ink: #14211a;
+  --color-ink-soft: #5e6b60;
+  --color-line: #dfddd2;
+  --color-accent: #3a5a40;
+  --color-accent-soft: #dce7dc;
+  /* Dark surface used for the masthead + primary buttons (text is always light) */
+  --color-brand: #14211a;
+
+  --radius: 2px;
+}
+
+/* Dark theme — higher specificity than :root so it overrides the @theme vars. */
+html.dark {
+  --color-canvas: #0e1512;
+  --color-panel: #16221b;
+  --color-ink: #e7ebe6;
+  --color-ink-soft: #9bab9f;
+  --color-line: #2a382f;
+  --color-accent: #86b58f;
+  --color-accent-soft: #1f2e26;
+  --color-brand: #1c2c23;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    color-scheme: light dark;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans;
+  }
+}
