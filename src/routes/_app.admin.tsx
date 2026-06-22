@@ -15,7 +15,7 @@ function AdminLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   return (
     <RequireAdmin>
-      <div className="flex items-center gap-1 mb-3 flex-wrap">
+      <div className="hidden sm:flex items-center gap-1 mb-3 flex-wrap">
         <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-ink-soft mr-2">
           Admin
         </span>
