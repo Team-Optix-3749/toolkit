@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useAuth } from '~/lib/auth'
+import { isRemembered } from '~/lib/supabase'
 import { isApproved } from '~/lib/rbac'
 import { label, input, btn } from '~/lib/ui'
 import { ThemeToggle } from '~/components/ThemeToggle'
@@ -14,8 +15,12 @@ function LoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [remember, setRememberMe] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // Reflect the last-used choice (e.g. if they previously unchecked it).
+  useEffect(() => setRememberMe(isRemembered()), [])
 
   useEffect(() => {
     if (!loading && user) {
@@ -27,7 +32,7 @@ function LoginPage() {
     e.preventDefault()
     setBusy(true)
     setErr(null)
-    const { error } = await signInPassword(email, password)
+    const { error } = await signInPassword(email, password, remember)
     setBusy(false)
     if (error) setErr(error)
   }
@@ -35,7 +40,7 @@ function LoginPage() {
   return (
     <AuthShell title="Sign in">
       <form onSubmit={submit} className="space-y-4">
-        <OAuthButtons onClick={signInOAuth} />
+        <OAuthButtons onClick={(p) => signInOAuth(p, remember)} />
         <Divider />
         <div>
           <label className={label}>Email</label>
@@ -45,6 +50,15 @@ function LoginPage() {
           <label className={label}>Password</label>
           <input type="password" required className={input} value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
+        <label className="flex items-center gap-2 text-sm text-ink-soft select-none cursor-pointer">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="h-4 w-4 accent-accent"
+          />
+          Remember me on this device
+        </label>
         {err && <p className="text-sm text-[#c0392b]">{err}</p>}
         <button disabled={busy} className={`w-full ${btn}`}>
           {busy ? '…' : 'Sign in'}

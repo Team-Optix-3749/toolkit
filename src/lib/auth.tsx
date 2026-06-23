@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from './supabase'
+import { supabase, setRemember } from './supabase'
 
 export type Profile = {
   id: string
@@ -26,9 +26,13 @@ type AuthValue = {
   role: string
   loading: boolean
   refresh: () => Promise<void>
-  signInPassword: (email: string, password: string) => Promise<{ error: string | null }>
+  signInPassword: (
+    email: string,
+    password: string,
+    remember?: boolean,
+  ) => Promise<{ error: string | null }>
   signUp: (email: string, password: string) => Promise<{ error: string | null }>
-  signInOAuth: (provider: 'google' | 'discord') => Promise<void>
+  signInOAuth: (provider: 'google' | 'discord', remember?: boolean) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -89,7 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: profile?.role ?? 'PENDING',
     loading,
     refresh,
-    async signInPassword(email, password) {
+    async signInPassword(email, password, remember = true) {
+      setRemember(remember)
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       return { error: error?.message ?? null }
     },
@@ -97,7 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signUp({ email, password })
       return { error: error?.message ?? null }
     },
-    async signInOAuth(provider) {
+    async signInOAuth(provider, remember = true) {
+      setRemember(remember)
       await supabase.auth.signInWithOAuth({
         provider,
         options: {

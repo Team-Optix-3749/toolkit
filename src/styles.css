@@ -35,10 +35,25 @@ html.dark {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     color-scheme: light dark;
+    /* No grey flash on tap; don't let iOS resize text on rotate. */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
   }
   body {
     @apply bg-canvas text-ink font-sans;
     overflow-x: hidden;
+    /* Native-app feel: no rubber-band overscroll bleeding past the page. */
+    overscroll-behavior-y: none;
+  }
+  /* Comfortable touch targets for interactive controls on coarse pointers. */
+  @media (pointer: coarse) {
+    button,
+    a,
+    [role='button'],
+    input[type='checkbox'],
+    input[type='radio'] {
+      touch-action: manipulation;
+    }
   }
 }
 
