@@ -20,7 +20,7 @@ function CallbackPage() {
   }, [loading, user, role, navigate])
 
   return (
-    <div className="min-h-screen grid place-items-center bg-canvas text-ink-soft font-mono text-sm">
+    <div className="min-h-dvh grid place-items-center bg-canvas text-ink-soft font-mono text-sm">
       Completing sign-in…
     </div>
   )

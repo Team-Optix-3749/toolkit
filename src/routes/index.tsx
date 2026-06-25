@@ -7,8 +7,8 @@ export const Route = createFileRoute('/')({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-canvas text-ink">
-      <header className="bg-brand text-white">
+    <div className="min-h-dvh bg-canvas text-ink">
+      <header className="bg-brand text-white sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
         <div className="max-w-5xl mx-auto px-5 h-[52px] flex items-center gap-2.5">
           <div className="w-7 h-7 bg-accent grid place-items-center font-mono font-semibold text-[13px]">
             O
@@ -33,11 +33,11 @@ function Landing() {
 
       <main className="max-w-5xl mx-auto px-5 py-20">
         <h1 className="text-4xl font-bold tracking-tight max-w-2xl">
-          Hours, outreach, and initiatives for the whole team — in one place.
+          Placeholder headline — tagline goes here.
         </h1>
         <p className="mt-4 text-lg text-ink-soft max-w-xl">
-          Track build & outreach hours with GPS / QR check-in, submit OPI initiatives, manage
-          purchases, and keep the team in sync.
+          Placeholder subheading. Replace this with a short description of what the
+          platform does for the team.
         </p>
         <div className="mt-8 flex gap-3">
           <Link
@@ -56,9 +56,9 @@ function Landing() {
 
         <div className="mt-16 grid sm:grid-cols-3 gap-px bg-line border border-line">
           {[
-            ['Build & Outreach', 'GPS / QR check-in, zones, automatic hour totals.'],
-            ['OPI Pipeline', 'Submit and track passion initiatives through review.'],
-            ['Purchases', 'Reimbursement requests with receipt upload & approvals.'],
+            ['Feature one', 'Placeholder description for the first feature goes here.'],
+            ['Feature two', 'Placeholder description for the second feature goes here.'],
+            ['Feature three', 'Placeholder description for the third feature goes here.'],
           ].map(([t, d]) => (
             <div key={t} className="bg-panel p-5">
               <div className="text-sm font-semibold">{t}</div>

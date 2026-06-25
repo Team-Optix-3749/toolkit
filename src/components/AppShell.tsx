@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     }`
 
   return (
-    <div className="min-h-screen bg-canvas text-ink">
+    <div className="min-h-dvh bg-canvas text-ink">
       <header className="bg-brand text-white sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-5 h-[52px] flex items-center gap-3">
           <Link to="/dashboard" className="flex items-center gap-2.5">

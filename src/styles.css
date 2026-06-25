@@ -38,12 +38,17 @@ html.dark {
     /* No grey flash on tap; don't let iOS resize text on rotate. */
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
+    /* Fill the safe-area gaps (behind the Dynamic Island / home indicator and
+       any overscroll) with the app background instead of white. */
+    background: var(--color-canvas);
   }
   body {
     @apply bg-canvas text-ink font-sans;
     overflow-x: hidden;
     /* Native-app feel: no rubber-band overscroll bleeding past the page. */
     overscroll-behavior-y: none;
+    /* Dynamic viewport height avoids the iOS Safari toolbar resize jump. */
+    min-height: 100dvh;
   }
   /* Comfortable touch targets for interactive controls on coarse pointers. */
   @media (pointer: coarse) {

@@ -6,9 +6,13 @@ import {
 } from '@tanstack/react-router'
 import { useEffect, type ReactNode } from 'react'
 import { AuthProvider } from '../lib/auth'
+import { isConfigured } from '../lib/supabase'
+import { RouteError, NotFound } from '../components/ErrorStates'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
+  errorComponent: RouteError,
+  notFoundComponent: NotFound,
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -44,10 +48,34 @@ function RootComponent() {
   }, [])
   return (
     <RootDocument>
-      <AuthProvider>
-        <Outlet />
-      </AuthProvider>
+      {isConfigured ? (
+        <AuthProvider>
+          <Outlet />
+        </AuthProvider>
+      ) : (
+        <NotConfigured />
+      )}
     </RootDocument>
+  )
+}
+
+// Shown when the Supabase env vars are missing from the deploy — fail loudly
+// with a clear message instead of letting every data call hang.
+function NotConfigured() {
+  return (
+    <div className="min-h-dvh grid place-items-center bg-canvas text-ink px-4 text-center">
+      <div className="max-w-sm">
+        <div className="w-10 h-10 mx-auto mb-5 bg-brand text-white grid place-items-center font-mono font-semibold">
+          O
+        </div>
+        <h1 className="text-base font-semibold mb-1">Not configured</h1>
+        <p className="text-sm text-ink-soft">
+          This deployment is missing its Supabase credentials. Set{' '}
+          <code className="font-mono text-[12px]">VITE_SUPABASE_URL</code> and{' '}
+          <code className="font-mono text-[12px]">VITE_SUPABASE_ANON_KEY</code>, then redeploy.
+        </p>
+      </div>
+    </div>
   )
 }
 

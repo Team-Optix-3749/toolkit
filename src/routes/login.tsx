@@ -76,7 +76,7 @@ function LoginPage() {
 
 export function AuthShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="min-h-screen grid place-items-center bg-canvas px-4">
+    <div className="min-h-dvh grid place-items-center bg-canvas px-4 py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className="w-full max-w-sm">
         <div className="flex items-center mb-5">
           <Link to="/" className="flex items-center gap-2.5">
