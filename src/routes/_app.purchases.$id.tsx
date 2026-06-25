@@ -40,7 +40,7 @@ function PurchaseDetail() {
         <Row k="Type" v={p.kind} />
         <Row k="Amount" v={`$${Number(p.amount).toFixed(2)}`} />
         <Row k="Submitted" v={fmtDateTime(p.created_at)} />
-        <Row k="Decided" v={p.decided_at ? fmtDateTime(p.decided_at) : '—'} />
+        <Row k="Decided" v={p.decided_at ? fmtDateTime(p.decided_at) : '-'} />
         <div className="pt-2">
           <div className="text-ink-soft mb-1">Description</div>
           <p className="whitespace-pre-wrap">{p.description}</p>

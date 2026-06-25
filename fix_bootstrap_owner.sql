@@ -1,8 +1,8 @@
 -- ============================================================
 -- FIX: force-promote your account to OWNER (handles ALL guards)
 -- ------------------------------------------------------------
--- Disables EVERY user trigger on profiles (so no guard — whatever its
--- name — can revert the change), promotes you, re-enables triggers,
+-- Disables EVERY user trigger on profiles (so no guard - whatever its
+-- name - can revert the change), promotes you, re-enables triggers,
 -- then removes the stale v2 guard and re-patches the v3 guard.
 -- Run the whole file at once.
 --
@@ -52,7 +52,7 @@ create trigger guard_profile_privileges_trg
   before update on public.profiles
   for each row execute function public.guard_profile_privileges();
 
--- 4) Final check — should show OWNER.
+-- 4) Final check - should show OWNER.
 select p.role, u.email
 from public.profiles p
 join auth.users u on u.id = p.id

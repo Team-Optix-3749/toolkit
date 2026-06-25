@@ -1,5 +1,5 @@
 -- ============================================================
--- OPTIX — Supabase schema  v3   (authoritative for the app)
+-- OPTIX - Supabase schema  v3   (authoritative for the app)
 -- ------------------------------------------------------------
 -- Full role model + build / outreach / OPI / purchases /
 -- notifications. Safe to re-run. Supersedes the role model in

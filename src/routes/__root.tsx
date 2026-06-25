@@ -59,7 +59,7 @@ function RootComponent() {
   )
 }
 
-// Shown when the Supabase env vars are missing from the deploy — fail loudly
+// Shown when the Supabase env vars are missing from the deploy - fail loudly
 // with a clear message instead of letting every data call hang.
 function NotConfigured() {
   return (

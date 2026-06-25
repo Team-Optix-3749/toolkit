@@ -34,7 +34,7 @@ function EventDetail() {
       if (admin && list.length) {
         const ids = [...new Set(list.map((c) => c.user_id))]
         const { data: p } = await supabase.from('profiles').select('id, display_name').in('id', ids)
-        const names = Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '—']))
+        const names = Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '-']))
         setAttendees(list.map((c) => ({ id: c.id, name: names[c.user_id] || c.user_id.slice(0, 8), when: c.checked_in_at })))
       }
     })()
@@ -51,8 +51,8 @@ function EventDetail() {
         </div>
         <div className="p-5 space-y-2 text-sm">
           <Row k="Starts" v={fmtDateTime(ev.starts_at)} />
-          <Row k="Ends" v={ev.ends_at ? fmtDateTime(ev.ends_at) : '—'} />
-          <Row k="Location" v={ev.location || '—'} />
+          <Row k="Ends" v={ev.ends_at ? fmtDateTime(ev.ends_at) : '-'} />
+          <Row k="Location" v={ev.location || '-'} />
           {ev.description && <p className="text-ink-soft pt-2">{ev.description}</p>}
           <div className="pt-3">
             {mineIn ? (

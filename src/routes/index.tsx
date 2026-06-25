@@ -33,7 +33,7 @@ function Landing() {
 
       <main className="max-w-5xl mx-auto px-5 py-20">
         <h1 className="text-4xl font-bold tracking-tight max-w-2xl">
-          Placeholder headline — tagline goes here.
+          Placeholder headline - tagline goes here.
         </h1>
         <p className="mt-4 text-lg text-ink-soft max-w-xl">
           Placeholder subheading. Replace this with a short description of what the

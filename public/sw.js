@@ -1,4 +1,4 @@
-// Optix service worker — dev-safe.
+// Optix service worker - dev-safe.
 // - precaches the offline page + icons
 // - navigations: network-first, fall back to /offline.html when offline
 // - hashed build assets (/assets/*): stale-while-revalidate

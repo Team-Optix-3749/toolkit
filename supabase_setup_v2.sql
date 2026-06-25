@@ -1,5 +1,5 @@
 -- ============================================================
--- HOURS — Supabase schema  v2  (run AFTER supabase_setup.sql)
+-- HOURS - Supabase schema  v2  (run AFTER supabase_setup.sql)
 -- ------------------------------------------------------------
 -- Adds: profiles (bio / pfp / role / public-hours toggle),
 -- events (team meetings + outreach), event check-ins,
@@ -25,14 +25,14 @@ create table if not exists public.profiles (
 );
 
 -- ============================================================
--- HOURS_LOG — add award metadata (table created in v1)
+-- HOURS_LOG - add award metadata (table created in v1)
 -- ============================================================
 alter table public.hours_log add column if not exists source     text default 'self';   -- 'self' | 'award'
 alter table public.hours_log add column if not exists reason      text;
 alter table public.hours_log add column if not exists awarded_by  uuid references auth.users(id);
 
 -- ============================================================
--- EVENTS — team meetings + outreach / OPI events
+-- EVENTS - team meetings + outreach / OPI events
 -- ============================================================
 create table if not exists public.events (
   id          uuid primary key default gen_random_uuid(),
@@ -49,7 +49,7 @@ create index if not exists idx_events_start on public.events(start_at);
 create index if not exists idx_events_type  on public.events(type);
 
 -- ============================================================
--- EVENT CHECK-INS — location-aware check-in for outreach events
+-- EVENT CHECK-INS - location-aware check-in for outreach events
 -- ============================================================
 create table if not exists public.event_checkins (
   id           uuid primary key default gen_random_uuid(),
@@ -192,7 +192,7 @@ create policy checkins_delete on public.event_checkins
 -- ------------------------------------------------------------
 -- Only non-leadership members who opted in (hours_public = true)
 -- appear. Runs as the view owner so it can aggregate across
--- members regardless of per-row hours_log RLS — this is the one
+-- members regardless of per-row hours_log RLS - this is the one
 -- place totals are intentionally shared.
 -- ============================================================
 create or replace view public.public_rankings as

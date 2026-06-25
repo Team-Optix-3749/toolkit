@@ -68,10 +68,10 @@ function MembersPage() {
             <tr key={m.id} className="border-b border-line">
               <td className="py-2 px-5">
                 <Link to="/admin/members/$id" params={{ id: m.id }} className="hover:underline">
-                  {m.display_name || '—'}
+                  {m.display_name || '-'}
                 </Link>
               </td>
-              <td className="py-2 px-5 text-ink-soft">{m.grade || '—'}</td>
+              <td className="py-2 px-5 text-ink-soft">{m.grade || '-'}</td>
               <td className="py-2 px-5">
                 <span className="text-[11px] font-mono uppercase px-1.5 py-0.5 border border-line text-ink-soft">
                   {m.role}

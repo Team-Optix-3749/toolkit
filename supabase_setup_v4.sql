@@ -1,5 +1,5 @@
 -- ============================================================
--- OPTIX — Supabase schema  v4  (run AFTER v3)
+-- OPTIX - Supabase schema  v4  (run AFTER v3)
 -- ------------------------------------------------------------
 -- Adds owner-area backing: org_settings, email_templates,
 -- the receipts storage bucket, and list_cron_jobs(). Safe to re-run.

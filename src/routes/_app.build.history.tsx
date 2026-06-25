@@ -43,7 +43,7 @@ function BuildHistory() {
   return (
     <section className={card}>
       <div className={cardHead}>
-        <span className={cardTitle}>Build history — {totalH} h total</span>
+        <span className={cardTitle}>Build history - {totalH} h total</span>
         <button onClick={load} className={btnGhost}>
           Refresh
         </button>
@@ -67,7 +67,7 @@ function BuildHistory() {
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-line">
               <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(r.checked_in_at)}</td>
-              <td className="py-2 px-5">{r.zone_id ? zones[r.zone_id] ?? '—' : '—'}</td>
+              <td className="py-2 px-5">{r.zone_id ? zones[r.zone_id] ?? '-' : '-'}</td>
               <td className="py-2 px-5">
                 <span className="font-mono text-xs uppercase text-ink-soft">{r.method}</span>
               </td>
@@ -75,7 +75,7 @@ function BuildHistory() {
                 {r.checked_out_at ? <Badge label="closed" tone="APPROVED" /> : <Badge label="open" tone="accent" />}
               </td>
               <td className="py-2 px-5 text-right font-mono tabular-nums">
-                {r.minutes_logged != null ? hoursFromMinutes(r.minutes_logged) : '—'}
+                {r.minutes_logged != null ? hoursFromMinutes(r.minutes_logged) : '-'}
               </td>
             </tr>
           ))}

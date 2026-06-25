@@ -1,5 +1,5 @@
 -- ============================================================
--- HOURS — Supabase schema  (Project B, fully separate)
+-- HOURS - Supabase schema  (Project B, fully separate)
 -- ------------------------------------------------------------
 -- The Hours app uses its OWN Supabase project, unrelated to the
 -- Scouting/Analytics project. Point hours/.env at this project.
@@ -46,7 +46,7 @@ create table if not exists public.login_events (
 create index if not exists idx_login_app on public.login_events(app);
 
 -- ============================================================
--- Row Level Security — only LOGGED-IN users can read/write.
+-- Row Level Security - only LOGGED-IN users can read/write.
 -- ============================================================
 alter table public.members      enable row level security;
 alter table public.hours_log    enable row level security;

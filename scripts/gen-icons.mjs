@@ -1,5 +1,5 @@
 // Generates the PWA PNG icons (dependency-free) into /public.
-// Green background (#3a5a40) with a white "O" ring — the Optix mark.
+// Green background (#3a5a40) with a white "O" ring - the Optix mark.
 import { deflateSync, crc32 } from 'node:zlib'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

@@ -37,7 +37,7 @@ function SessionDetail() {
         let names: Record<string, string> = {}
         if (ids.length) {
           const { data: p } = await supabase.from('profiles').select('id, display_name').in('id', ids)
-          names = Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '—']))
+          names = Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '-']))
         }
         setAttendees(list.map((c) => ({ ...c, name: names[c.user_id] })))
       }
@@ -58,8 +58,8 @@ function SessionDetail() {
         </div>
         <div className="p-5 space-y-2 text-sm">
           <Row k="Starts" v={fmtDateTime(session.starts_at)} />
-          <Row k="Ends" v={session.ends_at ? fmtDateTime(session.ends_at) : '—'} />
-          <Row k="Zone" v={zone ? zone.name : '—'} />
+          <Row k="Ends" v={session.ends_at ? fmtDateTime(session.ends_at) : '-'} />
+          <Row k="Zone" v={zone ? zone.name : '-'} />
           {zone?.gps_lat != null && <Row k="Location" v={`${zone.gps_lat.toFixed(4)}, ${zone.gps_lng?.toFixed(4)} (${zone.gps_radius_m}m)`} />}
           {session.is_recurring && <Row k="Recurring" v="Yes" />}
         </div>
@@ -87,7 +87,7 @@ function SessionDetail() {
                   <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(a.checked_in_at)}</td>
                   <td className="py-2 px-5 font-mono text-xs uppercase text-ink-soft">{a.method}</td>
                   <td className="py-2 px-5 text-right font-mono tabular-nums">
-                    {a.minutes_logged != null ? hoursFromMinutes(a.minutes_logged) : '—'}
+                    {a.minutes_logged != null ? hoursFromMinutes(a.minutes_logged) : '-'}
                   </td>
                 </tr>
               ))}

@@ -18,7 +18,7 @@
   --radius: 2px;
 }
 
-/* Dark theme — higher specificity than :root so it overrides the @theme vars. */
+/* Dark theme - higher specificity than :root so it overrides the @theme vars. */
 html.dark {
   --color-canvas: #0e1512;
   --color-panel: #16221b;

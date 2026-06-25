@@ -38,7 +38,7 @@ function OutreachHistory() {
   return (
     <section className={card}>
       <div className={cardHead}>
-        <span className={cardTitle}>Outreach history — {totalH} h total</span>
+        <span className={cardTitle}>Outreach history - {totalH} h total</span>
         <button onClick={load} className={btnGhost}>
           Refresh
         </button>
@@ -56,11 +56,11 @@ function OutreachHistory() {
         <tbody>
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-line">
-              <td className="py-2 px-5">{r.event_id ? titles[r.event_id] ?? '—' : '—'}</td>
+              <td className="py-2 px-5">{r.event_id ? titles[r.event_id] ?? '-' : '-'}</td>
               <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(r.checked_in_at)}</td>
               <td className="py-2 px-5 font-mono text-xs uppercase text-ink-soft">{r.method}</td>
               <td className="py-2 px-5 text-right font-mono tabular-nums">
-                {r.minutes_logged != null ? hoursFromMinutes(r.minutes_logged) : '—'}
+                {r.minutes_logged != null ? hoursFromMinutes(r.minutes_logged) : '-'}
               </td>
             </tr>
           ))}

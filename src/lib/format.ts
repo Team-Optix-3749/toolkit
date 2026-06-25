@@ -7,15 +7,15 @@ export const fmtDateTime = (iso?: string | null) =>
         hour: 'numeric',
         minute: '2-digit',
       })
-    : '—'
+    : '-'
 
 export const fmtDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-    : '—'
+    : '-'
 
 export const fmtTime = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '—'
+  iso ? new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '-'
 
 // minutes -> "2.5 h"
 export const hoursFromMinutes = (min?: number | null) => Math.round(((min || 0) / 60) * 10) / 10

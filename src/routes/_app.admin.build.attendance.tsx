@@ -25,7 +25,7 @@ function AttendancePage() {
     ])
     if (error) return flash('Load failed: ' + error.message, true)
     setRows((data as BuildCheckin[]) || [])
-    setNames(Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '—'])))
+    setNames(Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '-'])))
     setZones(Object.fromEntries(((z as Zone[]) || []).map((x) => [x.id, x.name])))
   }
   useEffect(() => {
@@ -74,7 +74,7 @@ function AttendancePage() {
             <tr key={r.id} className="border-b border-line">
               <td className="py-2 px-5">{names[r.user_id] || r.user_id.slice(0, 8)}</td>
               <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(r.checked_in_at)}</td>
-              <td className="py-2 px-5">{r.zone_id ? zones[r.zone_id] ?? '—' : '—'}</td>
+              <td className="py-2 px-5">{r.zone_id ? zones[r.zone_id] ?? '-' : '-'}</td>
               <td className="py-2 px-5">
                 {r.checked_out_at ? <Badge label="closed" tone="APPROVED" /> : <Badge label="open" tone="accent" />}
               </td>

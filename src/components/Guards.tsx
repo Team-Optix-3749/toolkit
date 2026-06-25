@@ -41,7 +41,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
-/** OWNER only — used inside admin pages. Renders a notice instead of redirecting. */
+/** OWNER only - used inside admin pages. Renders a notice instead of redirecting. */
 export function RequireOwner({ children }: { children: ReactNode }) {
   const { role } = useAuth()
   if (!isOwner(role))
