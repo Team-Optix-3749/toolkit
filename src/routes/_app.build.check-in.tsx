@@ -104,7 +104,7 @@ function CheckInFlow() {
       .update({ checked_out_at: now, minutes_logged: minutes })
       .eq('id', open.id)
     if (error) return flash('Check-out failed: ' + error.message, true)
-    flash(`Checked out - ${hoursFromMinutes(minutes)} h logged`)
+    flash(`Checked out, ${hoursFromMinutes(minutes)} h logged`)
     load()
   }
 
@@ -143,7 +143,7 @@ function CheckInFlow() {
             {sessions.length === 0 && <option value="">No sessions</option>}
             {sessions.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.title} - {fmtDateTime(s.starts_at)}
+                {s.title}, {fmtDateTime(s.starts_at)}
               </option>
             ))}
           </select>

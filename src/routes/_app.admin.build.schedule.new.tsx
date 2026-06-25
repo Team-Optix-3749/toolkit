@@ -89,7 +89,7 @@ function NewSession() {
           <div>
             <label className={label}>Zone</label>
             <select className={input} value={f.zone_id} onChange={(e) => setF({ ...f, zone_id: e.target.value })}>
-              <option value="">- none -</option>
+              <option value="">(none)</option>
               {zones.map((z) => (
                 <option key={z.id} value={z.id}>
                   {z.name}

@@ -43,7 +43,7 @@ function BuildHistory() {
   return (
     <section className={card}>
       <div className={cardHead}>
-        <span className={cardTitle}>Build history - {totalH} h total</span>
+        <span className={cardTitle}>Build history: {totalH} h total</span>
         <button onClick={load} className={btnGhost}>
           Refresh
         </button>

@@ -98,7 +98,7 @@ function OutreachCheckIn() {
             {events.length === 0 && <option value="">No events</option>}
             {events.map((e) => (
               <option key={e.id} value={e.id}>
-                {e.title} - {fmtDateTime(e.starts_at)}
+                {e.title}, {fmtDateTime(e.starts_at)}
               </option>
             ))}
           </select>

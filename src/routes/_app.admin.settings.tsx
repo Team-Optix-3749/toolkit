@@ -59,7 +59,7 @@ function Settings() {
               />
             </div>
           ))}
-          {settings.length === 0 && <div className="px-5 py-6 text-ink-soft text-sm">No settings yet - add one below.</div>}
+          {settings.length === 0 && <div className="px-5 py-6 text-ink-soft text-sm">No settings yet. Add one below.</div>}
         </div>
         <div className="p-5 border-t border-line flex items-end gap-3">
           <div className="flex-1">

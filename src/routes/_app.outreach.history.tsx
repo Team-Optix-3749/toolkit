@@ -38,7 +38,7 @@ function OutreachHistory() {
   return (
     <section className={card}>
       <div className={cardHead}>
-        <span className={cardTitle}>Outreach history - {totalH} h total</span>
+        <span className={cardTitle}>Outreach history: {totalH} h total</span>
         <button onClick={load} className={btnGhost}>
           Refresh
         </button>
