@@ -16,6 +16,7 @@ export type Profile = {
   avatar_url: string | null
   grade: string | null
   bio: string | null
+  department: string | null
   special_perms: string[] | null
 }
 
@@ -31,7 +32,11 @@ type AuthValue = {
     password: string,
     remember?: boolean,
   ) => Promise<{ error: string | null }>
-  signUp: (email: string, password: string) => Promise<{ error: string | null }>
+  signUp: (
+    email: string,
+    password: string,
+    displayName?: string,
+  ) => Promise<{ error: string | null }>
   signInOAuth: (provider: 'google' | 'discord', remember?: boolean) => Promise<void>
   signOut: () => Promise<void>
 }
@@ -51,9 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const ensureProfile = useCallback(async (user: User) => {
     let { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
     if (!data) {
-      await supabase
-        .from('profiles')
-        .insert({ id: user.id, display_name: (user.email || 'member').split('@')[0] })
+      const meta = user.user_metadata ?? {}
+      const name =
+        meta.display_name || meta.full_name || meta.name || (user.email || 'member').split('@')[0]
+      await supabase.from('profiles').insert({ id: user.id, display_name: name })
       ;({ data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle())
     }
     setProfile((data as Profile) ?? null)
@@ -98,8 +104,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       return { error: error?.message ?? null }
     },
-    async signUp(email, password) {
-      const { error } = await supabase.auth.signUp({ email, password })
+    async signUp(email, password, displayName) {
+      const name = displayName?.trim()
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: name ? { data: { display_name: name } } : undefined,
+      })
       return { error: error?.message ?? null }
     },
     async signInOAuth(provider, remember = true) {

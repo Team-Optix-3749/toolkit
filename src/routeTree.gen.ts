@@ -27,6 +27,7 @@ import { Route as AppBuildIndexRouteImport } from './routes/_app.build.index'
 import { Route as AppAdminIndexRouteImport } from './routes/_app.admin.index'
 import { Route as AppPurchasesNewRouteImport } from './routes/_app.purchases.new'
 import { Route as AppPurchasesIdRouteImport } from './routes/_app.purchases.$id'
+import { Route as AppOutreachLogRouteImport } from './routes/_app.outreach.log'
 import { Route as AppOutreachHistoryRouteImport } from './routes/_app.outreach.history'
 import { Route as AppOutreachCheckInRouteImport } from './routes/_app.outreach.check-in'
 import { Route as AppOpiNewRouteImport } from './routes/_app.opi.new'
@@ -50,12 +51,14 @@ import { Route as AppAdminMembersPendingRouteImport } from './routes/_app.admin.
 import { Route as AppAdminMembersIdRouteImport } from './routes/_app.admin.members.$id'
 import { Route as AppAdminBuildZonesRouteImport } from './routes/_app.admin.build.zones'
 import { Route as AppAdminBuildAttendanceRouteImport } from './routes/_app.admin.build.attendance'
+import { Route as AppAdminOutreachIndividualIndexRouteImport } from './routes/_app.admin.outreach.individual.index'
 import { Route as AppAdminOutreachEventsIndexRouteImport } from './routes/_app.admin.outreach.events.index'
 import { Route as AppAdminBuildScheduleIndexRouteImport } from './routes/_app.admin.build.schedule.index'
 import { Route as AppAdminPurchasesIdReviewRouteImport } from './routes/_app.admin.purchases.$id.review'
 import { Route as AppAdminOutreachEventsNewRouteImport } from './routes/_app.admin.outreach.events.new'
 import { Route as AppAdminOpiIdReviewRouteImport } from './routes/_app.admin.opi.$id.review'
 import { Route as AppAdminBuildScheduleNewRouteImport } from './routes/_app.admin.build.schedule.new'
+import { Route as AppAdminOutreachIndividualIdReviewRouteImport } from './routes/_app.admin.outreach.individual.$id.review'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -144,6 +147,11 @@ const AppPurchasesNewRoute = AppPurchasesNewRouteImport.update({
 const AppPurchasesIdRoute = AppPurchasesIdRouteImport.update({
   id: '/purchases/$id',
   path: '/purchases/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOutreachLogRoute = AppOutreachLogRouteImport.update({
+  id: '/outreach/log',
+  path: '/outreach/log',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOutreachHistoryRoute = AppOutreachHistoryRouteImport.update({
@@ -265,6 +273,12 @@ const AppAdminBuildAttendanceRoute = AppAdminBuildAttendanceRouteImport.update({
   path: '/build/attendance',
   getParentRoute: () => AppAdminRoute,
 } as any)
+const AppAdminOutreachIndividualIndexRoute =
+  AppAdminOutreachIndividualIndexRouteImport.update({
+    id: '/outreach/individual/',
+    path: '/outreach/individual/',
+    getParentRoute: () => AppAdminRoute,
+  } as any)
 const AppAdminOutreachEventsIndexRoute =
   AppAdminOutreachEventsIndexRouteImport.update({
     id: '/outreach/events/',
@@ -300,6 +314,12 @@ const AppAdminBuildScheduleNewRoute =
     path: '/build/schedule/new',
     getParentRoute: () => AppAdminRoute,
   } as any)
+const AppAdminOutreachIndividualIdReviewRoute =
+  AppAdminOutreachIndividualIdReviewRouteImport.update({
+    id: '/outreach/individual/$id/review',
+    path: '/outreach/individual/$id/review',
+    getParentRoute: () => AppAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -320,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/opi/new': typeof AppOpiNewRoute
   '/outreach/check-in': typeof AppOutreachCheckInRoute
   '/outreach/history': typeof AppOutreachHistoryRoute
+  '/outreach/log': typeof AppOutreachLogRoute
   '/purchases/$id': typeof AppPurchasesIdRoute
   '/purchases/new': typeof AppPurchasesNewRoute
   '/admin/': typeof AppAdminIndexRoute
@@ -348,6 +369,8 @@ export interface FileRoutesByFullPath {
   '/admin/purchases/$id/review': typeof AppAdminPurchasesIdReviewRoute
   '/admin/build/schedule/': typeof AppAdminBuildScheduleIndexRoute
   '/admin/outreach/events/': typeof AppAdminOutreachEventsIndexRoute
+  '/admin/outreach/individual/': typeof AppAdminOutreachIndividualIndexRoute
+  '/admin/outreach/individual/$id/review': typeof AppAdminOutreachIndividualIdReviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -367,6 +390,7 @@ export interface FileRoutesByTo {
   '/opi/new': typeof AppOpiNewRoute
   '/outreach/check-in': typeof AppOutreachCheckInRoute
   '/outreach/history': typeof AppOutreachHistoryRoute
+  '/outreach/log': typeof AppOutreachLogRoute
   '/purchases/$id': typeof AppPurchasesIdRoute
   '/purchases/new': typeof AppPurchasesNewRoute
   '/admin': typeof AppAdminIndexRoute
@@ -395,6 +419,8 @@ export interface FileRoutesByTo {
   '/admin/purchases/$id/review': typeof AppAdminPurchasesIdReviewRoute
   '/admin/build/schedule': typeof AppAdminBuildScheduleIndexRoute
   '/admin/outreach/events': typeof AppAdminOutreachEventsIndexRoute
+  '/admin/outreach/individual': typeof AppAdminOutreachIndividualIndexRoute
+  '/admin/outreach/individual/$id/review': typeof AppAdminOutreachIndividualIdReviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -417,6 +443,7 @@ export interface FileRoutesById {
   '/_app/opi/new': typeof AppOpiNewRoute
   '/_app/outreach/check-in': typeof AppOutreachCheckInRoute
   '/_app/outreach/history': typeof AppOutreachHistoryRoute
+  '/_app/outreach/log': typeof AppOutreachLogRoute
   '/_app/purchases/$id': typeof AppPurchasesIdRoute
   '/_app/purchases/new': typeof AppPurchasesNewRoute
   '/_app/admin/': typeof AppAdminIndexRoute
@@ -445,6 +472,8 @@ export interface FileRoutesById {
   '/_app/admin/purchases/$id/review': typeof AppAdminPurchasesIdReviewRoute
   '/_app/admin/build/schedule/': typeof AppAdminBuildScheduleIndexRoute
   '/_app/admin/outreach/events/': typeof AppAdminOutreachEventsIndexRoute
+  '/_app/admin/outreach/individual/': typeof AppAdminOutreachIndividualIndexRoute
+  '/_app/admin/outreach/individual/$id/review': typeof AppAdminOutreachIndividualIdReviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -467,6 +496,7 @@ export interface FileRouteTypes {
     | '/opi/new'
     | '/outreach/check-in'
     | '/outreach/history'
+    | '/outreach/log'
     | '/purchases/$id'
     | '/purchases/new'
     | '/admin/'
@@ -495,6 +525,8 @@ export interface FileRouteTypes {
     | '/admin/purchases/$id/review'
     | '/admin/build/schedule/'
     | '/admin/outreach/events/'
+    | '/admin/outreach/individual/'
+    | '/admin/outreach/individual/$id/review'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -514,6 +546,7 @@ export interface FileRouteTypes {
     | '/opi/new'
     | '/outreach/check-in'
     | '/outreach/history'
+    | '/outreach/log'
     | '/purchases/$id'
     | '/purchases/new'
     | '/admin'
@@ -542,6 +575,8 @@ export interface FileRouteTypes {
     | '/admin/purchases/$id/review'
     | '/admin/build/schedule'
     | '/admin/outreach/events'
+    | '/admin/outreach/individual'
+    | '/admin/outreach/individual/$id/review'
   id:
     | '__root__'
     | '/'
@@ -563,6 +598,7 @@ export interface FileRouteTypes {
     | '/_app/opi/new'
     | '/_app/outreach/check-in'
     | '/_app/outreach/history'
+    | '/_app/outreach/log'
     | '/_app/purchases/$id'
     | '/_app/purchases/new'
     | '/_app/admin/'
@@ -591,6 +627,8 @@ export interface FileRouteTypes {
     | '/_app/admin/purchases/$id/review'
     | '/_app/admin/build/schedule/'
     | '/_app/admin/outreach/events/'
+    | '/_app/admin/outreach/individual/'
+    | '/_app/admin/outreach/individual/$id/review'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -728,6 +766,13 @@ declare module '@tanstack/react-router' {
       path: '/purchases/$id'
       fullPath: '/purchases/$id'
       preLoaderRoute: typeof AppPurchasesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/outreach/log': {
+      id: '/_app/outreach/log'
+      path: '/outreach/log'
+      fullPath: '/outreach/log'
+      preLoaderRoute: typeof AppOutreachLogRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/outreach/history': {
@@ -891,6 +936,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminBuildAttendanceRouteImport
       parentRoute: typeof AppAdminRoute
     }
+    '/_app/admin/outreach/individual/': {
+      id: '/_app/admin/outreach/individual/'
+      path: '/outreach/individual'
+      fullPath: '/admin/outreach/individual/'
+      preLoaderRoute: typeof AppAdminOutreachIndividualIndexRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
     '/_app/admin/outreach/events/': {
       id: '/_app/admin/outreach/events/'
       path: '/outreach/events'
@@ -933,6 +985,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminBuildScheduleNewRouteImport
       parentRoute: typeof AppAdminRoute
     }
+    '/_app/admin/outreach/individual/$id/review': {
+      id: '/_app/admin/outreach/individual/$id/review'
+      path: '/outreach/individual/$id/review'
+      fullPath: '/admin/outreach/individual/$id/review'
+      preLoaderRoute: typeof AppAdminOutreachIndividualIdReviewRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
   }
 }
 
@@ -958,6 +1017,8 @@ interface AppAdminRouteChildren {
   AppAdminPurchasesIdReviewRoute: typeof AppAdminPurchasesIdReviewRoute
   AppAdminBuildScheduleIndexRoute: typeof AppAdminBuildScheduleIndexRoute
   AppAdminOutreachEventsIndexRoute: typeof AppAdminOutreachEventsIndexRoute
+  AppAdminOutreachIndividualIndexRoute: typeof AppAdminOutreachIndividualIndexRoute
+  AppAdminOutreachIndividualIdReviewRoute: typeof AppAdminOutreachIndividualIdReviewRoute
 }
 
 const AppAdminRouteChildren: AppAdminRouteChildren = {
@@ -982,6 +1043,9 @@ const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminPurchasesIdReviewRoute: AppAdminPurchasesIdReviewRoute,
   AppAdminBuildScheduleIndexRoute: AppAdminBuildScheduleIndexRoute,
   AppAdminOutreachEventsIndexRoute: AppAdminOutreachEventsIndexRoute,
+  AppAdminOutreachIndividualIndexRoute: AppAdminOutreachIndividualIndexRoute,
+  AppAdminOutreachIndividualIdReviewRoute:
+    AppAdminOutreachIndividualIdReviewRoute,
 }
 
 const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(
@@ -1000,6 +1064,7 @@ interface AppRouteChildren {
   AppOpiNewRoute: typeof AppOpiNewRoute
   AppOutreachCheckInRoute: typeof AppOutreachCheckInRoute
   AppOutreachHistoryRoute: typeof AppOutreachHistoryRoute
+  AppOutreachLogRoute: typeof AppOutreachLogRoute
   AppPurchasesIdRoute: typeof AppPurchasesIdRoute
   AppPurchasesNewRoute: typeof AppPurchasesNewRoute
   AppBuildIndexRoute: typeof AppBuildIndexRoute
@@ -1023,6 +1088,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOpiNewRoute: AppOpiNewRoute,
   AppOutreachCheckInRoute: AppOutreachCheckInRoute,
   AppOutreachHistoryRoute: AppOutreachHistoryRoute,
+  AppOutreachLogRoute: AppOutreachLogRoute,
   AppPurchasesIdRoute: AppPurchasesIdRoute,
   AppPurchasesNewRoute: AppPurchasesNewRoute,
   AppBuildIndexRoute: AppBuildIndexRoute,

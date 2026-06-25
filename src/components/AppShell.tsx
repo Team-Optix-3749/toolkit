@@ -17,6 +17,7 @@ const ADMIN_NAV: [string, string][] = [
   ['/admin/members', 'Members'],
   ['/admin/build/schedule', 'Build schedule'],
   ['/admin/outreach/events', 'Outreach events'],
+  ['/admin/outreach/individual', 'Individual outreach'],
   ['/admin/opi', 'OPI review'],
   ['/admin/purchases', 'Purchases'],
   ['/admin/reports/hours', 'Reports'],

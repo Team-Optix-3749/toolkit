@@ -52,7 +52,7 @@ function HoursSummary() {
         ))}
       </div>
       <div className="p-5 text-sm text-ink-soft">
-        Combined from your build and outreach check-ins.
+        Combined from your build and outreach check-ins, plus up to 6 approved individual outreach hours.
       </div>
       {Toast}
     </section>

@@ -74,6 +74,27 @@ export type OpiComment = {
   body: string
 }
 
+export const DEPARTMENTS = ['Build', 'Technology', 'Business', 'Outreach'] as const
+export type Department = (typeof DEPARTMENTS)[number]
+
+export type IndividualOutreach = {
+  id: string
+  created_at: string
+  user_id: string
+  full_name: string
+  department: string | null
+  event_name: string
+  what_you_did: string
+  impact: string
+  hours: number
+  event_date: string
+  proof_urls: string[]
+  people_impacted: number | null
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  reviewer_id: string | null
+  decided_at: string | null
+}
+
 export type Purchase = {
   id: string
   created_at: string
@@ -106,4 +127,5 @@ export type ProfileRow = {
   special_perms: string[] | null
   avatar_url: string | null
   bio: string | null
+  department: string | null
 }

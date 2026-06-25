@@ -11,6 +11,7 @@ export const Route = createFileRoute('/signup')({
 function SignupPage() {
   const { signUp, signInOAuth } = useAuth()
   const navigate = useNavigate()
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
@@ -20,7 +21,7 @@ function SignupPage() {
     e.preventDefault()
     setBusy(true)
     setMsg(null)
-    const { error } = await signUp(email, password)
+    const { error } = await signUp(email, password, name)
     setBusy(false)
     if (error) return setMsg({ type: 'err', text: error })
     setMsg({
@@ -35,6 +36,10 @@ function SignupPage() {
         <OAuthButtons onClick={signInOAuth} />
         <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-wide text-ink-soft">
           <span className="h-px bg-line flex-1" /> or <span className="h-px bg-line flex-1" />
+        </div>
+        <div>
+          <label className={label}>Full name</label>
+          <input type="text" required className={input} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
           <label className={label}>Email</label>

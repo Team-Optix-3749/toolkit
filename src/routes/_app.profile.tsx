@@ -4,6 +4,7 @@ import { useAuth } from '~/lib/auth'
 import { supabase } from '~/lib/supabase'
 import { card, cardHead, cardTitle, label, input, textarea, btn } from '~/lib/ui'
 import { ROLE_LABEL, type Role } from '~/lib/rbac'
+import { DEPARTMENTS } from '~/lib/types'
 
 export const Route = createFileRoute('/_app/profile')({
   component: ProfilePage,
@@ -11,7 +12,7 @@ export const Route = createFileRoute('/_app/profile')({
 
 function ProfilePage() {
   const { user, profile, role, refresh } = useAuth()
-  const [form, setForm] = useState({ display_name: '', grade: '', avatar_url: '', bio: '' })
+  const [form, setForm] = useState({ display_name: '', department: '', grade: '', avatar_url: '', bio: '' })
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [pw, setPw] = useState('')
@@ -32,6 +33,7 @@ function ProfilePage() {
     if (profile)
       setForm({
         display_name: profile.display_name || '',
+        department: profile.department || '',
         grade: profile.grade || '',
         avatar_url: profile.avatar_url || '',
         bio: profile.bio || '',
@@ -46,6 +48,7 @@ function ProfilePage() {
       .from('profiles')
       .update({
         display_name: form.display_name.trim(),
+        department: form.department || null,
         grade: form.grade || null,
         avatar_url: form.avatar_url || null,
         bio: form.bio || null,
@@ -75,9 +78,18 @@ function ProfilePage() {
               <input className={input} value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
             </div>
             <div>
-              <label className={label}>Grade / Year</label>
-              <input className={input} value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} />
+              <label className={label}>Department</label>
+              <select className={input} value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+                <option value="">—</option>
+                {DEPARTMENTS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
             </div>
+          </div>
+          <div className="mt-4">
+            <label className={label}>Grade / Year</label>
+            <input className={input} value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} />
           </div>
           <div className="mt-4">
             <label className={label}>Avatar URL</label>
