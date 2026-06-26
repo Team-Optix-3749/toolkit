@@ -41,7 +41,10 @@ function OutreachHome() {
   )
 
   const approvedHours = useMemo(
-    () => subs.filter((s) => s.status === 'APPROVED').reduce((sum, s) => sum + Number(s.hours), 0),
+    () =>
+      subs
+        .filter((s) => s.status === 'APPROVED')
+        .reduce((sum, s) => sum + Number(s.credited_hours ?? s.hours), 0),
     [subs],
   )
   const creditedHours = Math.min(approvedHours, 6)

@@ -87,6 +87,7 @@ export type IndividualOutreach = {
   what_you_did: string
   impact: string
   hours: number
+  credited_hours: number | null
   event_date: string
   proof_urls: string[]
   people_impacted: number | null
