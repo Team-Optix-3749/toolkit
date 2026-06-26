@@ -5,6 +5,7 @@ import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { fmtDate, fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
+import { isAdmin } from '~/lib/rbac'
 import type { OutreachEvent, IndividualOutreach } from '~/lib/types'
 import { card, cardHead, cardTitle, btn } from '~/lib/ui'
 
@@ -13,7 +14,8 @@ export const Route = createFileRoute('/_app/outreach/')({
 })
 
 function OutreachHome() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
+  const admin = isAdmin(role)
   const { flash, Toast } = useToast()
   const [events, setEvents] = useState<OutreachEvent[]>([])
   const [mine, setMine] = useState<Set<string>>(new Set())
@@ -87,9 +89,16 @@ function OutreachHome() {
           <span className={cardTitle}>
             Individual outreach hours · {creditedHours} / 6 credited
           </span>
-          <Link to="/outreach/log" className={btn.replace('h-10', 'h-8') + ' px-4 text-xs'}>
-            Log hours
-          </Link>
+          <div className="flex items-center gap-3">
+            {admin && (
+              <Link to="/admin/outreach/individual" className="text-[11px] font-mono uppercase text-accent hover:underline">
+                Review submissions
+              </Link>
+            )}
+            <Link to="/outreach/log" className={btn.replace('h-10', 'h-8') + ' px-4 text-xs'}>
+              Log hours
+            </Link>
+          </div>
         </div>
         <div className="divide-y divide-line">
           {subs.map((s) => (

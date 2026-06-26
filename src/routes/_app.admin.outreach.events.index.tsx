@@ -35,9 +35,14 @@ function EventsAdmin() {
     <section className={card}>
       <div className={cardHead}>
         <span className={cardTitle}>Outreach events ({events.length})</span>
-        <Link to="/admin/outreach/events/new" className={btnGhost}>
-          New event
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link to="/admin/outreach/individual" className="text-[11px] font-mono uppercase text-accent hover:underline">
+            Review individual hours
+          </Link>
+          <Link to="/admin/outreach/events/new" className={btnGhost}>
+            New event
+          </Link>
+        </div>
       </div>
       <div className="divide-y divide-line">
         {events.map((e) => (
