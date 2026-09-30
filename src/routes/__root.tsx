@@ -32,9 +32,9 @@ export const Route = createRootRoute({
         href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap',
       },
       { rel: 'stylesheet', href: appCss },
-      { rel: 'manifest', href: '/manifest.webmanifest' },
-      { rel: 'icon', type: 'image/png', href: '/icon-192.png' },
-      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      { rel: 'manifest', href: `${import.meta.env.BASE_URL}manifest.webmanifest` },
+      { rel: 'icon', type: 'image/png', href: `${import.meta.env.BASE_URL}icon-192.png` },
+      { rel: 'apple-touch-icon', href: `${import.meta.env.BASE_URL}apple-touch-icon.png` },
     ],
   }),
   component: RootComponent,
@@ -43,7 +43,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {})
+      navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {})
     }
   }, [])
   return (
