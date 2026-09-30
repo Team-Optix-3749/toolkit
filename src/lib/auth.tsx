@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         provider,
         options: {
           redirectTo:
-            typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
+            typeof window !== 'undefined' ? `${window.location.origin}${import.meta.env.BASE_URL}auth/callback` : undefined,
         },
       })
     },
