@@ -10,6 +10,8 @@ const index = join(dir, 'index.html')
 if (existsSync(shell)) {
   copyFileSync(shell, index)
   console.log('postbuild: copied _shell.html -> index.html')
+  copyFileSync(shell, join(dir, '404.html'))
+  console.log('postbuild: copied _shell.html -> 404.html (SPA fallback for GitHub Pages)')
 } else {
   console.warn('postbuild: _shell.html not found, skipped')
 }
