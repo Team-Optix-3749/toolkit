@@ -44,11 +44,11 @@ This is a multi-session effort to bring the app in line with the full PRD.
 - [x] Deactivated/rejected account state pages (section 8.5)
 
 ### Dashboard (section 9)
-- [ ] Show active build checkout prominently (priority 2)
-- [ ] Show assigned/overdue tasks (priority 3)
-- [ ] Show tasks awaiting review (priority 4)
-- [ ] Show upcoming outreach with planned-attendance state (priority 5)
-- [ ] Remove "Welcome" hero copy — use operational headings
+- [x] Show active build checkout prominently (priority 2)
+- [x] Show assigned/overdue tasks (priority 3)
+- [x] Show tasks awaiting review (priority 4)
+- [x] Show upcoming outreach with planned-attendance state (priority 5)
+- [x] Remove "Welcome" hero copy — use operational headings
 
 ### Team hours (section 10)
 - [ ] Team-wide sortable table (not just own hours)
