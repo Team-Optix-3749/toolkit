@@ -18,6 +18,8 @@
     "@supabase/supabase-js": "^2.45.0",
     "@tanstack/react-router": "^1.168.0",
     "@tanstack/react-start": "^1.168.0",
+    "@types/qrcode": "^1.5.6",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "rrule": "^2.8.1"

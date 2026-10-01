@@ -10,8 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ResendVerificationRouteImport } from './routes/resend-verification'
 import { Route as PendingApprovalRouteImport } from './routes/pending-approval'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as InviteRouteImport } from './routes/invite'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as AccountBlockedRouteImport } from './routes/account-blocked'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -19,12 +24,15 @@ import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppHoursRouteImport } from './routes/_app.hours'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
+import { Route as AppTasksIndexRouteImport } from './routes/_app.tasks.index'
 import { Route as AppPurchasesIndexRouteImport } from './routes/_app.purchases.index'
 import { Route as AppOutreachIndexRouteImport } from './routes/_app.outreach.index'
 import { Route as AppOpiIndexRouteImport } from './routes/_app.opi.index'
 import { Route as AppNotificationsIndexRouteImport } from './routes/_app.notifications.index'
 import { Route as AppBuildIndexRouteImport } from './routes/_app.build.index'
 import { Route as AppAdminIndexRouteImport } from './routes/_app.admin.index'
+import { Route as AppTasksNewRouteImport } from './routes/_app.tasks.new'
+import { Route as AppTasksIdRouteImport } from './routes/_app.tasks.$id'
 import { Route as AppPurchasesNewRouteImport } from './routes/_app.purchases.new'
 import { Route as AppPurchasesIdRouteImport } from './routes/_app.purchases.$id'
 import { Route as AppOutreachLogRouteImport } from './routes/_app.outreach.log'
@@ -50,6 +58,7 @@ import { Route as AppAdminNotificationsTemplatesRouteImport } from './routes/_ap
 import { Route as AppAdminMembersPendingRouteImport } from './routes/_app.admin.members.pending'
 import { Route as AppAdminMembersIdRouteImport } from './routes/_app.admin.members.$id'
 import { Route as AppAdminBuildZonesRouteImport } from './routes/_app.admin.build.zones'
+import { Route as AppAdminBuildQrRouteImport } from './routes/_app.admin.build.qr'
 import { Route as AppAdminBuildAttendanceRouteImport } from './routes/_app.admin.build.attendance'
 import { Route as AppAdminOutreachIndividualIndexRouteImport } from './routes/_app.admin.outreach.individual.index'
 import { Route as AppAdminOutreachEventsIndexRouteImport } from './routes/_app.admin.outreach.events.index'
@@ -65,6 +74,16 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResendVerificationRoute = ResendVerificationRouteImport.update({
+  id: '/resend-verification',
+  path: '/resend-verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PendingApprovalRoute = PendingApprovalRouteImport.update({
   id: '/pending-approval',
   path: '/pending-approval',
@@ -73,6 +92,21 @@ const PendingApprovalRoute = PendingApprovalRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountBlockedRoute = AccountBlockedRouteImport.update({
+  id: '/account-blocked',
+  path: '/account-blocked',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -109,6 +143,11 @@ const AppAdminRoute = AppAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTasksIndexRoute = AppTasksIndexRouteImport.update({
+  id: '/tasks/',
+  path: '/tasks/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPurchasesIndexRoute = AppPurchasesIndexRouteImport.update({
   id: '/purchases/',
   path: '/purchases/',
@@ -138,6 +177,16 @@ const AppAdminIndexRoute = AppAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppAdminRoute,
+} as any)
+const AppTasksNewRoute = AppTasksNewRouteImport.update({
+  id: '/tasks/new',
+  path: '/tasks/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksIdRoute = AppTasksIdRouteImport.update({
+  id: '/tasks/$id',
+  path: '/tasks/$id',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppPurchasesNewRoute = AppPurchasesNewRouteImport.update({
   id: '/purchases/new',
@@ -268,6 +317,11 @@ const AppAdminBuildZonesRoute = AppAdminBuildZonesRouteImport.update({
   path: '/build/zones',
   getParentRoute: () => AppAdminRoute,
 } as any)
+const AppAdminBuildQrRoute = AppAdminBuildQrRouteImport.update({
+  id: '/build/qr',
+  path: '/build/qr',
+  getParentRoute: () => AppAdminRoute,
+} as any)
 const AppAdminBuildAttendanceRoute = AppAdminBuildAttendanceRouteImport.update({
   id: '/build/attendance',
   path: '/build/attendance',
@@ -323,8 +377,13 @@ const AppAdminOutreachIndividualIdReviewRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account-blocked': typeof AccountBlockedRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/pending-approval': typeof PendingApprovalRoute
+  '/resend-verification': typeof ResendVerificationRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AppAdminRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
@@ -343,13 +402,17 @@ export interface FileRoutesByFullPath {
   '/outreach/log': typeof AppOutreachLogRoute
   '/purchases/$id': typeof AppPurchasesIdRoute
   '/purchases/new': typeof AppPurchasesNewRoute
+  '/tasks/$id': typeof AppTasksIdRoute
+  '/tasks/new': typeof AppTasksNewRoute
   '/admin/': typeof AppAdminIndexRoute
   '/build/': typeof AppBuildIndexRoute
   '/notifications/': typeof AppNotificationsIndexRoute
   '/opi/': typeof AppOpiIndexRoute
   '/outreach/': typeof AppOutreachIndexRoute
   '/purchases/': typeof AppPurchasesIndexRoute
+  '/tasks/': typeof AppTasksIndexRoute
   '/admin/build/attendance': typeof AppAdminBuildAttendanceRoute
+  '/admin/build/qr': typeof AppAdminBuildQrRoute
   '/admin/build/zones': typeof AppAdminBuildZonesRoute
   '/admin/members/$id': typeof AppAdminMembersIdRoute
   '/admin/members/pending': typeof AppAdminMembersPendingRoute
@@ -374,8 +437,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account-blocked': typeof AccountBlockedRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/pending-approval': typeof PendingApprovalRoute
+  '/resend-verification': typeof ResendVerificationRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AppDashboardRoute
   '/hours': typeof AppHoursRoute
@@ -393,13 +461,17 @@ export interface FileRoutesByTo {
   '/outreach/log': typeof AppOutreachLogRoute
   '/purchases/$id': typeof AppPurchasesIdRoute
   '/purchases/new': typeof AppPurchasesNewRoute
+  '/tasks/$id': typeof AppTasksIdRoute
+  '/tasks/new': typeof AppTasksNewRoute
   '/admin': typeof AppAdminIndexRoute
   '/build': typeof AppBuildIndexRoute
   '/notifications': typeof AppNotificationsIndexRoute
   '/opi': typeof AppOpiIndexRoute
   '/outreach': typeof AppOutreachIndexRoute
   '/purchases': typeof AppPurchasesIndexRoute
+  '/tasks': typeof AppTasksIndexRoute
   '/admin/build/attendance': typeof AppAdminBuildAttendanceRoute
+  '/admin/build/qr': typeof AppAdminBuildQrRoute
   '/admin/build/zones': typeof AppAdminBuildZonesRoute
   '/admin/members/$id': typeof AppAdminMembersIdRoute
   '/admin/members/pending': typeof AppAdminMembersPendingRoute
@@ -426,8 +498,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/account-blocked': typeof AccountBlockedRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/pending-approval': typeof PendingApprovalRoute
+  '/resend-verification': typeof ResendVerificationRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_app/admin': typeof AppAdminRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
@@ -446,13 +523,17 @@ export interface FileRoutesById {
   '/_app/outreach/log': typeof AppOutreachLogRoute
   '/_app/purchases/$id': typeof AppPurchasesIdRoute
   '/_app/purchases/new': typeof AppPurchasesNewRoute
+  '/_app/tasks/$id': typeof AppTasksIdRoute
+  '/_app/tasks/new': typeof AppTasksNewRoute
   '/_app/admin/': typeof AppAdminIndexRoute
   '/_app/build/': typeof AppBuildIndexRoute
   '/_app/notifications/': typeof AppNotificationsIndexRoute
   '/_app/opi/': typeof AppOpiIndexRoute
   '/_app/outreach/': typeof AppOutreachIndexRoute
   '/_app/purchases/': typeof AppPurchasesIndexRoute
+  '/_app/tasks/': typeof AppTasksIndexRoute
   '/_app/admin/build/attendance': typeof AppAdminBuildAttendanceRoute
+  '/_app/admin/build/qr': typeof AppAdminBuildQrRoute
   '/_app/admin/build/zones': typeof AppAdminBuildZonesRoute
   '/_app/admin/members/$id': typeof AppAdminMembersIdRoute
   '/_app/admin/members/pending': typeof AppAdminMembersPendingRoute
@@ -479,8 +560,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account-blocked'
+    | '/forgot-password'
+    | '/invite'
     | '/login'
     | '/pending-approval'
+    | '/resend-verification'
+    | '/reset-password'
     | '/signup'
     | '/admin'
     | '/dashboard'
@@ -499,13 +585,17 @@ export interface FileRouteTypes {
     | '/outreach/log'
     | '/purchases/$id'
     | '/purchases/new'
+    | '/tasks/$id'
+    | '/tasks/new'
     | '/admin/'
     | '/build/'
     | '/notifications/'
     | '/opi/'
     | '/outreach/'
     | '/purchases/'
+    | '/tasks/'
     | '/admin/build/attendance'
+    | '/admin/build/qr'
     | '/admin/build/zones'
     | '/admin/members/$id'
     | '/admin/members/pending'
@@ -530,8 +620,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account-blocked'
+    | '/forgot-password'
+    | '/invite'
     | '/login'
     | '/pending-approval'
+    | '/resend-verification'
+    | '/reset-password'
     | '/signup'
     | '/dashboard'
     | '/hours'
@@ -549,13 +644,17 @@ export interface FileRouteTypes {
     | '/outreach/log'
     | '/purchases/$id'
     | '/purchases/new'
+    | '/tasks/$id'
+    | '/tasks/new'
     | '/admin'
     | '/build'
     | '/notifications'
     | '/opi'
     | '/outreach'
     | '/purchases'
+    | '/tasks'
     | '/admin/build/attendance'
+    | '/admin/build/qr'
     | '/admin/build/zones'
     | '/admin/members/$id'
     | '/admin/members/pending'
@@ -581,8 +680,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
+    | '/account-blocked'
+    | '/forgot-password'
+    | '/invite'
     | '/login'
     | '/pending-approval'
+    | '/resend-verification'
+    | '/reset-password'
     | '/signup'
     | '/_app/admin'
     | '/_app/dashboard'
@@ -601,13 +705,17 @@ export interface FileRouteTypes {
     | '/_app/outreach/log'
     | '/_app/purchases/$id'
     | '/_app/purchases/new'
+    | '/_app/tasks/$id'
+    | '/_app/tasks/new'
     | '/_app/admin/'
     | '/_app/build/'
     | '/_app/notifications/'
     | '/_app/opi/'
     | '/_app/outreach/'
     | '/_app/purchases/'
+    | '/_app/tasks/'
     | '/_app/admin/build/attendance'
+    | '/_app/admin/build/qr'
     | '/_app/admin/build/zones'
     | '/_app/admin/members/$id'
     | '/_app/admin/members/pending'
@@ -634,8 +742,13 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  AccountBlockedRoute: typeof AccountBlockedRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
+  InviteRoute: typeof InviteRoute
   LoginRoute: typeof LoginRoute
   PendingApprovalRoute: typeof PendingApprovalRoute
+  ResendVerificationRoute: typeof ResendVerificationRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
 }
@@ -647,6 +760,20 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resend-verification': {
+      id: '/resend-verification'
+      path: '/resend-verification'
+      fullPath: '/resend-verification'
+      preLoaderRoute: typeof ResendVerificationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pending-approval': {
@@ -661,6 +788,27 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account-blocked': {
+      id: '/account-blocked'
+      path: '/account-blocked'
+      fullPath: '/account-blocked'
+      preLoaderRoute: typeof AccountBlockedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -712,6 +860,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/tasks/': {
+      id: '/_app/tasks/'
+      path: '/tasks'
+      fullPath: '/tasks/'
+      preLoaderRoute: typeof AppTasksIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/purchases/': {
       id: '/_app/purchases/'
       path: '/purchases'
@@ -753,6 +908,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AppAdminIndexRouteImport
       parentRoute: typeof AppAdminRoute
+    }
+    '/_app/tasks/new': {
+      id: '/_app/tasks/new'
+      path: '/tasks/new'
+      fullPath: '/tasks/new'
+      preLoaderRoute: typeof AppTasksNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tasks/$id': {
+      id: '/_app/tasks/$id'
+      path: '/tasks/$id'
+      fullPath: '/tasks/$id'
+      preLoaderRoute: typeof AppTasksIdRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/purchases/new': {
       id: '/_app/purchases/new'
@@ -929,6 +1098,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminBuildZonesRouteImport
       parentRoute: typeof AppAdminRoute
     }
+    '/_app/admin/build/qr': {
+      id: '/_app/admin/build/qr'
+      path: '/build/qr'
+      fullPath: '/admin/build/qr'
+      preLoaderRoute: typeof AppAdminBuildQrRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
     '/_app/admin/build/attendance': {
       id: '/_app/admin/build/attendance'
       path: '/build/attendance'
@@ -1000,6 +1176,7 @@ interface AppAdminRouteChildren {
   AppAdminSettingsRoute: typeof AppAdminSettingsRoute
   AppAdminIndexRoute: typeof AppAdminIndexRoute
   AppAdminBuildAttendanceRoute: typeof AppAdminBuildAttendanceRoute
+  AppAdminBuildQrRoute: typeof AppAdminBuildQrRoute
   AppAdminBuildZonesRoute: typeof AppAdminBuildZonesRoute
   AppAdminMembersIdRoute: typeof AppAdminMembersIdRoute
   AppAdminMembersPendingRoute: typeof AppAdminMembersPendingRoute
@@ -1026,6 +1203,7 @@ const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminSettingsRoute: AppAdminSettingsRoute,
   AppAdminIndexRoute: AppAdminIndexRoute,
   AppAdminBuildAttendanceRoute: AppAdminBuildAttendanceRoute,
+  AppAdminBuildQrRoute: AppAdminBuildQrRoute,
   AppAdminBuildZonesRoute: AppAdminBuildZonesRoute,
   AppAdminMembersIdRoute: AppAdminMembersIdRoute,
   AppAdminMembersPendingRoute: AppAdminMembersPendingRoute,
@@ -1067,11 +1245,14 @@ interface AppRouteChildren {
   AppOutreachLogRoute: typeof AppOutreachLogRoute
   AppPurchasesIdRoute: typeof AppPurchasesIdRoute
   AppPurchasesNewRoute: typeof AppPurchasesNewRoute
+  AppTasksIdRoute: typeof AppTasksIdRoute
+  AppTasksNewRoute: typeof AppTasksNewRoute
   AppBuildIndexRoute: typeof AppBuildIndexRoute
   AppNotificationsIndexRoute: typeof AppNotificationsIndexRoute
   AppOpiIndexRoute: typeof AppOpiIndexRoute
   AppOutreachIndexRoute: typeof AppOutreachIndexRoute
   AppPurchasesIndexRoute: typeof AppPurchasesIndexRoute
+  AppTasksIndexRoute: typeof AppTasksIndexRoute
   AppBuildSessionsIdRoute: typeof AppBuildSessionsIdRoute
   AppOutreachEventsIdRoute: typeof AppOutreachEventsIdRoute
 }
@@ -1091,11 +1272,14 @@ const AppRouteChildren: AppRouteChildren = {
   AppOutreachLogRoute: AppOutreachLogRoute,
   AppPurchasesIdRoute: AppPurchasesIdRoute,
   AppPurchasesNewRoute: AppPurchasesNewRoute,
+  AppTasksIdRoute: AppTasksIdRoute,
+  AppTasksNewRoute: AppTasksNewRoute,
   AppBuildIndexRoute: AppBuildIndexRoute,
   AppNotificationsIndexRoute: AppNotificationsIndexRoute,
   AppOpiIndexRoute: AppOpiIndexRoute,
   AppOutreachIndexRoute: AppOutreachIndexRoute,
   AppPurchasesIndexRoute: AppPurchasesIndexRoute,
+  AppTasksIndexRoute: AppTasksIndexRoute,
   AppBuildSessionsIdRoute: AppBuildSessionsIdRoute,
   AppOutreachEventsIdRoute: AppOutreachEventsIdRoute,
 }
@@ -1105,8 +1289,13 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  AccountBlockedRoute: AccountBlockedRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
+  InviteRoute: InviteRoute,
   LoginRoute: LoginRoute,
   PendingApprovalRoute: PendingApprovalRoute,
+  ResendVerificationRoute: ResendVerificationRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   AuthCallbackRoute: AuthCallbackRoute,
 }

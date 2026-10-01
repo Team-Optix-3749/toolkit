@@ -80,13 +80,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!active) return
       setSession(data.session)
       if (data.session?.user) await ensureProfile(data.session.user)
-      setLoading(false)
+      if (active) setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
       if (!active) return
       setSession(s)
       if (s?.user) await ensureProfile(s.user)
       else setProfile(null)
+      if (active) setLoading(false)
     })
     return () => {
       active = false
@@ -103,7 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refresh,
     async signInPassword(email, password, remember = true) {
       setRemember(remember)
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (!error && data.session) {
+        setSession(data.session)
+        await ensureProfile(data.session.user)
+      }
       return { error: error?.message ?? null }
     },
     async signUp(email, password, displayName) {
