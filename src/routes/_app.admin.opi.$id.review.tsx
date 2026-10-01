@@ -202,7 +202,7 @@ function OpiReview() {
         <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>Google Doc</span>
-            <a href={opi.document_url} target="_blank" rel="noreferrer" className="text-[11px] font-mono uppercase text-accent hover:underline">
+            <a href={opi.document_url?.startsWith('http') ? opi.document_url : `https://${opi.document_url}`} target="_blank" rel="noreferrer" className="text-[11px] font-mono uppercase text-accent hover:underline">
               Open ↗
             </a>
           </div>

@@ -42,6 +42,12 @@ function OpiDetail() {
   const canResubmit = isOwner && opi?.status === 'CHANGES_REQUESTED'
 
   async function resubmit() {
+    const rawUrl = form.document_url.trim()
+    let docUrl: string | undefined
+    if (rawUrl) {
+      docUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`
+      if (!docUrl.startsWith('https://docs.google.com/')) return flash('Link must be a Google Docs URL (docs.google.com)', true)
+    }
     setBusy(true)
     const { error } = await supabase.rpc('opi_action', {
       payload: {
@@ -49,7 +55,7 @@ function OpiDetail() {
         id,
         title: form.title.trim() || undefined,
         summary: form.summary || undefined,
-        document_url: form.document_url || undefined,
+        document_url: docUrl,
       },
     })
     setBusy(false)
@@ -81,7 +87,12 @@ function OpiDetail() {
           {!editing ? (
             <>
               {opi.document_url && (
-                <a href={opi.document_url} target="_blank" rel="noreferrer" className="inline-block text-sm text-accent hover:underline">
+                <a
+                  href={opi.document_url.startsWith('http') ? opi.document_url : `https://${opi.document_url}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-block text-sm text-accent hover:underline"
+                >
                   Open Google Doc ↗
                 </a>
               )}

@@ -14,15 +14,25 @@ function NewOpi() {
   const [f, setF] = useState({ title: '', document_url: '', summary: '' })
   const [busy, setBusy] = useState(false)
 
+  function normalizeUrl(raw: string): string | null {
+    const trimmed = raw.trim()
+    if (!trimmed) return null
+    const url = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`
+    if (!url.startsWith('https://docs.google.com/')) return '__invalid__'
+    return url
+  }
+
   async function submit() {
     if (!f.title.trim()) return flash('Title required', true)
+    const docUrl = normalizeUrl(f.document_url)
+    if (docUrl === '__invalid__') return flash('Link must be a Google Docs URL (docs.google.com)', true)
     setBusy(true)
     const { data, error } = await supabase.rpc('opi_action', {
       payload: {
         action: 'submit',
         title: f.title.trim(),
         summary: f.summary || null,
-        document_url: f.document_url || null,
+        document_url: docUrl,
       },
     })
     setBusy(false)

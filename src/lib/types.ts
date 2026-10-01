@@ -93,7 +93,7 @@ export type OpiFeedback = {
   decision: string | null
 }
 
-export const DEPARTMENTS = ['Build', 'Technology', 'Business', 'Outreach'] as const
+export const DEPARTMENTS = ['Electrical', 'Software', 'Business', 'Outreach', 'Mechanical', 'Design'] as const
 export type Department = (typeof DEPARTMENTS)[number]
 
 export type IndividualOutreach = {
