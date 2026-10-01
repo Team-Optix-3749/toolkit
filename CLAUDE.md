@@ -51,11 +51,11 @@ This is a multi-session effort to bring the app in line with the full PRD.
 - [x] Remove "Welcome" hero copy — use operational headings
 
 ### Team hours (section 10)
-- [ ] Team-wide sortable table (not just own hours)
-- [ ] Exact 5 columns: Member name, Outreach hours, Build hours, Outreach-target progress, Build-target progress
-- [ ] Sorting by any column
-- [ ] Two decimal places
-- [ ] Mobile-friendly (stacked rows or scroll)
+- [x] Team-wide sortable table (not just own hours)
+- [x] Exact 5 columns: Member name, Outreach hours, Build hours, Outreach-target progress, Build-target progress
+- [x] Sorting by any column
+- [x] Two decimal places
+- [x] Mobile-friendly (stacked rows or scroll)
 
 ### Tasks system (section 11) — NEW
 - [ ] Task CRUD with states: Assigned, In progress, Completed, Cancelled
