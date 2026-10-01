@@ -2,55 +2,63 @@
 
 @theme {
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: "Space Grotesk", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Light (default) */
+  /* Dark-first: Optix Control theme */
+  --color-canvas: #06080b;
+  --color-panel: #10131a;
+  --color-raised: #1a1e28;
+  --color-ink: #e8eaef;
+  --color-ink-soft: #8b90a0;
+  --color-line: #252a36;
+  --color-accent: #b4f54e;
+  --color-accent-soft: #1a2a12;
+  --color-brand: #0c0e14;
+  --color-cyan: #4dd8e0;
+  --color-lime: #b4f54e;
+  --color-danger: #f55e5e;
+
+  --radius: 2px;
+}
+
+/* Light theme override */
+html.light {
   --color-canvas: #f0efeb;
   --color-panel: #ffffff;
+  --color-raised: #f7f7f5;
   --color-ink: #14211a;
   --color-ink-soft: #5e6b60;
   --color-line: #dfddd2;
   --color-accent: #3a5a40;
   --color-accent-soft: #dce7dc;
-  /* Dark surface used for the masthead + primary buttons (text is always light) */
   --color-brand: #14211a;
-
-  --radius: 2px;
-}
-
-/* Dark theme - higher specificity than :root so it overrides the @theme vars. */
-html.dark {
-  --color-canvas: #0e1512;
-  --color-panel: #16221b;
-  --color-ink: #e7ebe6;
-  --color-ink-soft: #9bab9f;
-  --color-line: #2a382f;
-  --color-accent: #86b58f;
-  --color-accent-soft: #1f2e26;
-  --color-brand: #1c2c23;
+  --color-cyan: #1a8a8f;
+  --color-lime: #3a7a20;
+  --color-danger: #c0392b;
 }
 
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    color-scheme: light dark;
-    /* No grey flash on tap; don't let iOS resize text on rotate. */
+    color-scheme: dark;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
-    /* Fill the safe-area gaps (behind the Dynamic Island / home indicator and
-       any overscroll) with the app background instead of white. */
     background: var(--color-canvas);
+  }
+  html.light {
+    color-scheme: light;
   }
   body {
     @apply bg-canvas text-ink font-sans;
     overflow-x: hidden;
-    /* Native-app feel: no rubber-band overscroll bleeding past the page. */
     overscroll-behavior-y: none;
-    /* Dynamic viewport height avoids the iOS Safari toolbar resize jump. */
     min-height: 100dvh;
   }
-  /* Comfortable touch targets for interactive controls on coarse pointers. */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
   @media (pointer: coarse) {
     button,
     a,
@@ -62,8 +70,6 @@ html.dark {
   }
 }
 
-/* Mobile: let wide data tables scroll inside their card instead of
-   overflowing the screen. Desktop keeps normal full-width tables. */
 @media (max-width: 640px) {
   table {
     display: block;
@@ -72,4 +78,39 @@ html.dark {
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: var(--color-accent);
+  color: var(--color-canvas);
+  font-weight: 600;
+}
+.skip-link:focus {
+  top: 0;
 }

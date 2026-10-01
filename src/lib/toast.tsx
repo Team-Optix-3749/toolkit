@@ -8,6 +8,8 @@ export function useToast() {
   }, [])
   const Toast = toast ? (
     <div
+      role={toast.err ? 'alert' : 'status'}
+      aria-live="polite"
       className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 text-sm text-white border-l-2 z-50 ${
         toast.err ? 'bg-[#c0392b] border-white/40' : 'bg-brand border-accent'
       }`}

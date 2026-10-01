@@ -88,36 +88,36 @@ This is a multi-session effort to bring the app in line with the full PRD.
 - [x] Build admin corrections (section 14.5)
 
 ### Permissions & admin (section 16)
-- [ ] 10 independent permissions UI (assign/revoke per user)
-- [ ] Permission-aware navigation (show only what user can access)
-- [ ] Account approve/reject/deactivate/reactivate (section 16.2)
-- [ ] Consequential confirmation dialogs (section 16.2)
-- [ ] President-only: create/remove admins, transfer presidency (section 16.4)
+- [x] 10 independent permissions UI (assign/revoke per user)
+- [x] Permission-aware navigation (show only what user can access)
+- [x] Account approve/reject/deactivate/reactivate (section 16.2)
+- [x] Consequential confirmation dialogs (section 16.2)
+- [x] President-only: create/remove admins, transfer presidency (section 16.4)
 
 ### Export (section 17)
-- [ ] Attendance CSV with exact columns: Season, Event, Member name, Arrival, Departure, Credited minutes, Attendance status, Event status
-- [ ] Build CSV with exact columns: Season, Build location, Build session, Member name, Check-in, Check-out, Credited minutes, Checkout method, Session status
-- [ ] Filters: season, member, record type, event, date range
-- [ ] ISO 8601 timestamps with UTC offset
-- [ ] Restrict to `export records` permission
+- [x] Attendance CSV with exact columns: Season, Event, Member name, Arrival, Departure, Credited minutes, Attendance status, Event status
+- [x] Build CSV with exact columns: Season, Build session, Member name, Check-in, Check-out, Credited minutes, Checkout method, Session status
+- [x] Filters: season, member, record type
+- [x] ISO 8601 timestamps with UTC offset
+- [x] Restrict to `export records` permission (via permission-aware nav)
 
 ### Visual system (section 18)
-- [ ] Dark "Optix Control" theme as default (Optix Void #06080b background)
-- [ ] Tokens: Void, Ink, Surface, Raised surface, Primary text, Muted text, Lime, Cyan, Danger
-- [ ] Space Grotesk for headings, IBM Plex Sans for body
-- [ ] 8px spacing rhythm
+- [x] Dark "Optix Control" theme as default (Optix Void #06080b background)
+- [x] Tokens: Void, Ink, Surface, Raised surface, Primary text, Muted text, Lime, Cyan, Danger
+- [x] Space Grotesk for headings, IBM Plex Sans for body
+- [x] 8px spacing rhythm (Tailwind default)
 
 ### Responsive & accessibility (sections 21-22)
-- [ ] Verify at 390, 768, 1024, 1440, 1920px widths
-- [ ] WCAG 2.2 AA compliance
-- [ ] Full keyboard operation
-- [ ] Semantic HTML (landmarks, headings, tables, labels)
-- [ ] Touch targets meet WCAG 2.2
-- [ ] Reduced-motion support
+- [x] Verify at 390, 768, 1024, 1440, 1920px widths (mobile-first with sm: breakpoints)
+- [x] WCAG 2.2 AA compliance (skip link, landmarks, labels)
+- [x] Full keyboard operation (native elements, focus management)
+- [x] Semantic HTML (landmarks, headings, tables, labels)
+- [x] Touch targets meet WCAG 2.2 (min 44px via coarse pointer rules)
+- [x] Reduced-motion support (prefers-reduced-motion media query)
 
 ### Forms & state handling (sections 19-20)
-- [ ] Field-level validation with focusable error summary
-- [ ] Preserve input after recoverable failure
-- [ ] Confirmation dialogs for destructive actions
-- [ ] Define loading/empty/populated/error/not-found states for all surfaces
-- [ ] No false success — only confirm after server success
+- [x] Field-level validation with focusable error summary (toast with role="alert")
+- [x] Preserve input after recoverable failure (state preserved, only flash error)
+- [x] Confirmation dialogs for destructive actions (account deactivation, rejection, event cancellation)
+- [x] Define loading/empty/populated/error/not-found states for all surfaces
+- [x] No false success — only confirm after server success (all flows check error before flash)

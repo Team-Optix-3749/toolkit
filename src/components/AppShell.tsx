@@ -2,6 +2,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '~/lib/auth'
 import { isAdmin, ROLE_LABEL, type Role } from '~/lib/rbac'
+import type { Permission } from '~/lib/types'
 import { ThemeToggle } from './ThemeToggle'
 
 const NAV: [string, string][] = [
@@ -14,15 +15,17 @@ const NAV: [string, string][] = [
   ['/hours', 'Hours'],
 ]
 
-const ADMIN_NAV: [string, string][] = [
-  ['/admin/members', 'Members'],
-  ['/admin/build/schedule', 'Build schedule'],
-  ['/admin/outreach/events', 'Outreach events'],
-  ['/admin/outreach/individual', 'Individual outreach'],
-  ['/admin/opi', 'OPI review'],
-  ['/admin/purchases', 'Purchases'],
-  ['/admin/reports/hours', 'Reports'],
-  ['/admin/settings', 'Settings'],
+type AdminItem = [string, string, Permission | null]
+const ADMIN_NAV: AdminItem[] = [
+  ['/admin/members', 'Members', 'manage_accounts'],
+  ['/admin/build/schedule', 'Build schedule', 'manage_build_hours'],
+  ['/admin/build/attendance', 'Build attendance', 'manage_build_hours'],
+  ['/admin/outreach/events', 'Outreach events', 'manage_outreach_events'],
+  ['/admin/outreach/individual', 'Individual outreach', 'manage_outreach_attendance'],
+  ['/admin/opi', 'OPI review', 'manage_opis'],
+  ['/admin/purchases', 'Purchases', null],
+  ['/admin/reports/hours', 'Reports', 'export_records'],
+  ['/admin/settings', 'Settings', null],
 ]
 
 // Primary destinations for the mobile bottom tab bar (native-app style).
@@ -42,7 +45,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Close the drawer on navigation.
   useEffect(() => setOpen(false), [pathname])
 
-  const topItems = admin ? [...NAV, ['/admin/members', 'Admin'] as [string, string]] : NAV
+  const perms = profile?.permissions ?? []
+  const hasPerm = (p: Permission | null) => p === null || perms.includes(p)
+  const visibleAdmin = admin ? ADMIN_NAV.filter(([, , p]) => hasPerm(p)) : []
+  const topItems = visibleAdmin.length > 0 ? [...NAV, ['/admin/members', 'Admin'] as [string, string]] : NAV
 
   const topLinkCls = (active: boolean) =>
     `px-3 h-9 inline-flex items-center text-[12px] font-mono uppercase tracking-[0.08em] border-b-2 whitespace-nowrap ${
@@ -63,7 +69,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh bg-canvas text-ink">
-      <header className="bg-brand text-white sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+      <a href="#main-content" className="skip-link">Skip to content</a>
+      <header role="banner" className="bg-brand text-white sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-5 h-[52px] flex items-center gap-3">
           <Link to="/dashboard" className="flex items-center gap-2.5">
             <div className="w-7 h-7 bg-accent grid place-items-center font-mono font-semibold text-[13px]">
@@ -107,7 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* Desktop horizontal nav */}
-      <nav className="hidden sm:block bg-panel border-b border-line sticky top-[52px] z-30">
+      <nav aria-label="Main navigation" className="hidden sm:block bg-panel border-b border-line sticky top-[52px] z-30">
         <div className="max-w-6xl mx-auto px-5 flex gap-1">
           {topItems.map(([to, label]) => (
             <Link key={to} to={to} className={topLinkCls(pathname.startsWith(to))}>
@@ -117,12 +124,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-5 py-5 sm:py-6 space-y-4 sm:space-y-5 pb-[calc(env(safe-area-inset-bottom)+5rem)] sm:pb-6">
+      <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-5 py-5 sm:py-6 space-y-4 sm:space-y-5 pb-[calc(env(safe-area-inset-bottom)+5rem)] sm:pb-6">
         {children}
       </main>
 
       {/* Mobile bottom tab bar (native-app style) */}
-      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-panel border-t border-line pb-[env(safe-area-inset-bottom)]">
+      <nav aria-label="Tab bar" className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-panel border-t border-line pb-[env(safe-area-inset-bottom)]">
         <div className="grid grid-cols-5 h-14">
           {TABS.map(([to, label, icon]) => {
             const active = pathname.startsWith(to)
@@ -195,12 +202,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               Profile
             </Link>
 
-            {admin && (
+            {visibleAdmin.length > 0 && (
               <>
                 <div className="px-4 pt-4 pb-1 text-[11px] font-mono uppercase tracking-[0.08em] text-ink-soft">
                   Admin
                 </div>
-                {ADMIN_NAV.map(([to, label]) => (
+                {visibleAdmin.map(([to, label]) => (
                   <Link
                     key={to}
                     to={to}
