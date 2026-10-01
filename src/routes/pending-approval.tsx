@@ -9,14 +9,16 @@ export const Route = createFileRoute('/pending-approval')({
 })
 
 function PendingPage() {
-  const { loading, user, role, refresh, signOut } = useAuth()
+  const { loading, user, role, profile, refresh, signOut } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
     if (loading) return
     if (!user) navigate({ to: '/login' })
-    else if (isApproved(role)) navigate({ to: '/dashboard' })
-  }, [loading, user, role, navigate])
+    else if (profile?.account_status === 'deactivated' || profile?.account_status === 'rejected') {
+      navigate({ to: '/account-blocked' })
+    } else if (isApproved(role)) navigate({ to: '/dashboard' })
+  }, [loading, user, role, profile, navigate])
 
   return (
     <AuthShell title="Awaiting approval">

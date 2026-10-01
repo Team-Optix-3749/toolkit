@@ -37,11 +37,11 @@ This is a multi-session effort to bring the app in line with the full PRD.
 - [x] Account deactivation/rejection flows in DB (section 16.2)
 
 ### Auth & account flows
-- [ ] Forgot password route `/forgot-password` (section 8)
-- [ ] Reset password route `/reset-password` (section 8)
-- [ ] Invitation admission route `/invite` (section 8.3)
-- [ ] Resend verification route `/resend-verification` (section 8)
-- [ ] Deactivated/rejected account state pages (section 8.5)
+- [x] Forgot password route `/forgot-password` (section 8)
+- [x] Reset password route `/reset-password` (section 8)
+- [x] Invitation admission route `/invite` (section 8.3)
+- [x] Resend verification route `/resend-verification` (section 8)
+- [x] Deactivated/rejected account state pages (section 8.5)
 
 ### Dashboard (section 9)
 - [ ] Show active build checkout prominently (priority 2)

@@ -63,6 +63,14 @@ function LoginPage() {
         <button disabled={busy} className={`w-full ${btn}`}>
           {busy ? '…' : 'Sign in'}
         </button>
+        <div className="flex justify-between text-sm text-ink-soft">
+          <Link to="/forgot-password" className="text-accent hover:underline">
+            Forgot password?
+          </Link>
+          <Link to="/resend-verification" className="text-accent hover:underline">
+            Resend verification
+          </Link>
+        </div>
         <p className="text-center text-sm text-ink-soft">
           No account?{' '}
           <Link to="/signup" className="text-accent font-medium hover:underline">

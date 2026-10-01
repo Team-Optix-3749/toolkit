@@ -12,18 +12,23 @@ function Loading() {
   )
 }
 
-/** MEMBER+ only. PENDING users are redirected to the holding page, guests to login. */
+/** MEMBER+ only. Routes by account state: blocked → /account-blocked, pending → /pending-approval, guests → /login. */
 export function RequireApproved({ children }: { children: ReactNode }) {
-  const { loading, user, role } = useAuth()
+  const { loading, user, role, profile } = useAuth()
   const navigate = useNavigate()
   useEffect(() => {
     if (loading) return
-    if (!user) navigate({ to: '/login' })
-    else if (!isApproved(role)) navigate({ to: '/pending-approval' })
-  }, [loading, user, role, navigate])
+    if (!user) return void navigate({ to: '/login' })
+    const status = profile?.account_status
+    if (status === 'deactivated' || status === 'rejected') {
+      return void navigate({ to: '/account-blocked' })
+    }
+    if (!isApproved(role)) navigate({ to: '/pending-approval' })
+  }, [loading, user, role, profile, navigate])
 
   if (loading) return <Loading />
   if (!user || !isApproved(role)) return <Loading />
+  if (profile?.account_status !== 'active') return <Loading />
   return <>{children}</>
 }
 
