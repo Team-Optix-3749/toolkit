@@ -49,6 +49,20 @@ function CheckInFlow() {
 
   async function checkIn() {
     if (!session) return flash('Pick a session', true)
+    if (open) return flash('You already have an active check-in. Check out first.', true)
+
+    // Check for existing check-in to this session
+    const { data: existing } = await supabase
+      .from('build_checkins')
+      .select('id')
+      .eq('user_id', user!.id)
+      .eq('session_id', session.id)
+      .is('checked_out_at', null)
+      .limit(1)
+    if (existing && existing.length > 0) {
+      return flash('You are already checked in to this session.', true)
+    }
+
     setBusy(true)
     let lat: number | null = null
     let lng: number | null = null
@@ -97,6 +111,13 @@ function CheckInFlow() {
 
   async function checkOut() {
     if (!open) return
+    // Idempotent: re-fetch to confirm still open
+    const { data: fresh } = await supabase.from('build_checkins').select('checked_out_at').eq('id', open.id).single()
+    if (fresh?.checked_out_at) {
+      flash('Already checked out')
+      load()
+      return
+    }
     const now = new Date().toISOString()
     const minutes = minutesBetween(open.checked_in_at, now)
     const { error } = await supabase

@@ -76,7 +76,16 @@ function AttendancePage() {
               <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(r.checked_in_at)}</td>
               <td className="py-2 px-5">{r.zone_id ? zones[r.zone_id] ?? '-' : '-'}</td>
               <td className="py-2 px-5">
-                {r.checked_out_at ? <Badge label="closed" tone="APPROVED" /> : <Badge label="open" tone="accent" />}
+                {r.checked_out_at ? (
+                  <Badge label="closed" tone="APPROVED" />
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <Badge label="open" tone="accent" />
+                    {new Date(r.checked_in_at).getTime() < Date.now() - 12 * 60 * 60 * 1000 && (
+                      <Badge label="stale" tone="REJECTED" />
+                    )}
+                  </div>
+                )}
               </td>
               <td className="py-2 px-5">
                 <input

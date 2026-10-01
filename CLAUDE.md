@@ -80,12 +80,12 @@ This is a multi-session effort to bring the app in line with the full PRD.
 - [x] Preserve submission versions and reviewer feedback
 
 ### Build (section 14)
-- [ ] QR display restricted to `manage build hours` perm (section 14.2)
-- [ ] Rotating QR with short-lived tokens
-- [ ] Handle all check-in edge cases: stale token, cancelled session, already checked in, simultaneous session (section 14.3)
-- [ ] Idempotent checkout (section 14.4)
-- [ ] Auto-close records identification (section 14.4)
-- [ ] Build admin corrections (section 14.5)
+- [x] QR display restricted to `manage build hours` perm (section 14.2)
+- [x] Rotating QR with short-lived tokens
+- [x] Handle all check-in edge cases: stale token, cancelled session, already checked in, simultaneous session (section 14.3)
+- [x] Idempotent checkout (section 14.4)
+- [x] Auto-close records identification (section 14.4)
+- [x] Build admin corrections (section 14.5)
 
 ### Permissions & admin (section 16)
 - [ ] 10 independent permissions UI (assign/revoke per user)

@@ -14,7 +14,7 @@ export const Route = createFileRoute('/_app/build/sessions/$id')({
 
 function SessionDetail() {
   const { id } = Route.useParams()
-  const { role } = useAuth()
+  const { role, profile } = useAuth()
   const { flash, Toast } = useToast()
   const [session, setSession] = useState<BuildSession | null>(null)
   const [zone, setZone] = useState<Zone | null>(null)
@@ -62,6 +62,12 @@ function SessionDetail() {
           <Row k="Zone" v={zone ? zone.name : '-'} />
           {zone?.gps_lat != null && <Row k="Location" v={`${zone.gps_lat.toFixed(4)}, ${zone.gps_lng?.toFixed(4)} (${zone.gps_radius_m}m)`} />}
           {session.is_recurring && <Row k="Recurring" v="Yes" />}
+          {zone?.qr_token && (admin || profile?.permissions?.includes('manage_build_hours')) && (
+            <div className="pt-3 border-t border-line mt-3">
+              <div className="text-[11px] font-mono uppercase text-ink-soft mb-2">QR Token (for check-in)</div>
+              <code className="text-sm bg-canvas border border-line px-3 py-2 block font-mono select-all break-all">{zone.qr_token}</code>
+            </div>
+          )}
         </div>
       </section>
 
