@@ -42,7 +42,7 @@ function Dashboard() {
     return out.sort((a, b) => a.when.getTime() - b.when.getTime()).slice(0, 5)
   }, [sessions])
 
-  const pendingOpi = opis.filter((o) => o.status === 'PENDING' || o.status === 'IN_REVIEW')
+  const pendingOpi = opis.filter((o) => o.status === 'SUBMITTED' || o.status === 'RESUBMITTED' || o.status === 'CHANGES_REQUESTED')
 
   const tiles: [string, number][] = [
     ['Build hrs', summary.build_hours],

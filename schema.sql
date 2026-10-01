@@ -1,31 +1,291 @@
 -- ============================================================
 -- Optix Toolkit — Supabase database schema (verified)
 -- Supabase project ref: exvhzdpjuorlzhulnyvl
--- Extracted from live database on 2026-09-30
+-- Last updated: 2026-09-30
 -- ============================================================
+
+-- ============================================================
+-- HELPER FUNCTIONS (used by RLS policies)
+-- ============================================================
+create or replace function is_member() returns boolean as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid()
+    and role not in ('PENDING')
+    and account_status = 'active'
+  );
+$$ language sql security definer stable;
+
+create or replace function is_admin() returns boolean as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid()
+    and role in ('LEADERSHIP', 'OFFICER', 'OWNER')
+    and account_status = 'active'
+  );
+$$ language sql security definer stable;
+
+create or replace function is_leadership() returns boolean as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid()
+    and role in ('LEADERSHIP', 'OFFICER', 'OWNER')
+    and account_status = 'active'
+  );
+$$ language sql security definer stable;
+
+create or replace function is_owner() returns boolean as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid()
+    and role = 'OWNER'
+    and account_status = 'active'
+  );
+$$ language sql security definer stable;
+
+create or replace function has_perm(perm text) returns boolean as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid()
+    and (
+      role in ('OFFICER', 'OWNER')
+      or perm = any(permissions)
+    )
+    and account_status = 'active'
+  );
+$$ language sql security definer stable;
+
+-- ============================================================
+-- SEASONS
+-- ============================================================
+create table seasons (
+  id              uuid primary key default gen_random_uuid(),
+  created_at      timestamptz not null default now(),
+  name            text not null unique,
+  is_current      boolean not null default false,
+  outreach_target numeric not null default 0,
+  build_target    numeric not null default 0
+);
+
+create unique index idx_seasons_current on seasons (is_current) where is_current = true;
+
+alter table seasons enable row level security;
+create policy seasons_read on seasons for select to authenticated using (true);
+create policy seasons_write on seasons for all to authenticated using (is_admin()) with check (is_admin());
 
 -- ============================================================
 -- PROFILES (extends Supabase auth.users)
 -- ============================================================
 create table profiles (
-  id            uuid primary key,  -- references auth.users(id)
-  created_at    timestamptz not null default now(),
-  display_name  text,
-  grade         text,
-  department    text,
-  avatar_url    text,
-  bio           text,
-  role          text not null default 'member'
-                  check (role in ('PENDING','MEMBER','LEADERSHIP','OFFICER','OWNER')),
-  hours_public  boolean not null default false,
-  special_perms text[] not null default '{}'
+  id             uuid primary key,  -- references auth.users(id)
+  created_at     timestamptz not null default now(),
+  display_name   text,
+  grade          text,
+  department     text,
+  avatar_url     text,
+  bio            text,
+  role           text not null default 'member'
+                   check (role in ('PENDING','MEMBER','LEADERSHIP','OFFICER','OWNER')),
+  hours_public   boolean not null default false,
+  special_perms  text[] not null default '{}',
+  permissions    text[] not null default '{}',
+  account_status text not null default 'active'
+                   check (account_status in ('active','deactivated','rejected'))
 );
+-- Valid permissions: manage_accounts, manage_invitations, manage_tasks,
+-- manage_groups, manage_seasons, manage_outreach_events, manage_outreach_attendance,
+-- manage_build_hours, manage_opis, export_records
 
--- Trigger: prevents non-admins from escalating their own privileges
--- create function guard_profile_privileges() ...
 create trigger guard_profile_privileges_trg
   before update on profiles
   for each row execute function guard_profile_privileges();
+
+alter table profiles enable row level security;
+create policy profiles_select on profiles for select to authenticated using (true);
+create policy profiles_insert on profiles for insert to authenticated with check (id = auth.uid());
+create policy profiles_update on profiles for update to authenticated
+  using ((id = auth.uid()) or is_admin())
+  with check ((id = auth.uid()) or is_admin());
+
+-- ============================================================
+-- INVITATIONS (reusable invite links)
+-- ============================================================
+create table invitations (
+  id         uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  created_by uuid,
+  code       text not null unique default encode(gen_random_bytes(16), 'hex'),
+  expires_at timestamptz not null,
+  revoked    boolean not null default false
+);
+
+create index idx_invitations_code on invitations(code);
+
+alter table invitations enable row level security;
+create policy inv_read on invitations for select to authenticated using (has_perm('manage_invitations'));
+create policy inv_write on invitations for all to authenticated using (has_perm('manage_invitations')) with check (has_perm('manage_invitations'));
+create policy inv_public_read on invitations for select to anon using (not revoked and expires_at > now());
+
+-- ============================================================
+-- GROUPS (flat member groups)
+-- ============================================================
+create table groups (
+  id         uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  name       text not null unique
+);
+
+create table group_members (
+  group_id uuid not null references groups(id) on delete cascade,
+  user_id  uuid not null,
+  primary key (group_id, user_id)
+);
+
+alter table groups enable row level security;
+create policy groups_read on groups for select to authenticated using (is_member());
+create policy groups_write on groups for all to authenticated using (has_perm('manage_groups')) with check (has_perm('manage_groups'));
+
+alter table group_members enable row level security;
+create policy gm_read on group_members for select to authenticated using (is_member());
+create policy gm_write on group_members for all to authenticated using (has_perm('manage_groups')) with check (has_perm('manage_groups'));
+
+-- ============================================================
+-- TASK GROUPS (organizational categories with color chip)
+-- ============================================================
+create table task_groups (
+  id         uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  name       text not null,
+  color      text not null default '#6b7280'
+);
+
+alter table task_groups enable row level security;
+create policy tg_read on task_groups for select to authenticated using (is_member());
+create policy tg_write on task_groups for all to authenticated using (has_perm('manage_tasks')) with check (has_perm('manage_tasks'));
+
+-- ============================================================
+-- TASKS
+-- ============================================================
+create table tasks (
+  id              uuid primary key default gen_random_uuid(),
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  created_by      uuid,
+  title           text not null,
+  description     text,
+  status          text not null default 'assigned'
+                    check (status in ('assigned','in_progress','submitted','changes_requested','resubmitted','completed','cancelled')),
+  requires_review boolean not null default false,
+  deadline        date,
+  group_id        uuid references task_groups(id) on delete set null,
+  season_id       uuid references seasons(id) on delete set null
+);
+
+create index idx_tasks_status on tasks(status);
+create index idx_tasks_deadline on tasks(deadline);
+
+alter table tasks enable row level security;
+create policy tasks_select on tasks for select to authenticated
+  using (
+    has_perm('manage_tasks')
+    or exists (select 1 from task_assignees ta where ta.task_id = id and ta.user_id = auth.uid())
+    or exists (select 1 from task_reviewers tr where tr.task_id = id and tr.user_id = auth.uid())
+  );
+create policy tasks_insert on tasks for insert to authenticated with check (has_perm('manage_tasks'));
+create policy tasks_update on tasks for update to authenticated
+  using (
+    has_perm('manage_tasks')
+    or exists (select 1 from task_assignees ta where ta.task_id = id and ta.user_id = auth.uid())
+    or exists (select 1 from task_reviewers tr where tr.task_id = id and tr.user_id = auth.uid())
+  );
+create policy tasks_delete on tasks for delete to authenticated using (has_perm('manage_tasks'));
+
+-- ============================================================
+-- TASK ASSIGNEES (many-to-many)
+-- ============================================================
+create table task_assignees (
+  task_id uuid not null references tasks(id) on delete cascade,
+  user_id uuid not null,
+  primary key (task_id, user_id)
+);
+
+alter table task_assignees enable row level security;
+create policy ta_select on task_assignees for select to authenticated
+  using (
+    has_perm('manage_tasks')
+    or user_id = auth.uid()
+    or exists (select 1 from task_assignees ta2 where ta2.task_id = task_id and ta2.user_id = auth.uid())
+    or exists (select 1 from task_reviewers tr where tr.task_id = task_id and tr.user_id = auth.uid())
+  );
+create policy ta_write on task_assignees for all to authenticated using (has_perm('manage_tasks')) with check (has_perm('manage_tasks'));
+
+-- ============================================================
+-- TASK REVIEWERS (selected reviewers for review-required tasks)
+-- ============================================================
+create table task_reviewers (
+  task_id uuid not null references tasks(id) on delete cascade,
+  user_id uuid not null,
+  primary key (task_id, user_id)
+);
+
+alter table task_reviewers enable row level security;
+create policy tr_select on task_reviewers for select to authenticated
+  using (
+    has_perm('manage_tasks')
+    or user_id = auth.uid()
+    or exists (select 1 from task_assignees ta where ta.task_id = task_id and ta.user_id = auth.uid())
+  );
+create policy tr_write on task_reviewers for all to authenticated using (has_perm('manage_tasks')) with check (has_perm('manage_tasks'));
+
+-- ============================================================
+-- TASK EVIDENCE (note, link, or picture per task)
+-- ============================================================
+create table task_evidence (
+  id         uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  task_id    uuid not null references tasks(id) on delete cascade,
+  user_id    uuid,
+  kind       text not null check (kind in ('note','link','picture')),
+  content    text not null,
+  file_url   text
+);
+
+alter table task_evidence enable row level security;
+create policy te_select on task_evidence for select to authenticated
+  using (
+    has_perm('manage_tasks')
+    or exists (select 1 from task_assignees ta where ta.task_id = task_id and ta.user_id = auth.uid())
+    or exists (select 1 from task_reviewers tr where tr.task_id = task_id and tr.user_id = auth.uid())
+  );
+create policy te_insert on task_evidence for insert to authenticated
+  with check (
+    user_id = auth.uid() and (
+      has_perm('manage_tasks')
+      or exists (select 1 from task_assignees ta where ta.task_id = task_id and ta.user_id = auth.uid())
+    )
+  );
+
+-- ============================================================
+-- TASK HISTORY (status transitions and review feedback)
+-- ============================================================
+create table task_history (
+  id          uuid primary key default gen_random_uuid(),
+  created_at  timestamptz not null default now(),
+  task_id     uuid not null references tasks(id) on delete cascade,
+  user_id     uuid,
+  from_status text,
+  to_status   text not null,
+  feedback    text
+);
+
+alter table task_history enable row level security;
+create policy th_select on task_history for select to authenticated
+  using (
+    has_perm('manage_tasks')
+    or exists (select 1 from task_assignees ta where ta.task_id = task_id and ta.user_id = auth.uid())
+    or exists (select 1 from task_reviewers tr where tr.task_id = task_id and tr.user_id = auth.uid())
+  );
+create policy th_insert on task_history for insert to authenticated with check (true);
 
 -- ============================================================
 -- MEMBERS (legacy / standalone member list)
@@ -124,6 +384,7 @@ create table build_schedule (
   starts_at    timestamptz not null,
   ends_at      timestamptz,
   zone_id      uuid references build_zones(id) on delete set null,
+  season_id    uuid references seasons(id) on delete set null,
   rrule        text,
   is_recurring boolean not null default false,
   short_notice boolean not null default false
@@ -164,6 +425,7 @@ create table outreach_events (
   lng         double precision,
   starts_at   timestamptz not null,
   ends_at     timestamptz,
+  season_id   uuid references seasons(id) on delete set null,
   qr_token    text
 );
 
@@ -216,16 +478,17 @@ create index idx_individual_outreach_status on individual_outreach(status);
 -- OPI INITIATIVES (Outreach Project Initiatives)
 -- ============================================================
 create table opi_initiatives (
-  id          uuid primary key default gen_random_uuid(),
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
-  user_id     uuid,
-  title       text not null,
-  description text,
-  doc_url     text,
-  status      text not null default 'PENDING'
-                check (status in ('PENDING','IN_REVIEW','APPROVED','EXECUTED','REJECTED')),
-  reviewer_id uuid
+  id              uuid primary key default gen_random_uuid(),
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  user_id         uuid,
+  title           text not null,
+  description     text,
+  doc_url         text,
+  status          text not null default 'SUBMITTED'
+                    check (status in ('SUBMITTED','CHANGES_REQUESTED','RESUBMITTED','APPROVED','REJECTED','CONVERTED')),
+  reviewer_id     uuid,
+  linked_event_id uuid references outreach_events(id) on delete set null
 );
 
 create index idx_opi_status on opi_initiatives(status);
@@ -347,17 +610,8 @@ group by p.id, p.display_name, p.avatar_url
 order by coalesce(sum(h.hours), 0) desc;
 
 -- ============================================================
--- RLS POLICIES
+-- RLS POLICIES (for tables not shown inline above)
 -- ============================================================
--- Helper functions used by policies: is_member(), is_admin(), is_owner(), is_leadership()
-
--- profiles
-alter table profiles enable row level security;
-create policy profiles_select on profiles for select to authenticated using (true);
-create policy profiles_insert on profiles for insert to authenticated with check (id = auth.uid());
-create policy profiles_update on profiles for update to authenticated
-  using ((id = auth.uid()) or is_admin())
-  with check ((id = auth.uid()) or is_admin());
 
 -- build_zones
 alter table build_zones enable row level security;
@@ -403,18 +657,18 @@ create policy io_delete on individual_outreach for delete to authenticated
 
 -- opi_initiatives
 alter table opi_initiatives enable row level security;
-create policy opi_read on opi_initiatives for select to authenticated using ((user_id = auth.uid()) or is_admin());
+create policy opi_read on opi_initiatives for select to authenticated using ((user_id = auth.uid()) or has_perm('manage_opis'));
 create policy opi_insert on opi_initiatives for insert to authenticated with check (user_id = auth.uid());
 create policy opi_update on opi_initiatives for update to authenticated
-  using (((user_id = auth.uid()) and (status = 'PENDING')) or is_admin())
-  with check ((user_id = auth.uid()) or is_admin());
+  using (((user_id = auth.uid()) and (status in ('SUBMITTED','CHANGES_REQUESTED'))) or has_perm('manage_opis'))
+  with check ((user_id = auth.uid()) or has_perm('manage_opis'));
 
 -- opi_comments
 alter table opi_comments enable row level security;
 create policy opic_read on opi_comments for select to authenticated
-  using (is_admin() or exists (select 1 from opi_initiatives i where i.id = initiative_id and i.user_id = auth.uid()));
+  using (has_perm('manage_opis') or exists (select 1 from opi_initiatives i where i.id = initiative_id and i.user_id = auth.uid()));
 create policy opic_insert on opi_comments for insert to authenticated
-  with check ((user_id = auth.uid()) and (is_admin() or exists (select 1 from opi_initiatives i where i.id = initiative_id and i.user_id = auth.uid())));
+  with check ((user_id = auth.uid()) and (has_perm('manage_opis') or exists (select 1 from opi_initiatives i where i.id = initiative_id and i.user_id = auth.uid())));
 
 -- purchases
 alter table purchases enable row level security;
@@ -474,5 +728,6 @@ create policy hours_delete on hours_log for delete to authenticated using ((crea
 -- ============================================================
 -- STORAGE BUCKETS
 -- ============================================================
--- outreach-proofs  (public bucket — individual outreach proof images/videos)
--- receipts         (public bucket — purchase receipt uploads)
+-- outreach-proofs  (public  — individual outreach proof images/videos)
+-- receipts         (public  — purchase receipt uploads)
+-- task-evidence    (private — task evidence pictures, 10MB limit)

@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_app/admin/reports/opi')({
   component: OpiReport,
 })
 
-const STAGES = ['PENDING', 'IN_REVIEW', 'APPROVED', 'EXECUTED', 'REJECTED']
+const STAGES = ['SUBMITTED', 'CHANGES_REQUESTED', 'RESUBMITTED', 'APPROVED', 'REJECTED', 'CONVERTED']
 
 function OpiReport() {
   const { flash, Toast } = useToast()
@@ -31,14 +31,14 @@ function OpiReport() {
     return c
   }, [rows])
 
-  const executed = rows.filter((r) => r.status === 'EXECUTED').length
-  const decided = rows.filter((r) => r.status === 'EXECUTED' || r.status === 'REJECTED').length
-  const approvalRate = decided ? Math.round((executed / decided) * 100) : 0
+  const converted = rows.filter((r) => r.status === 'CONVERTED').length
+  const decided = rows.filter((r) => r.status === 'CONVERTED' || r.status === 'APPROVED' || r.status === 'REJECTED').length
+  const approvalRate = decided ? Math.round(((converted + rows.filter((r) => r.status === 'APPROVED').length) / decided) * 100) : 0
 
   return (
     <section className={card}>
       <div className={cardHead}>
-        <span className={cardTitle}>OPI analytics · {rows.length} total · {approvalRate}% executed</span>
+        <span className={cardTitle}>OPI analytics · {rows.length} total · {approvalRate}% approved</span>
         <button
           onClick={() => downloadCsv('opi-report.csv', STAGES.map((s) => ({ status: s, count: counts[s] })))}
           className={btnGhost}

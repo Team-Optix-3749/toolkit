@@ -18,6 +18,8 @@ export type Profile = {
   bio: string | null
   department: string | null
   special_perms: string[] | null
+  permissions: string[]
+  account_status: 'active' | 'deactivated' | 'rejected'
 }
 
 type AuthValue = {

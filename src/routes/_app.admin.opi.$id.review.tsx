@@ -13,13 +13,13 @@ export const Route = createFileRoute('/_app/admin/opi/$id/review')({
   component: OpiReview,
 })
 
-// Allowed forward transitions per stage.
 const NEXT: Record<string, string[]> = {
-  PENDING: ['IN_REVIEW', 'REJECTED'],
-  IN_REVIEW: ['APPROVED', 'REJECTED'],
-  APPROVED: ['EXECUTED', 'REJECTED'],
-  EXECUTED: [],
-  REJECTED: ['IN_REVIEW'],
+  SUBMITTED: ['CHANGES_REQUESTED', 'APPROVED', 'REJECTED'],
+  CHANGES_REQUESTED: [],
+  RESUBMITTED: ['CHANGES_REQUESTED', 'APPROVED', 'REJECTED'],
+  APPROVED: ['CONVERTED'],
+  REJECTED: ['SUBMITTED'],
+  CONVERTED: [],
 }
 
 function docPreview(url: string): string | null {

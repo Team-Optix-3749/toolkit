@@ -26,7 +26,7 @@ function NewOpi() {
         title: f.title.trim(),
         doc_url: f.doc_url || null,
         description: f.description || null,
-        status: 'PENDING',
+        status: 'SUBMITTED',
       })
       .select('id')
       .single()

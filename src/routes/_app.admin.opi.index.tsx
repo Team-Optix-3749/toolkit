@@ -11,7 +11,7 @@ export const Route = createFileRoute('/_app/admin/opi/')({
   component: OpiQueue,
 })
 
-const FILTERS = ['ALL', 'PENDING', 'IN_REVIEW', 'APPROVED', 'EXECUTED', 'REJECTED']
+const FILTERS = ['ALL', 'SUBMITTED', 'CHANGES_REQUESTED', 'RESUBMITTED', 'APPROVED', 'REJECTED', 'CONVERTED']
 
 function OpiQueue() {
   const { flash, Toast } = useToast()
