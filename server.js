@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { join, extname } from 'node:path'
 
 const PORT = process.env.PORT || 3000
-const DIR = join(import.meta.dirname, '.output', 'static')
+const DIR = join(import.meta.dirname, 'dist', 'client')
 
 const TYPES = {
   '.html': 'text/html',
