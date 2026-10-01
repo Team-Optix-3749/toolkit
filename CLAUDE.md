@@ -73,11 +73,11 @@ This is a multi-session effort to bring the app in line with the full PRD.
 - [x] Attendance: arrival, departure, credited time per member/event (section 12.4)
 
 ### OPI (section 13)
-- [ ] Fix state machine: Submitted → Changes requested → Resubmitted → Approved/Rejected, Converted to event
-- [ ] Lock edits while Submitted/Resubmitted
-- [ ] Require feedback for Changes requested and Rejected
-- [ ] Conversion to outreach event (prefill form, atomic linkage)
-- [ ] Preserve submission versions and reviewer feedback
+- [x] Fix state machine: Submitted → Changes requested → Resubmitted → Approved/Rejected, Converted to event
+- [x] Lock edits while Submitted/Resubmitted
+- [x] Require feedback for Changes requested and Rejected
+- [x] Conversion to outreach event (prefill form, atomic linkage)
+- [x] Preserve submission versions and reviewer feedback
 
 ### Build (section 14)
 - [ ] QR display restricted to `manage build hours` perm (section 14.2)
