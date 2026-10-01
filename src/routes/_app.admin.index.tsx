@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
+import { useToast } from '~/lib/toast'
 import { fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
 import type { Opi, OutreachEvent, BuildSession, ProfileRow } from '~/lib/types'
@@ -33,52 +34,87 @@ const ZERO: Stats = {
 }
 
 function AdminDashboard() {
+  const { flash, Toast } = useToast()
   const [s, setS] = useState<Stats>(ZERO)
   const [loading, setLoading] = useState(true)
   const [recentOpis, setRecentOpis] = useState<Opi[]>([])
   const [upcomingEvents, setUpcomingEvents] = useState<OutreachEvent[]>([])
   const [upcomingSessions, setUpcomingSessions] = useState<BuildSession[]>([])
   const [recentMembers, setRecentMembers] = useState<Pick<ProfileRow, 'id' | 'display_name' | 'role'>[]>([])
+  const [confirmId, setConfirmId] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function load() {
-      const now = new Date().toISOString()
-      const [
-        members, pending, checkins, outreach, opis, tasks, purchases, individual,
-        opiRows, eventRows, sessionRows, memberRows,
-      ] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('account_status', 'active').neq('role', 'PENDING'),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'PENDING').eq('account_status', 'active'),
-        supabase.from('build_records').select('id', { count: 'exact', head: true }).is('check_out', null),
-        supabase.from('outreach_events').select('id', { count: 'exact', head: true }).eq('cancelled', false).gte('starts_at', now),
-        supabase.from('opis').select('id', { count: 'exact', head: true }).in('status', ['SUBMITTED', 'RESUBMITTED']),
-        supabase.from('tasks').select('id', { count: 'exact', head: true }).in('status', ['submitted', 'resubmitted']),
-        supabase.from('purchases').select('id', { count: 'exact', head: true }).eq('status', 'PENDING'),
-        supabase.from('individual_outreach').select('id', { count: 'exact', head: true }).eq('status', 'PENDING'),
-        supabase.from('opis').select('*').in('status', ['SUBMITTED', 'RESUBMITTED', 'CHANGES_REQUESTED']).order('created_at', { ascending: false }).limit(5),
-        supabase.from('outreach_events').select('*').eq('cancelled', false).gte('starts_at', now).order('starts_at').limit(5),
-        supabase.from('build_sessions').select('*').eq('cancelled', false).gte('opens_at', now).order('opens_at').limit(5),
-        supabase.from('profiles').select('id, display_name, role').eq('account_status', 'active').neq('role', 'PENDING').order('created_at', { ascending: false }).limit(8),
-      ])
+  async function load() {
+    const now = new Date().toISOString()
+    const [
+      members, pending, checkins, outreach, opis, tasks, purchases, individual,
+      opiRows, eventRows, sessionRows, memberRows,
+    ] = await Promise.all([
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('account_status', 'active').neq('role', 'PENDING'),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'PENDING').eq('account_status', 'active'),
+      supabase.from('build_records').select('id', { count: 'exact', head: true }).is('check_out', null),
+      supabase.from('outreach_events').select('id', { count: 'exact', head: true }).eq('cancelled', false).gte('starts_at', now),
+      supabase.from('opis').select('id', { count: 'exact', head: true }).in('status', ['SUBMITTED', 'RESUBMITTED']),
+      supabase.from('tasks').select('id', { count: 'exact', head: true }).in('status', ['submitted', 'resubmitted']),
+      supabase.from('purchases').select('id', { count: 'exact', head: true }).eq('status', 'PENDING'),
+      supabase.from('individual_outreach').select('id', { count: 'exact', head: true }).eq('status', 'PENDING'),
+      supabase.from('opis').select('*').in('status', ['SUBMITTED', 'RESUBMITTED', 'CHANGES_REQUESTED']).order('created_at', { ascending: false }).limit(5),
+      supabase.from('outreach_events').select('*').eq('cancelled', false).gte('starts_at', now).order('starts_at').limit(5),
+      supabase.from('build_sessions').select('*').eq('cancelled', false).gte('opens_at', now).order('opens_at').limit(5),
+      supabase.from('profiles').select('id, display_name, role').eq('account_status', 'active').neq('role', 'PENDING').order('created_at', { ascending: false }).limit(8),
+    ])
 
-      setS({
-        members: members.count ?? 0,
-        pending: pending.count ?? 0,
-        activeCheckins: checkins.count ?? 0,
-        upcomingOutreach: outreach.count ?? 0,
-        openOpis: opis.count ?? 0,
-        openTasks: tasks.count ?? 0,
-        pendingPurchases: purchases.count ?? 0,
-        pendingIndividual: individual.count ?? 0,
-      })
-      setRecentOpis((opiRows.data as Opi[]) || [])
-      setUpcomingEvents((eventRows.data as OutreachEvent[]) || [])
-      setUpcomingSessions((sessionRows.data as BuildSession[]) || [])
-      setRecentMembers((memberRows.data as Pick<ProfileRow, 'id' | 'display_name' | 'role'>[]) || [])
-      setLoading(false)
-    }
+    setS({
+      members: members.count ?? 0,
+      pending: pending.count ?? 0,
+      activeCheckins: checkins.count ?? 0,
+      upcomingOutreach: outreach.count ?? 0,
+      openOpis: opis.count ?? 0,
+      openTasks: tasks.count ?? 0,
+      pendingPurchases: purchases.count ?? 0,
+      pendingIndividual: individual.count ?? 0,
+    })
+    setRecentOpis((opiRows.data as Opi[]) || [])
+    setUpcomingEvents((eventRows.data as OutreachEvent[]) || [])
+    setUpcomingSessions((sessionRows.data as BuildSession[]) || [])
+    setRecentMembers((memberRows.data as Pick<ProfileRow, 'id' | 'display_name' | 'role'>[]) || [])
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function cancelSession(id: string) {
+    const { error } = await supabase.rpc('build_action', { payload: { action: 'cancel', id } })
+    setConfirmId(null)
+    if (error) return flash('Cancel failed: ' + error.message, true)
+    flash('Session cancelled')
     load()
-  }, [])
+  }
+
+  async function cancelEvent(id: string) {
+    const { error } = await supabase.rpc('outreach_action', { payload: { action: 'cancel', id } })
+    setConfirmId(null)
+    if (error) return flash('Cancel failed: ' + error.message, true)
+    flash('Event cancelled')
+    load()
+  }
+
+  async function rejectOpi(id: string) {
+    const { error } = await supabase.rpc('opi_action', {
+      payload: { action: 'reject', id, feedback: 'Rejected from admin dashboard' },
+    })
+    setConfirmId(null)
+    if (error) return flash('Reject failed: ' + error.message, true)
+    flash('OPI rejected')
+    load()
+  }
+
+  async function deactivateMember(id: string) {
+    const { error } = await supabase.from('profiles').update({ account_status: 'deactivated' }).eq('id', id)
+    setConfirmId(null)
+    if (error) return flash('Deactivate failed: ' + error.message, true)
+    flash('Member deactivated')
+    load()
+  }
 
   const needsAttention = s.pending + s.openOpis + s.openTasks + s.pendingPurchases + s.pendingIndividual
 
@@ -134,13 +170,24 @@ function AdminDashboard() {
           </div>
           <div className="divide-y divide-line">
             {recentOpis.map((o) => (
-              <Link key={o.id} to="/admin/opi/$id/review" params={{ id: o.id }} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-canvas group">
-                <div className="min-w-0">
+              <div key={o.id} className="px-5 py-3 flex items-center justify-between gap-3 group">
+                <Link to="/admin/opi/$id/review" params={{ id: o.id }} className="min-w-0 flex-1">
                   <div className="text-sm truncate group-hover:text-ink">{o.title}</div>
                   <div className="text-xs text-ink-soft mt-0.5">{fmtDateTime(o.created_at)}</div>
+                </Link>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge label={o.status.replace('_', ' ')} tone={o.status} />
+                  {confirmId === `opi-${o.id}` ? (
+                    <ConfirmInline
+                      onConfirm={() => rejectOpi(o.id)}
+                      onCancel={() => setConfirmId(null)}
+                      label="Reject?"
+                    />
+                  ) : (
+                    <RemoveBtn onClick={() => setConfirmId(`opi-${o.id}`)} />
+                  )}
                 </div>
-                <Badge label={o.status.replace('_', ' ')} tone={o.status} />
-              </Link>
+              </div>
             ))}
             {recentOpis.length === 0 && <Empty text="No OPIs need review." />}
           </div>
@@ -154,13 +201,24 @@ function AdminDashboard() {
           </div>
           <div className="divide-y divide-line">
             {upcomingEvents.map((ev) => (
-              <Link key={ev.id} to="/outreach/events/$id" params={{ id: ev.id }} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-canvas group">
-                <div className="min-w-0">
+              <div key={ev.id} className="px-5 py-3 flex items-center justify-between gap-3 group">
+                <Link to="/outreach/events/$id" params={{ id: ev.id }} className="min-w-0 flex-1">
                   <div className="text-sm truncate group-hover:text-ink">{ev.title}</div>
                   {ev.location && <div className="text-xs text-ink-soft mt-0.5">{ev.location}</div>}
+                </Link>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-mono text-ink-soft whitespace-nowrap hidden sm:inline">{fmtDateTime(ev.starts_at)}</span>
+                  {confirmId === `ev-${ev.id}` ? (
+                    <ConfirmInline
+                      onConfirm={() => cancelEvent(ev.id)}
+                      onCancel={() => setConfirmId(null)}
+                      label="Cancel?"
+                    />
+                  ) : (
+                    <RemoveBtn onClick={() => setConfirmId(`ev-${ev.id}`)} />
+                  )}
                 </div>
-                <span className="text-xs font-mono text-ink-soft whitespace-nowrap">{fmtDateTime(ev.starts_at)}</span>
-              </Link>
+              </div>
             ))}
             {upcomingEvents.length === 0 && <Empty text="No upcoming events." />}
           </div>
@@ -174,11 +232,22 @@ function AdminDashboard() {
           </div>
           <div className="divide-y divide-line">
             {upcomingSessions.map((sess) => (
-              <div key={sess.id} className="px-5 py-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
+              <div key={sess.id} className="px-5 py-3 flex items-center justify-between gap-3 group">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm truncate">{sess.title}</div>
                 </div>
-                <span className="text-xs font-mono text-ink-soft whitespace-nowrap">{fmtDateTime(sess.opens_at)}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-mono text-ink-soft whitespace-nowrap hidden sm:inline">{fmtDateTime(sess.opens_at)}</span>
+                  {confirmId === `sess-${sess.id}` ? (
+                    <ConfirmInline
+                      onConfirm={() => cancelSession(sess.id)}
+                      onCancel={() => setConfirmId(null)}
+                      label="Cancel?"
+                    />
+                  ) : (
+                    <RemoveBtn onClick={() => setConfirmId(`sess-${sess.id}`)} />
+                  )}
+                </div>
               </div>
             ))}
             {upcomingSessions.length === 0 && <Empty text="No upcoming sessions." />}
@@ -193,10 +262,23 @@ function AdminDashboard() {
           </div>
           <div className="divide-y divide-line">
             {recentMembers.map((m) => (
-              <Link key={m.id} to="/admin/members/$id" params={{ id: m.id }} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-canvas group">
-                <span className="text-sm truncate group-hover:text-ink">{m.display_name || m.id.slice(0, 8)}</span>
-                <span className="text-[11px] font-mono uppercase px-1.5 py-0.5 border border-line text-ink-soft">{m.role}</span>
-              </Link>
+              <div key={m.id} className="px-5 py-3 flex items-center justify-between gap-3 group">
+                <Link to="/admin/members/$id" params={{ id: m.id }} className="text-sm truncate group-hover:text-ink flex-1 min-w-0">
+                  {m.display_name || m.id.slice(0, 8)}
+                </Link>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-mono uppercase px-1.5 py-0.5 border border-line text-ink-soft">{m.role}</span>
+                  {confirmId === `mem-${m.id}` ? (
+                    <ConfirmInline
+                      onConfirm={() => deactivateMember(m.id)}
+                      onCancel={() => setConfirmId(null)}
+                      label="Deactivate?"
+                    />
+                  ) : (
+                    <RemoveBtn onClick={() => setConfirmId(`mem-${m.id}`)} />
+                  )}
+                </div>
+              </div>
             ))}
             {recentMembers.length === 0 && <Empty text="No members yet." />}
           </div>
@@ -215,6 +297,46 @@ function AdminDashboard() {
         <QuickLink to="/admin/purchases" label="Purchases" />
         <QuickLink to="/admin/settings" label="Settings" />
       </div>
+
+      {Toast}
+    </div>
+  )
+}
+
+function RemoveBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={(e) => { e.preventDefault(); onClick() }}
+      className="w-7 h-7 flex items-center justify-center text-ink-soft hover:text-[#c0392b] hover:bg-[#fbeeec] border border-transparent hover:border-[#e3a9a1] opacity-0 group-hover:opacity-100 transition-opacity"
+      title="Remove"
+    >
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  )
+}
+
+function ConfirmInline({ onConfirm, onCancel, label }: { onConfirm: () => void; onCancel: () => void; label: string }) {
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-xs text-[#c0392b]">{label}</span>
+      <button
+        onClick={(e) => { e.preventDefault(); onConfirm() }}
+        className="w-6 h-6 flex items-center justify-center text-xs border border-[#c0392b] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f5d5d1]"
+      >
+        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </button>
+      <button
+        onClick={(e) => { e.preventDefault(); onCancel() }}
+        className="w-6 h-6 flex items-center justify-center text-xs border border-line text-ink-soft hover:bg-canvas"
+      >
+        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   )
 }
