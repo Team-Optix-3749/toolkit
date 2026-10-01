@@ -288,6 +288,15 @@ create policy th_select on task_history for select to authenticated
 create policy th_insert on task_history for insert to authenticated with check (true);
 
 -- ============================================================
+-- TASK EVIDENCE STORAGE BUCKET
+-- ============================================================
+-- insert into storage.buckets (id, name, public) values ('task-evidence', 'task-evidence', false);
+-- RLS: users upload under their own uid folder, admins can also delete
+-- create policy te_storage_select on storage.objects for select to authenticated using (bucket_id = 'task-evidence' and auth.uid()::text = (storage.foldername(name))[1]);
+-- create policy te_storage_insert on storage.objects for insert to authenticated with check (bucket_id = 'task-evidence' and auth.uid()::text = (storage.foldername(name))[1]);
+-- create policy te_storage_delete on storage.objects for delete to authenticated using (bucket_id = 'task-evidence' and (auth.uid()::text = (storage.foldername(name))[1] or is_admin()));
+
+-- ============================================================
 -- MEMBERS (legacy / standalone member list)
 -- ============================================================
 create table members (

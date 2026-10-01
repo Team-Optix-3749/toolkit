@@ -58,13 +58,13 @@ This is a multi-session effort to bring the app in line with the full PRD.
 - [x] Mobile-friendly (stacked rows or scroll)
 
 ### Tasks system (section 11) — NEW
-- [ ] Task CRUD with states: Assigned, In progress, Completed, Cancelled
-- [ ] Review-required tasks with: Submitted, Changes requested, Resubmitted states
-- [ ] Task groups (name + color chip)
-- [ ] Task detail: assignees, reviewers, deadline, evidence (note/link/picture), history
-- [ ] Evidence upload to private storage
-- [ ] Task routes: `/tasks`, `/tasks/[id]`
-- [ ] Dashboard integration
+- [x] Task CRUD with states: Assigned, In progress, Completed, Cancelled
+- [x] Review-required tasks with: Submitted, Changes requested, Resubmitted states
+- [x] Task groups (name + color chip)
+- [x] Task detail: assignees, reviewers, deadline, evidence (note/link/picture), history
+- [x] Evidence upload to private storage
+- [x] Task routes: `/tasks`, `/tasks/[id]`
+- [x] Dashboard integration
 
 ### Outreach (section 12)
 - [ ] Planned attendance (informational, pre-event) (section 12.2)

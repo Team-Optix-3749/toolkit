@@ -129,7 +129,7 @@ function Dashboard() {
         <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>My tasks</span>
-            <span className="text-[11px] font-mono uppercase text-ink-soft">Tasks</span>
+            <Link to="/tasks" className="text-[11px] font-mono uppercase text-accent hover:underline">View</Link>
           </div>
           <div className="divide-y divide-line">
             {overdueTasks.length > 0 && (
@@ -161,7 +161,7 @@ function Dashboard() {
         <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>Awaiting my review</span>
-            <span className="text-[11px] font-mono uppercase text-ink-soft">Review</span>
+            <Link to="/tasks" className="text-[11px] font-mono uppercase text-accent hover:underline">View</Link>
           </div>
           <div className="divide-y divide-line">
             {reviewTasks.slice(0, 5).map((t) => (
