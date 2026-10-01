@@ -67,10 +67,10 @@ This is a multi-session effort to bring the app in line with the full PRD.
 - [x] Dashboard integration
 
 ### Outreach (section 12)
-- [ ] Planned attendance (informational, pre-event) (section 12.2)
-- [ ] Event leads — assign leads who can manage attendance within event window (section 12.4)
-- [ ] Event cancellation/restoration with attendance preservation (section 12.1)
-- [ ] Attendance: arrival, departure, credited time per member/event (section 12.4)
+- [x] Planned attendance (informational, pre-event) (section 12.2)
+- [x] Event leads — assign leads who can manage attendance within event window (section 12.4)
+- [x] Event cancellation/restoration with attendance preservation (section 12.1)
+- [x] Attendance: arrival, departure, credited time per member/event (section 12.4)
 
 ### OPI (section 13)
 - [ ] Fix state machine: Submitted → Changes requested → Resubmitted → Approved/Rejected, Converted to event

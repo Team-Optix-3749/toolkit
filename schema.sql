@@ -435,24 +435,41 @@ create table outreach_events (
   starts_at   timestamptz not null,
   ends_at     timestamptz,
   season_id   uuid references seasons(id) on delete set null,
-  qr_token    text
+  qr_token    text,
+  cancelled   boolean not null default false,
+  lead_ids    uuid[] not null default '{}'
 );
 
 create index idx_outreach_starts on outreach_events(starts_at);
 
 -- ============================================================
+-- OUTREACH PLANNED ATTENDANCE (informational, pre-event)
+-- ============================================================
+create table outreach_planned_attendance (
+  event_id uuid not null references outreach_events(id) on delete cascade,
+  user_id  uuid not null,
+  primary  key (event_id, user_id)
+);
+alter table outreach_planned_attendance enable row level security;
+create policy opa_select on outreach_planned_attendance for select to authenticated using (true);
+create policy opa_own on outreach_planned_attendance for insert to authenticated with check (user_id = auth.uid());
+create policy opa_delete on outreach_planned_attendance for delete to authenticated using (user_id = auth.uid());
+
+-- ============================================================
 -- OUTREACH CHECK-INS
 -- ============================================================
 create table outreach_checkins (
-  id             uuid primary key default gen_random_uuid(),
-  created_at     timestamptz not null default now(),
-  event_id       uuid references outreach_events(id) on delete cascade,
-  user_id        uuid,
-  method         text not null default 'gps',
-  checked_in_at  timestamptz not null default now(),
-  minutes_logged integer,
-  lat            double precision,
-  lng            double precision
+  id               uuid primary key default gen_random_uuid(),
+  created_at       timestamptz not null default now(),
+  event_id         uuid references outreach_events(id) on delete cascade,
+  user_id          uuid,
+  method           text not null default 'gps',
+  checked_in_at    timestamptz not null default now(),
+  departed_at      timestamptz,
+  credited_minutes integer,
+  minutes_logged   integer,
+  lat              double precision,
+  lng              double precision
 );
 
 create index idx_outreach_checkins_user on outreach_checkins(user_id);

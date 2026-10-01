@@ -45,6 +45,8 @@ export type OutreachEvent = {
   ends_at: string | null
   season_id: string | null
   qr_token: string | null
+  cancelled: boolean
+  lead_ids: string[]
 }
 
 export type OutreachCheckin = {
@@ -53,6 +55,8 @@ export type OutreachCheckin = {
   user_id: string
   method: string
   checked_in_at: string
+  departed_at: string | null
+  credited_minutes: number | null
   minutes_logged: number | null
 }
 

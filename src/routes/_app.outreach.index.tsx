@@ -62,10 +62,11 @@ function OutreachHome() {
         </div>
         <div className="divide-y divide-line">
           {upcoming.map((e) => (
-            <div key={e.id} className="px-5 py-3 flex items-center gap-3">
+            <div key={e.id} className={`px-5 py-3 flex items-center gap-3 ${e.cancelled ? 'opacity-50' : ''}`}>
               <div className="flex-1 min-w-0">
                 <div className="font-medium flex items-center gap-2">
                   {e.title}
+                  {e.cancelled && <Badge label="Cancelled" tone="REJECTED" />}
                   {mine.has(e.id) && <Badge label="checked in" tone="APPROVED" />}
                 </div>
                 <div className="text-sm text-ink-soft font-mono">

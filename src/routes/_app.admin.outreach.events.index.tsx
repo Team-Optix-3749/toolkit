@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useToast } from '~/lib/toast'
 import { fmtDateTime } from '~/lib/format'
+import { Badge } from '~/components/Badge'
 import type { OutreachEvent } from '~/lib/types'
 import { card, cardHead, cardTitle, btnGhost } from '~/lib/ui'
 
@@ -19,12 +20,17 @@ function EventsAdmin() {
     if (error) return flash('Load failed: ' + error.message, true)
     setEvents((data as OutreachEvent[]) || [])
   }
-  useEffect(() => {
+  useEffect(() => { load() }, [])
+
+  async function toggleCancel(ev: OutreachEvent) {
+    const { error } = await supabase.from('outreach_events').update({ cancelled: !ev.cancelled }).eq('id', ev.id)
+    if (error) return flash(error.message, true)
+    flash(ev.cancelled ? 'Event restored' : 'Event cancelled')
     load()
-  }, [])
+  }
 
   async function del(id: string) {
-    if (!confirm('Delete this event?')) return
+    if (!confirm('Permanently delete this event and all its attendance records?')) return
     const { error } = await supabase.from('outreach_events').delete().eq('id', id)
     if (error) return flash(error.message, true)
     flash('Deleted')
@@ -46,18 +52,27 @@ function EventsAdmin() {
       </div>
       <div className="divide-y divide-line">
         {events.map((e) => (
-          <div key={e.id} className="px-5 py-3 flex items-start gap-3">
+          <div key={e.id} className={`px-5 py-3 flex items-start gap-3 ${e.cancelled ? 'opacity-50' : ''}`}>
             <div className="flex-1 min-w-0">
-              <div className="font-medium">{e.title}</div>
+              <div className="font-medium flex items-center gap-2">
+                {e.title}
+                {e.cancelled && <Badge label="Cancelled" tone="REJECTED" />}
+              </div>
               <div className="text-sm text-ink-soft font-mono">
                 {fmtDateTime(e.starts_at)}
                 {e.location ? ` · ${e.location}` : ''}
                 {e.qr_token ? ` · QR ${e.qr_token.slice(0, 8)}…` : ''}
+                {e.lead_ids.length > 0 ? ` · ${e.lead_ids.length} lead(s)` : ''}
               </div>
             </div>
-            <button onClick={() => del(e.id)} className="text-ink-soft hover:text-[#c0392b] px-1" title="Delete">
-              ✕
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button onClick={() => toggleCancel(e)} className={btnGhost} title={e.cancelled ? 'Restore' : 'Cancel'}>
+                {e.cancelled ? 'Restore' : 'Cancel'}
+              </button>
+              <button onClick={() => del(e.id)} className="text-ink-soft hover:text-[#c0392b] px-1" title="Delete">
+                ✕
+              </button>
+            </div>
           </div>
         ))}
         {events.length === 0 && <div className="px-5 py-6 text-center text-ink-soft text-sm">No events yet.</div>}
