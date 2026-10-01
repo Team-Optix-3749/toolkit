@@ -5,9 +5,9 @@ import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { fmtDate } from '~/lib/format'
 import { OpiTimeline } from '~/components/OpiTimeline'
-import { OpiComments } from '~/components/OpiComments'
+import { OpiFeedbackList } from '~/components/OpiFeedback'
 import { Badge } from '~/components/Badge'
-import type { OpiInitiative } from '~/lib/types'
+import type { Opi } from '~/lib/types'
 import { card, cardHead, cardTitle, btn, label, input, textarea } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/opi/$id')({
@@ -20,55 +20,38 @@ function OpiDetail() {
   const { id } = Route.useParams()
   const { user } = useAuth()
   const { flash, Toast } = useToast()
-  const [opi, setOpi] = useState<OpiInitiative | null>(null)
+  const [opi, setOpi] = useState<Opi | null>(null)
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ title: '', doc_url: '', description: '' })
+  const [form, setForm] = useState({ title: '', document_url: '', summary: '' })
   const [busy, setBusy] = useState(false)
 
   async function load() {
-    const { data, error } = await supabase.from('opi_initiatives').select('*').eq('id', id).maybeSingle()
+    const { data, error } = await supabase.from('opis').select('*').eq('id', id).maybeSingle()
     if (error) flash(error.message, true)
-    const o = data as OpiInitiative
+    const o = data as Opi
     setOpi(o)
-    if (o) setForm({ title: o.title, doc_url: o.doc_url || '', description: o.description || '' })
+    if (o) setForm({ title: o.title, document_url: o.document_url || '', summary: o.summary || '' })
   }
 
-  useEffect(() => { load() }, [id])
-
-  const isOwner = opi?.user_id === user?.id
-  const locked = opi ? LOCKED_STATUSES.has(opi.status) : true
-  const canEdit = isOwner && !locked
-  const canResubmit = isOwner && opi?.status === 'CHANGES_REQUESTED'
-
-  async function save() {
-    if (!form.title.trim()) return flash('Title required', true)
-    setBusy(true)
-    const { error } = await supabase.from('opi_initiatives').update({
-      title: form.title.trim(),
-      doc_url: form.doc_url || null,
-      description: form.description || null,
-      updated_at: new Date().toISOString(),
-    }).eq('id', id)
-    setBusy(false)
-    if (error) return flash(error.message, true)
-    flash('Saved')
-    setEditing(false)
+  useEffect(() => {
     load()
-  }
+  }, [id])
+
+  const isOwner = opi?.submitter_id === user?.id
+  const locked = opi ? LOCKED_STATUSES.has(opi.status) : true
+  const canResubmit = isOwner && opi?.status === 'CHANGES_REQUESTED'
 
   async function resubmit() {
     setBusy(true)
-    const { error } = await supabase.from('opi_initiatives').update({
-      status: 'RESUBMITTED',
-      updated_at: new Date().toISOString(),
-    }).eq('id', id)
-
-    await supabase.from('opi_comments').insert({
-      initiative_id: id,
-      user_id: user!.id,
-      body: '[RESUBMITTED] Updated and resubmitted for review',
+    const { error } = await supabase.rpc('opi_action', {
+      payload: {
+        action: 'resubmit',
+        id,
+        title: form.title.trim() || undefined,
+        summary: form.summary || undefined,
+        document_url: form.document_url || undefined,
+      },
     })
-
     setBusy(false)
     if (error) return flash(error.message, true)
     flash('Resubmitted for review')
@@ -83,7 +66,7 @@ function OpiDetail() {
       <section className={card}>
         <div className={cardHead}>
           <span className={cardTitle}>{opi.title}</span>
-          <span className="text-[11px] font-mono text-ink-soft">Submitted {fmtDate(opi.created_at)}</span>
+          <span className="text-[11px] font-mono text-ink-soft">Submitted {fmtDate(opi.created_at ?? '')}</span>
         </div>
         <div className="p-5 space-y-4">
           <OpiTimeline status={opi.status} />
@@ -97,19 +80,18 @@ function OpiDetail() {
 
           {!editing ? (
             <>
-              {opi.doc_url && (
-                <a href={opi.doc_url} target="_blank" rel="noreferrer" className="inline-block text-sm text-accent hover:underline">
+              {opi.document_url && (
+                <a href={opi.document_url} target="_blank" rel="noreferrer" className="inline-block text-sm text-accent hover:underline">
                   Open Google Doc ↗
                 </a>
               )}
-              {opi.description && <p className="text-sm whitespace-pre-wrap text-ink">{opi.description}</p>}
+              {opi.summary && <p className="text-sm whitespace-pre-wrap text-ink">{opi.summary}</p>}
               <div className="flex gap-2 pt-2">
-                {canEdit && (
-                  <button onClick={() => setEditing(true)} className={btn}>Edit</button>
-                )}
                 {canResubmit && (
                   <>
-                    <button onClick={() => setEditing(true)} className={btn}>Edit & resubmit</button>
+                    <button onClick={() => setEditing(true)} className={btn}>
+                      Edit & resubmit
+                    </button>
                     <button onClick={resubmit} disabled={busy} className={btn}>
                       Resubmit as-is
                     </button>
@@ -121,32 +103,23 @@ function OpiDetail() {
             <div className="space-y-4 border-t border-line pt-4">
               <div>
                 <label className={label}>Title</label>
-                <input className={input} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+                <input className={input} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
               </div>
               <div>
                 <label className={label}>Google Doc link</label>
-                <input className={input} value={form.doc_url} onChange={e => setForm({ ...form, doc_url: e.target.value })} />
+                <input className={input} value={form.document_url} onChange={(e) => setForm({ ...form, document_url: e.target.value })} />
               </div>
               <div>
-                <label className={label}>Description</label>
-                <textarea className={textarea} rows={4} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                <label className={label}>Summary</label>
+                <textarea className={textarea} rows={4} value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
               </div>
               <div className="flex gap-2">
-                {canResubmit ? (
-                  <>
-                    <button onClick={async () => { await save(); await resubmit() }} disabled={busy} className={btn}>
-                      {busy ? 'Saving…' : 'Save & resubmit'}
-                    </button>
-                    <button onClick={() => setEditing(false)} className="text-sm text-ink-soft hover:text-ink">Cancel</button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={save} disabled={busy} className={btn}>
-                      {busy ? 'Saving…' : 'Save'}
-                    </button>
-                    <button onClick={() => setEditing(false)} className="text-sm text-ink-soft hover:text-ink">Cancel</button>
-                  </>
-                )}
+                <button onClick={resubmit} disabled={busy} className={btn}>
+                  {busy ? 'Saving…' : 'Save & resubmit'}
+                </button>
+                <button onClick={() => setEditing(false)} className="text-sm text-ink-soft hover:text-ink">
+                  Cancel
+                </button>
               </div>
             </div>
           )}
@@ -155,10 +128,10 @@ function OpiDetail() {
 
       <section className={card}>
         <div className={cardHead}>
-          <span className={cardTitle}>Comments & feedback</span>
+          <span className={cardTitle}>Feedback & history</span>
         </div>
         <div className="p-5">
-          <OpiComments initiativeId={opi.id} />
+          <OpiFeedbackList opiId={opi.id} />
         </div>
       </section>
       {Toast}

@@ -1,11 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
-import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { toISO } from '~/lib/format'
-import { buildRRule, WEEKDAYS } from '~/lib/recurrence'
-import type { Zone } from '~/lib/types'
+import type { BuildLocation } from '~/lib/types'
 import { card, cardHead, cardTitle, label, input, btn } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/admin/build/schedule/new')({
@@ -13,61 +11,37 @@ export const Route = createFileRoute('/_app/admin/build/schedule/new')({
 })
 
 function NewSession() {
-  const { user } = useAuth()
   const { flash, Toast } = useToast()
   const navigate = useNavigate()
-  const [zones, setZones] = useState<Zone[]>([])
+  const [locations, setLocations] = useState<BuildLocation[]>([])
   const [busy, setBusy] = useState(false)
   const [f, setF] = useState({
     title: '',
-    zone_id: '',
-    starts_at: '',
-    ends_at: '',
-    short_notice: false,
-    recurring: false,
-    freq: 'WEEKLY' as 'WEEKLY' | 'DAILY',
-    interval: '1',
-    byday: [] as string[],
-    count: '',
+    location_id: '',
+    opens_at: '',
+    closes_at: '',
   })
 
   useEffect(() => {
     supabase
-      .from('build_zones')
+      .from('build_locations')
       .select('*')
-      .eq('active', true)
       .order('name')
-      .then(({ data }) => setZones((data as Zone[]) || []))
+      .then(({ data }) => setLocations((data as BuildLocation[]) || []))
   }, [])
-
-  function toggleDay(d: string) {
-    setF((s) => ({
-      ...s,
-      byday: s.byday.includes(d) ? s.byday.filter((x) => x !== d) : [...s.byday, d],
-    }))
-  }
 
   async function create() {
     if (!f.title.trim()) return flash('Title required', true)
-    if (!f.starts_at) return flash('Start time required', true)
-    const rrule = f.recurring
-      ? buildRRule({
-          freq: f.freq,
-          interval: Number(f.interval) || 1,
-          byday: f.freq === 'WEEKLY' ? f.byday : undefined,
-          count: f.count ? Number(f.count) : undefined,
-        })
-      : null
+    if (!f.opens_at) return flash('Opens at required', true)
     setBusy(true)
-    const { error } = await supabase.from('build_schedule').insert({
-      created_by: user!.id,
-      title: f.title.trim(),
-      zone_id: f.zone_id || null,
-      starts_at: toISO(f.starts_at),
-      ends_at: f.ends_at ? toISO(f.ends_at) : null,
-      rrule,
-      is_recurring: f.recurring,
-      short_notice: f.short_notice,
+    const { error } = await supabase.rpc('build_action', {
+      payload: {
+        action: 'session',
+        title: f.title.trim(),
+        location_id: f.location_id || null,
+        opens_at: toISO(f.opens_at),
+        closes_at: f.closes_at ? toISO(f.closes_at) : null,
+      },
     })
     setBusy(false)
     if (error) return flash('Create failed: ' + error.message, true)
@@ -87,77 +61,25 @@ function NewSession() {
             <input className={input} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
           </div>
           <div>
-            <label className={label}>Zone</label>
-            <select className={input} value={f.zone_id} onChange={(e) => setF({ ...f, zone_id: e.target.value })}>
+            <label className={label}>Location</label>
+            <select className={input} value={f.location_id} onChange={(e) => setF({ ...f, location_id: e.target.value })}>
               <option value="">(none)</option>
-              {zones.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.name}
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label className={label}>Starts</label>
-            <input type="datetime-local" className={input} value={f.starts_at} onChange={(e) => setF({ ...f, starts_at: e.target.value })} />
+            <label className={label}>Opens at</label>
+            <input type="datetime-local" className={input} value={f.opens_at} onChange={(e) => setF({ ...f, opens_at: e.target.value })} />
           </div>
           <div>
-            <label className={label}>Ends</label>
-            <input type="datetime-local" className={input} value={f.ends_at} onChange={(e) => setF({ ...f, ends_at: e.target.value })} />
+            <label className={label}>Closes at</label>
+            <input type="datetime-local" className={input} value={f.closes_at} onChange={(e) => setF({ ...f, closes_at: e.target.value })} />
           </div>
         </div>
-
-        <div className="mt-4 flex items-center gap-6">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={f.short_notice} onChange={(e) => setF({ ...f, short_notice: e.target.checked })} />
-            Short notice
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={f.recurring} onChange={(e) => setF({ ...f, recurring: e.target.checked })} />
-            Recurring
-          </label>
-        </div>
-
-        {f.recurring && (
-          <div className="mt-4 border border-line p-4 space-y-4">
-            <div className="grid sm:grid-cols-3 gap-4">
-              <div>
-                <label className={label}>Frequency</label>
-                <select className={input} value={f.freq} onChange={(e) => setF({ ...f, freq: e.target.value as 'WEEKLY' | 'DAILY' })}>
-                  <option value="WEEKLY">Weekly</option>
-                  <option value="DAILY">Daily</option>
-                </select>
-              </div>
-              <div>
-                <label className={label}>Every (interval)</label>
-                <input type="number" min="1" className={input} value={f.interval} onChange={(e) => setF({ ...f, interval: e.target.value })} />
-              </div>
-              <div>
-                <label className={label}>Count (optional)</label>
-                <input type="number" min="1" className={input} value={f.count} onChange={(e) => setF({ ...f, count: e.target.value })} />
-              </div>
-            </div>
-            {f.freq === 'WEEKLY' && (
-              <div>
-                <label className={label}>On days</label>
-                <div className="flex gap-1 flex-wrap">
-                  {WEEKDAYS.map(([v, l]) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => toggleDay(v)}
-                      className={`h-8 px-3 text-xs border ${
-                        f.byday.includes(v) ? 'bg-brand text-white border-ink' : 'bg-panel border-line hover:bg-canvas'
-                      }`}
-                    >
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         <button onClick={create} disabled={busy} className={`mt-5 ${btn}`}>
           {busy ? 'Creating…' : 'Create session'}

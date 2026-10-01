@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useToast } from '~/lib/toast'
 import { downloadCsv } from '~/lib/csv'
-import type { OpiInitiative } from '~/lib/types'
+import type { Opi } from '~/lib/types'
 import { card, cardHead, cardTitle, btnGhost } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/admin/reports/opi')({
@@ -14,12 +14,12 @@ const STAGES = ['SUBMITTED', 'CHANGES_REQUESTED', 'RESUBMITTED', 'APPROVED', 'RE
 
 function OpiReport() {
   const { flash, Toast } = useToast()
-  const [rows, setRows] = useState<OpiInitiative[]>([])
+  const [rows, setRows] = useState<Opi[]>([])
 
   async function load() {
-    const { data, error } = await supabase.from('opi_initiatives').select('*')
+    const { data, error } = await supabase.from('opis').select('*')
     if (error) return flash('Load failed: ' + error.message, true)
-    setRows((data as OpiInitiative[]) || [])
+    setRows((data as Opi[]) || [])
   }
   useEffect(() => {
     load()

@@ -4,7 +4,7 @@ import { supabase } from '~/lib/supabase'
 import { useToast } from '~/lib/toast'
 import { fmtDate } from '~/lib/format'
 import { Badge } from '~/components/Badge'
-import type { OpiInitiative, ProfileRow } from '~/lib/types'
+import type { Opi, ProfileRow } from '~/lib/types'
 import { card, cardHead, cardTitle } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/admin/opi/')({
@@ -15,16 +15,16 @@ const FILTERS = ['ALL', 'SUBMITTED', 'CHANGES_REQUESTED', 'RESUBMITTED', 'APPROV
 
 function OpiQueue() {
   const { flash, Toast } = useToast()
-  const [rows, setRows] = useState<OpiInitiative[]>([])
+  const [rows, setRows] = useState<Opi[]>([])
   const [names, setNames] = useState<Record<string, string>>({})
   const [filter, setFilter] = useState('ALL')
 
   async function load() {
-    const { data, error } = await supabase.from('opi_initiatives').select('*').order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('opis').select('*').order('created_at', { ascending: false })
     if (error) return flash('Load failed: ' + error.message, true)
-    const list = (data as OpiInitiative[]) || []
+    const list = (data as Opi[]) || []
     setRows(list)
-    const ids = [...new Set(list.map((r) => r.user_id))]
+    const ids = [...new Set(list.map((r) => r.submitter_id))]
     if (ids.length) {
       const { data: p } = await supabase.from('profiles').select('id, display_name').in('id', ids)
       setNames(Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '-'])))
@@ -60,7 +60,7 @@ function OpiQueue() {
             <div className="flex-1 min-w-0">
               <div className="font-medium">{r.title}</div>
               <div className="text-sm text-ink-soft font-mono">
-                {names[r.user_id] || 'member'} · {fmtDate(r.created_at)}
+                {names[r.submitter_id] || 'member'} · {fmtDate(r.created_at ?? '')}
               </div>
             </div>
             <Badge label={r.status.replace('_', ' ')} tone={r.status} />

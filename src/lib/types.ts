@@ -1,37 +1,31 @@
-export type Zone = {
+export type BuildLocation = {
   id: string
   name: string
-  description: string | null
-  gps_lat: number | null
-  gps_lng: number | null
-  gps_radius_m: number | null
-  qr_token: string | null
-  active: boolean
 }
 
 export type BuildSession = {
   id: string
   title: string
-  zone_id: string | null
+  location_id: string | null
   season_id: string | null
-  starts_at: string
-  ends_at: string | null
-  rrule: string | null
-  is_recurring: boolean
-  short_notice: boolean
+  opens_at: string
+  closes_at: string | null
+  cancelled: boolean
 }
 
-export type BuildCheckin = {
+export type BuildRecord = {
   id: string
   session_id: string | null
-  zone_id: string | null
-  user_id: string
-  method: string
-  checked_in_at: string
-  checked_out_at: string | null
-  minutes_logged: number | null
-  lat: number | null
-  lng: number | null
+  member_id: string
+  check_in: string
+  check_out: string | null
+  reserved_until: string | null
+  checkout_method: string
+  automatically_closed: boolean
+  credit_override: boolean | null
+  credit_enabled: boolean
+  credited_minutes: number | null
+  credit_interval: string | null
 }
 
 export type OutreachEvent = {
@@ -39,25 +33,26 @@ export type OutreachEvent = {
   title: string
   description: string | null
   location: string | null
-  lat: number | null
-  lng: number | null
   starts_at: string
   ends_at: string | null
   season_id: string | null
-  qr_token: string | null
   cancelled: boolean
-  lead_ids: string[]
 }
 
-export type OutreachCheckin = {
+export type OutreachAttendance = {
   id: string
   event_id: string | null
-  user_id: string
-  method: string
-  checked_in_at: string
-  departed_at: string | null
+  member_id: string
+  arrival: string
+  departure: string | null
+  credit_enabled: boolean
   credited_minutes: number | null
-  minutes_logged: number | null
+  credit_interval: string | null
+}
+
+export type OutreachLead = {
+  event_id: string
+  member_id: string
 }
 
 export type OpiStatus =
@@ -68,25 +63,32 @@ export type OpiStatus =
   | 'REJECTED'
   | 'CONVERTED'
 
-export type OpiInitiative = {
+export type Opi = {
   id: string
   created_at: string
-  updated_at: string
-  user_id: string
-  title: string
-  description: string | null
-  doc_url: string | null
+  submitter_id: string
   status: OpiStatus
-  reviewer_id: string | null
-  linked_event_id: string | null
+  title: string
+  summary: string | null
+  document_url: string | null
+  event_id: string | null
 }
 
-export type OpiComment = {
+export type OpiVersion = {
+  id: string
+  opi_id: string
+  title: string
+  summary: string | null
+  document_url: string | null
+  submitted_at: string
+}
+
+export type OpiFeedback = {
   id: string
   created_at: string
-  initiative_id: string
-  user_id: string
-  body: string
+  opi_id: string
+  feedback: string
+  decision: string | null
 }
 
 export const DEPARTMENTS = ['Build', 'Technology', 'Business', 'Outreach'] as const

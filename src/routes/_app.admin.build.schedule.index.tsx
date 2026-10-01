@@ -4,7 +4,7 @@ import { supabase } from '~/lib/supabase'
 import { useToast } from '~/lib/toast'
 import { fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
-import type { BuildSession, Zone } from '~/lib/types'
+import type { BuildSession, BuildLocation } from '~/lib/types'
 import { card, cardHead, cardTitle, btnGhost } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/admin/build/schedule/')({
@@ -14,26 +14,27 @@ export const Route = createFileRoute('/_app/admin/build/schedule/')({
 function SchedulePage() {
   const { flash, Toast } = useToast()
   const [sessions, setSessions] = useState<BuildSession[]>([])
-  const [zones, setZones] = useState<Record<string, string>>({})
+  const [locations, setLocations] = useState<Record<string, string>>({})
 
   async function load() {
-    const [{ data: s, error: e1 }, { data: z }] = await Promise.all([
-      supabase.from('build_schedule').select('*').order('starts_at', { ascending: false }),
-      supabase.from('build_zones').select('id, name'),
+    const [{ data: s, error: e1 }, { data: loc }] = await Promise.all([
+      supabase.from('build_sessions').select('*').order('opens_at', { ascending: false }),
+      supabase.from('build_locations').select('id, name'),
     ])
     if (e1) return flash('Load failed: ' + e1.message, true)
     setSessions((s as BuildSession[]) || [])
-    setZones(Object.fromEntries(((z as Zone[]) || []).map((x) => [x.id, x.name])))
+    setLocations(Object.fromEntries(((loc as BuildLocation[]) || []).map((x) => [x.id, x.name])))
   }
   useEffect(() => {
     load()
   }, [])
 
-  async function del(id: string) {
-    if (!confirm('Delete this session?')) return
-    const { error } = await supabase.from('build_schedule').delete().eq('id', id)
+  async function cancel(id: string) {
+    const { error } = await supabase.rpc('build_action', {
+      payload: { action: 'cancel', id },
+    })
     if (error) return flash(error.message, true)
-    flash('Deleted')
+    flash('Cancelled')
     load()
   }
 
@@ -51,18 +52,19 @@ function SchedulePage() {
             <div className="flex-1 min-w-0">
               <div className="font-medium flex items-center gap-2">
                 {s.title}
-                {s.is_recurring && <Badge label="recurring" tone="accent" />}
-                {s.short_notice && <Badge label="short notice" tone="PENDING" />}
+                {s.cancelled && <Badge label="cancelled" tone="REJECTED" />}
               </div>
               <div className="text-sm text-ink-soft font-mono">
-                {fmtDateTime(s.starts_at)}
-                {s.ends_at ? ` – ${fmtDateTime(s.ends_at)}` : ''}
-                {s.zone_id ? ` · ${zones[s.zone_id] ?? 'zone'}` : ''}
+                {fmtDateTime(s.opens_at)}
+                {s.closes_at ? ` – ${fmtDateTime(s.closes_at)}` : ''}
+                {s.location_id ? ` · ${locations[s.location_id] ?? 'location'}` : ''}
               </div>
             </div>
-            <button onClick={() => del(s.id)} className="text-ink-soft hover:text-[#c0392b] px-1" title="Delete">
-              ✕
-            </button>
+            {!s.cancelled && (
+              <button onClick={() => cancel(s.id)} className="text-ink-soft hover:text-[#c0392b] px-1" title="Cancel">
+                ✕
+              </button>
+            )}
           </div>
         ))}
         {sessions.length === 0 && (

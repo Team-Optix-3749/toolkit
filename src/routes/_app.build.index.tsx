@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { fmtDateTime } from '~/lib/format'
-import { nextOccurrences } from '~/lib/recurrence'
 import { Badge } from '~/components/Badge'
-import type { BuildSession, Zone, BuildCheckin } from '~/lib/types'
+import type { BuildSession, BuildLocation, BuildRecord } from '~/lib/types'
 import { card, cardHead, cardTitle, btn, btnGhost } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/build/')({
@@ -17,44 +16,40 @@ function BuildHome() {
   const { user } = useAuth()
   const { flash, Toast } = useToast()
   const [sessions, setSessions] = useState<BuildSession[]>([])
-  const [zones, setZones] = useState<Record<string, string>>({})
-  const [open, setOpen] = useState<BuildCheckin | null>(null)
+  const [locations, setLocations] = useState<Record<string, string>>({})
+  const [open, setOpen] = useState<BuildRecord | null>(null)
 
   async function load() {
-    const [{ data: s, error: e1 }, { data: z }, { data: ci }] = await Promise.all([
-      supabase.from('build_schedule').select('*'),
-      supabase.from('build_zones').select('id, name'),
+    const [{ data: s, error: e1 }, { data: loc }, { data: ci }] = await Promise.all([
+      supabase.from('build_sessions').select('*').eq('cancelled', false).order('opens_at', { ascending: true }),
+      supabase.from('build_locations').select('id, name'),
       supabase
-        .from('build_checkins')
+        .from('build_records')
         .select('*')
-        .eq('user_id', user!.id)
-        .is('checked_out_at', null)
-        .order('checked_in_at', { ascending: false })
+        .eq('member_id', user!.id)
+        .is('check_out', null)
+        .order('check_in', { ascending: false })
         .limit(1),
     ])
     if (e1) return flash('Load failed: ' + e1.message, true)
     setSessions((s as BuildSession[]) || [])
-    setZones(Object.fromEntries(((z as Zone[]) || []).map((x) => [x.id, x.name])))
-    setOpen(((ci as BuildCheckin[]) || [])[0] ?? null)
+    setLocations(Object.fromEntries(((loc as BuildLocation[]) || []).map((x) => [x.id, x.name])))
+    setOpen(((ci as BuildRecord[]) || [])[0] ?? null)
   }
   useEffect(() => {
     load()
   }, [])
 
-  const upcoming = useMemo(() => {
-    const out: { session: BuildSession; when: Date }[] = []
-    for (const s of sessions) {
-      for (const d of nextOccurrences(s.starts_at, s.rrule, 3)) out.push({ session: s, when: d })
-    }
-    return out.sort((a, b) => a.when.getTime() - b.when.getTime()).slice(0, 12)
-  }, [sessions])
+  const upcoming = sessions
+    .filter((s) => new Date(s.opens_at) >= new Date() || (s.closes_at && new Date(s.closes_at) >= new Date()))
+    .slice(0, 12)
 
   return (
     <>
       {open && (
         <div className="bg-accent-soft border border-accent px-5 py-3 flex items-center gap-3">
           <span className="text-sm text-accent font-medium">
-            You're checked in since {fmtDateTime(open.checked_in_at)}.
+            You're checked in since {fmtDateTime(open.check_in)}.
           </span>
           <Link to="/build/check-in" className={`${btnGhost} ml-auto border-accent text-accent`}>
             Check out
@@ -70,17 +65,14 @@ function BuildHome() {
           </Link>
         </div>
         <div className="divide-y divide-line">
-          {upcoming.map(({ session, when }, i) => (
-            <div key={session.id + i} className="px-5 py-3 flex items-center gap-3">
+          {upcoming.map((session) => (
+            <div key={session.id} className="px-5 py-3 flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <div className="font-medium flex items-center gap-2">
-                  {session.title}
-                  {session.short_notice && <Badge label="short notice" tone="PENDING" />}
-                  {session.is_recurring && <Badge label="recurring" tone="accent" />}
-                </div>
+                <div className="font-medium">{session.title}</div>
                 <div className="text-sm text-ink-soft font-mono">
-                  {fmtDateTime(when.toISOString())}
-                  {session.zone_id ? ` · ${zones[session.zone_id] ?? 'zone'}` : ''}
+                  {fmtDateTime(session.opens_at)}
+                  {session.closes_at ? ` – ${fmtDateTime(session.closes_at)}` : ''}
+                  {session.location_id ? ` · ${locations[session.location_id] ?? 'location'}` : ''}
                 </div>
               </div>
               <Link
@@ -93,9 +85,7 @@ function BuildHome() {
             </div>
           ))}
           {upcoming.length === 0 && (
-            <div className="px-5 py-6 text-center text-ink-soft text-sm">
-              No upcoming sessions scheduled.
-            </div>
+            <div className="px-5 py-6 text-center text-ink-soft text-sm">No upcoming sessions scheduled.</div>
           )}
         </div>
       </section>

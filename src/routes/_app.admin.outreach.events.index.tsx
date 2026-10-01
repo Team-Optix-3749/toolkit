@@ -20,20 +20,16 @@ function EventsAdmin() {
     if (error) return flash('Load failed: ' + error.message, true)
     setEvents((data as OutreachEvent[]) || [])
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   async function toggleCancel(ev: OutreachEvent) {
-    const { error } = await supabase.from('outreach_events').update({ cancelled: !ev.cancelled }).eq('id', ev.id)
+    const { error } = await supabase.rpc('outreach_action', {
+      payload: { action: ev.cancelled ? 'restore' : 'cancel', id: ev.id },
+    })
     if (error) return flash(error.message, true)
     flash(ev.cancelled ? 'Event restored' : 'Event cancelled')
-    load()
-  }
-
-  async function del(id: string) {
-    if (!confirm('Permanently delete this event and all its attendance records?')) return
-    const { error } = await supabase.from('outreach_events').delete().eq('id', id)
-    if (error) return flash(error.message, true)
-    flash('Deleted')
     load()
   }
 
@@ -61,16 +57,11 @@ function EventsAdmin() {
               <div className="text-sm text-ink-soft font-mono">
                 {fmtDateTime(e.starts_at)}
                 {e.location ? ` · ${e.location}` : ''}
-                {e.qr_token ? ` · QR ${e.qr_token.slice(0, 8)}…` : ''}
-                {e.lead_ids.length > 0 ? ` · ${e.lead_ids.length} lead(s)` : ''}
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button onClick={() => toggleCancel(e)} className={btnGhost} title={e.cancelled ? 'Restore' : 'Cancel'}>
                 {e.cancelled ? 'Restore' : 'Cancel'}
-              </button>
-              <button onClick={() => del(e.id)} className="text-ink-soft hover:text-[#c0392b] px-1" title="Delete">
-                ✕
               </button>
             </div>
           </div>

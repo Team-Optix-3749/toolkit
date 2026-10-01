@@ -1,12 +1,12 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { fmtDate, toISO } from '~/lib/format'
 import { OpiTimeline } from '~/components/OpiTimeline'
-import { OpiComments } from '~/components/OpiComments'
-import type { OpiInitiative } from '~/lib/types'
+import { OpiFeedbackList } from '~/components/OpiFeedback'
+import type { Opi } from '~/lib/types'
 import { card, cardHead, cardTitle, btn, btnGhost, label, input, textarea as textareaCls } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/admin/opi/$id/review')({
@@ -33,21 +33,22 @@ function OpiReview() {
   const { id } = Route.useParams()
   const { user } = useAuth()
   const { flash, Toast } = useToast()
-  const navigate = useNavigate()
-  const [opi, setOpi] = useState<OpiInitiative | null>(null)
+  const [opi, setOpi] = useState<Opi | null>(null)
   const [feedback, setFeedback] = useState('')
   const [busy, setBusy] = useState(false)
   const [showConvert, setShowConvert] = useState(false)
   const [convertForm, setConvertForm] = useState({ title: '', location: '', starts_at: '', ends_at: '' })
 
   async function load() {
-    const { data, error } = await supabase.from('opi_initiatives').select('*').eq('id', id).maybeSingle()
+    const { data, error } = await supabase.from('opis').select('*').eq('id', id).maybeSingle()
     if (error) return flash(error.message, true)
-    const o = data as OpiInitiative
+    const o = data as Opi
     setOpi(o)
-    if (o) setConvertForm(f => ({ ...f, title: f.title || o.title }))
+    if (o) setConvertForm((f) => ({ ...f, title: f.title || o.title }))
   }
-  useEffect(() => { load() }, [id])
+  useEffect(() => {
+    load()
+  }, [id])
 
   async function transition(status: string) {
     if (NEEDS_FEEDBACK.has(status) && !feedback.trim()) {
@@ -55,18 +56,20 @@ function OpiReview() {
     }
     setBusy(true)
 
-    if (feedback.trim()) {
-      await supabase.from('opi_comments').insert({
-        initiative_id: id,
-        user_id: user!.id,
-        body: `[${status.replace('_', ' ')}] ${feedback.trim()}`,
-      })
+    const actionMap: Record<string, string> = {
+      CHANGES_REQUESTED: 'changes',
+      APPROVED: 'approve',
+      REJECTED: 'reject',
+      SUBMITTED: 'reopen',
     }
 
-    const { error } = await supabase
-      .from('opi_initiatives')
-      .update({ status, reviewer_id: user!.id, updated_at: new Date().toISOString() })
-      .eq('id', id)
+    const { error } = await supabase.rpc('opi_action', {
+      payload: {
+        action: actionMap[status] || status.toLowerCase(),
+        id,
+        feedback: feedback.trim() || undefined,
+      },
+    })
     setBusy(false)
     if (error) return flash('Update failed: ' + error.message, true)
     setFeedback('')
@@ -79,38 +82,16 @@ function OpiReview() {
       return flash('Title and start time required', true)
     }
     setBusy(true)
-
-    const { data: season } = await supabase.from('seasons').select('id').eq('is_current', true).maybeSingle()
-
-    const { data: ev, error: evErr } = await supabase.from('outreach_events').insert({
-      created_by: user!.id,
-      title: convertForm.title.trim(),
-      location: convertForm.location || null,
-      starts_at: toISO(convertForm.starts_at),
-      ends_at: convertForm.ends_at ? toISO(convertForm.ends_at) : null,
-      season_id: season?.id ?? null,
-      qr_token: crypto.randomUUID(),
-    }).select('id').single()
-
-    if (evErr) { setBusy(false); return flash('Event creation failed: ' + evErr.message, true) }
-
-    const eventId = (ev as { id: string }).id
-    const { error } = await supabase
-      .from('opi_initiatives')
-      .update({
-        status: 'CONVERTED',
-        linked_event_id: eventId,
-        reviewer_id: user!.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-
-    await supabase.from('opi_comments').insert({
-      initiative_id: id,
-      user_id: user!.id,
-      body: `[CONVERTED] Linked to outreach event`,
+    const { error } = await supabase.rpc('opi_action', {
+      payload: {
+        action: 'convert',
+        id,
+        title: convertForm.title.trim(),
+        location: convertForm.location || null,
+        starts_at: toISO(convertForm.starts_at),
+        ends_at: convertForm.ends_at ? toISO(convertForm.ends_at) : null,
+      },
     })
-
     setBusy(false)
     if (error) return flash(error.message, true)
     flash('Converted to outreach event')
@@ -119,7 +100,7 @@ function OpiReview() {
 
   if (!opi) return <div className="bg-panel border border-line p-8 text-center text-sm text-ink-soft">Loading…</div>
 
-  const preview = opi.doc_url ? docPreview(opi.doc_url) : null
+  const preview = opi.document_url ? docPreview(opi.document_url) : null
   const actions = NEXT[opi.status] || []
 
   return (
@@ -127,22 +108,22 @@ function OpiReview() {
       <section className={card}>
         <div className={cardHead}>
           <span className={cardTitle}>{opi.title}</span>
-          <span className="text-[11px] font-mono text-ink-soft">Submitted {fmtDate(opi.created_at)}</span>
+          <span className="text-[11px] font-mono text-ink-soft">Submitted {fmtDate(opi.created_at ?? '')}</span>
         </div>
         <div className="p-5 space-y-4">
           <OpiTimeline status={opi.status} />
-          {opi.description && <p className="text-sm whitespace-pre-wrap pt-2">{opi.description}</p>}
+          {opi.summary && <p className="text-sm whitespace-pre-wrap pt-2">{opi.summary}</p>}
 
           {actions.length > 0 && (
             <div className="border-t border-line pt-4 space-y-3">
-              {actions.some(s => NEEDS_FEEDBACK.has(s)) && (
+              {actions.some((s) => NEEDS_FEEDBACK.has(s)) && (
                 <div>
                   <label className={label}>Reviewer feedback</label>
                   <textarea
                     className={textareaCls}
                     rows={3}
                     value={feedback}
-                    onChange={e => setFeedback(e.target.value)}
+                    onChange={(e) => setFeedback(e.target.value)}
                     placeholder="Required for changes requested or rejection"
                   />
                 </div>
@@ -179,38 +160,35 @@ function OpiReview() {
             <span className="text-sm text-ink-soft">No further transitions.</span>
           )}
 
-          {opi.linked_event_id && (
-            <div className="text-sm text-[#1a7f4b]">
-              Linked to outreach event
-            </div>
-          )}
+          {opi.event_id && <div className="text-sm text-[#1a7f4b]">Linked to outreach event</div>}
         </div>
       </section>
 
-      {/* Conversion form */}
       {showConvert && (
         <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>Convert to outreach event</span>
-            <button onClick={() => setShowConvert(false)} className={btnGhost}>Cancel</button>
+            <button onClick={() => setShowConvert(false)} className={btnGhost}>
+              Cancel
+            </button>
           </div>
           <div className="p-5 space-y-4">
             <div>
               <label className={label}>Event title</label>
-              <input className={input} value={convertForm.title} onChange={e => setConvertForm({ ...convertForm, title: e.target.value })} />
+              <input className={input} value={convertForm.title} onChange={(e) => setConvertForm({ ...convertForm, title: e.target.value })} />
             </div>
             <div>
               <label className={label}>Location</label>
-              <input className={input} value={convertForm.location} onChange={e => setConvertForm({ ...convertForm, location: e.target.value })} />
+              <input className={input} value={convertForm.location} onChange={(e) => setConvertForm({ ...convertForm, location: e.target.value })} />
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label className={label}>Starts</label>
-                <input type="datetime-local" className={input} value={convertForm.starts_at} onChange={e => setConvertForm({ ...convertForm, starts_at: e.target.value })} />
+                <input type="datetime-local" className={input} value={convertForm.starts_at} onChange={(e) => setConvertForm({ ...convertForm, starts_at: e.target.value })} />
               </div>
               <div>
                 <label className={label}>Ends</label>
-                <input type="datetime-local" className={input} value={convertForm.ends_at} onChange={e => setConvertForm({ ...convertForm, ends_at: e.target.value })} />
+                <input type="datetime-local" className={input} value={convertForm.ends_at} onChange={(e) => setConvertForm({ ...convertForm, ends_at: e.target.value })} />
               </div>
             </div>
             <button onClick={convertToEvent} disabled={busy} className={btn}>
@@ -220,11 +198,11 @@ function OpiReview() {
         </section>
       )}
 
-      {opi.doc_url && (
+      {opi.document_url && (
         <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>Google Doc</span>
-            <a href={opi.doc_url} target="_blank" rel="noreferrer" className="text-[11px] font-mono uppercase text-accent hover:underline">
+            <a href={opi.document_url} target="_blank" rel="noreferrer" className="text-[11px] font-mono uppercase text-accent hover:underline">
               Open ↗
             </a>
           </div>
@@ -241,7 +219,7 @@ function OpiReview() {
           <span className={cardTitle}>Feedback & history</span>
         </div>
         <div className="p-5">
-          <OpiComments initiativeId={opi.id} />
+          <OpiFeedbackList opiId={opi.id} />
         </div>
       </section>
       {Toast}

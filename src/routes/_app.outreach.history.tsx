@@ -4,7 +4,7 @@ import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { fmtDateTime, hoursFromMinutes } from '~/lib/format'
-import type { OutreachCheckin, OutreachEvent } from '~/lib/types'
+import type { OutreachAttendance, OutreachEvent } from '~/lib/types'
 import { card, cardHead, cardTitle, btnGhost } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/outreach/history')({
@@ -14,16 +14,16 @@ export const Route = createFileRoute('/_app/outreach/history')({
 function OutreachHistory() {
   const { user } = useAuth()
   const { flash, Toast } = useToast()
-  const [rows, setRows] = useState<OutreachCheckin[]>([])
+  const [rows, setRows] = useState<OutreachAttendance[]>([])
   const [titles, setTitles] = useState<Record<string, string>>({})
 
   async function load() {
     const [{ data, error }, { data: e }] = await Promise.all([
-      supabase.from('outreach_checkins').select('*').eq('user_id', user!.id).order('checked_in_at', { ascending: false }),
+      supabase.from('outreach_attendance').select('*').eq('member_id', user!.id).order('arrival', { ascending: false }),
       supabase.from('outreach_events').select('id, title'),
     ])
     if (error) return flash('Load failed: ' + error.message, true)
-    setRows((data as OutreachCheckin[]) || [])
+    setRows((data as OutreachAttendance[]) || [])
     setTitles(Object.fromEntries(((e as OutreachEvent[]) || []).map((x) => [x.id, x.title])))
   }
   useEffect(() => {
@@ -31,7 +31,7 @@ function OutreachHistory() {
   }, [])
 
   const totalH = useMemo(
-    () => hoursFromMinutes(rows.reduce((s, r) => s + (r.minutes_logged || 0), 0)),
+    () => hoursFromMinutes(rows.reduce((s, r) => s + (r.credited_minutes || 0), 0)),
     [rows],
   )
 
@@ -46,8 +46,11 @@ function OutreachHistory() {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-ink-soft">
-            {['Event', 'Checked in', 'Method', 'Hours'].map((h) => (
-              <th key={h} className={`py-2 px-5 font-mono text-[11px] uppercase tracking-[0.06em] border-b border-line ${h === 'Hours' ? 'text-right' : 'text-left'}`}>
+            {['Event', 'Arrival', 'Departure', 'Hours'].map((h) => (
+              <th
+                key={h}
+                className={`py-2 px-5 font-mono text-[11px] uppercase tracking-[0.06em] border-b border-line ${h === 'Hours' ? 'text-right' : 'text-left'}`}
+              >
                 {h}
               </th>
             ))}
@@ -57,16 +60,18 @@ function OutreachHistory() {
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-line">
               <td className="py-2 px-5">{r.event_id ? titles[r.event_id] ?? '-' : '-'}</td>
-              <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(r.checked_in_at)}</td>
-              <td className="py-2 px-5 font-mono text-xs uppercase text-ink-soft">{r.method}</td>
+              <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(r.arrival)}</td>
+              <td className="py-2 px-5 font-mono text-ink-soft">{r.departure ? fmtDateTime(r.departure) : '-'}</td>
               <td className="py-2 px-5 text-right font-mono tabular-nums">
-                {r.minutes_logged != null ? hoursFromMinutes(r.minutes_logged) : '-'}
+                {r.credited_minutes != null ? hoursFromMinutes(r.credited_minutes) : '-'}
               </td>
             </tr>
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={4} className="py-6 text-center text-ink-soft text-sm">No outreach check-ins yet.</td>
+              <td colSpan={4} className="py-6 text-center text-ink-soft text-sm">
+                No outreach attendance yet.
+              </td>
             </tr>
           )}
         </tbody>

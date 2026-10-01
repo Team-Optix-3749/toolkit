@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
@@ -6,7 +6,7 @@ import { useToast } from '~/lib/toast'
 import { isAdmin } from '~/lib/rbac'
 import { fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
-import type { OutreachEvent, OutreachCheckin, ProfileRow } from '~/lib/types'
+import type { OutreachEvent, OutreachAttendance, OutreachLead, ProfileRow } from '~/lib/types'
 import { card, cardHead, cardTitle, btn, btnGhost } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/outreach/events/$id')({
@@ -18,76 +18,68 @@ function EventDetail() {
   const { user, role, profile } = useAuth()
   const { flash, Toast } = useToast()
   const [ev, setEv] = useState<OutreachEvent | null>(null)
-  const [checkins, setCheckins] = useState<OutreachCheckin[]>([])
-  const [planned, setPlanned] = useState<string[]>([])
+  const [attendance, setAttendance] = useState<OutreachAttendance[]>([])
+  const [rsvps, setRsvps] = useState<string[]>([])
+  const [leads, setLeads] = useState<string[]>([])
   const [profiles, setProfiles] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const admin = isAdmin(role)
   const uid = user!.id
 
   async function load() {
-    const [{ data: e, error }, { data: ci }, { data: pa }] = await Promise.all([
+    const [{ data: e, error }, { data: att }, { data: rv }, { data: ld }] = await Promise.all([
       supabase.from('outreach_events').select('*').eq('id', id).maybeSingle(),
-      supabase.from('outreach_checkins').select('*').eq('event_id', id),
-      supabase.from('outreach_planned_attendance').select('user_id').eq('event_id', id),
+      supabase.from('outreach_attendance').select('*').eq('event_id', id),
+      supabase.from('outreach_rsvps').select('member_id').eq('event_id', id),
+      supabase.from('outreach_leads').select('member_id').eq('event_id', id),
     ])
     if (error) return flash(error.message, true)
     setEv(e as OutreachEvent)
-    const list = (ci as OutreachCheckin[]) || []
-    setCheckins(list)
-    setPlanned((pa as { user_id: string }[] || []).map(r => r.user_id))
+    const attList = (att as OutreachAttendance[]) || []
+    setAttendance(attList)
+    const rsvpIds = ((rv as { member_id: string }[]) || []).map((r) => r.member_id)
+    setRsvps(rsvpIds)
+    const leadIds = ((ld as OutreachLead[]) || []).map((r) => r.member_id)
+    setLeads(leadIds)
 
     const userIds = new Set<string>()
-    list.forEach(c => userIds.add(c.user_id))
-    ;(pa as { user_id: string }[] || []).forEach(r => userIds.add(r.user_id))
-    if ((e as OutreachEvent)?.lead_ids) (e as OutreachEvent).lead_ids.forEach(lid => userIds.add(lid))
+    attList.forEach((c) => userIds.add(c.member_id))
+    rsvpIds.forEach((uid) => userIds.add(uid))
+    leadIds.forEach((uid) => userIds.add(uid))
     if (userIds.size > 0) {
       const { data: p } = await supabase.from('profiles').select('id, display_name').in('id', [...userIds])
-      setProfiles(Object.fromEntries((p as ProfileRow[] || []).map(x => [x.id, x.display_name || '—'])))
+      setProfiles(Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '—'])))
     }
   }
 
-  useEffect(() => { load() }, [id])
+  useEffect(() => {
+    load()
+  }, [id])
 
-  const mineIn = checkins.some(c => c.user_id === uid)
-  const myCheckin = checkins.find(c => c.user_id === uid)
-  const iPlanned = planned.includes(uid)
-  const isLead = ev?.lead_ids?.includes(uid) || false
+  const myAttendance = attendance.find((c) => c.member_id === uid)
+  const iRsvped = rsvps.includes(uid)
+  const isLead = leads.includes(uid)
   const canManageAttendance = admin || isLead || profile?.permissions?.includes('manage_outreach_attendance')
 
-  async function togglePlan() {
+  async function toggleRsvp() {
     setBusy(true)
-    if (iPlanned) {
-      await supabase.from('outreach_planned_attendance').delete().eq('event_id', id).eq('user_id', uid)
-    } else {
-      await supabase.from('outreach_planned_attendance').insert({ event_id: id, user_id: uid })
-    }
+    const { error } = await supabase.rpc('outreach_action', {
+      payload: { action: 'rsvp', event_id: id, planned: !iRsvped },
+    })
     setBusy(false)
+    if (error) return flash(error.message, true)
     load()
   }
 
   async function toggleCancel() {
     if (!ev) return
     setBusy(true)
-    const { error } = await supabase.from('outreach_events').update({ cancelled: !ev.cancelled }).eq('id', id)
+    const { error } = await supabase.rpc('outreach_action', {
+      payload: { action: ev.cancelled ? 'restore' : 'cancel', id },
+    })
     setBusy(false)
     if (error) return flash(error.message, true)
     flash(ev.cancelled ? 'Event restored' : 'Event cancelled')
-    load()
-  }
-
-  async function markDeparture(checkinId: string) {
-    setBusy(true)
-    const now = new Date().toISOString()
-    const ci = checkins.find(c => c.id === checkinId)
-    const credited = ci ? Math.round((new Date(now).getTime() - new Date(ci.checked_in_at).getTime()) / 60000) : null
-    const { error } = await supabase.from('outreach_checkins').update({
-      departed_at: now,
-      credited_minutes: credited,
-    }).eq('id', checkinId)
-    setBusy(false)
-    if (error) return flash(error.message, true)
-    flash('Departure recorded')
     load()
   }
 
@@ -101,38 +93,30 @@ function EventDetail() {
             <span className={cardTitle}>{ev.title}</span>
             {ev.cancelled && <Badge label="Cancelled" tone="REJECTED" />}
           </div>
-          <span className="text-[11px] font-mono text-ink-soft">{checkins.length} checked in · {planned.length} planned</span>
+          <span className="text-[11px] font-mono text-ink-soft">
+            {attendance.length} attended · {rsvps.length} RSVPs
+          </span>
         </div>
         <div className="p-5 space-y-3 text-sm">
           <Row k="Starts" v={fmtDateTime(ev.starts_at)} />
           <Row k="Ends" v={ev.ends_at ? fmtDateTime(ev.ends_at) : '—'} />
           <Row k="Location" v={ev.location || '—'} />
-          {ev.lead_ids.length > 0 && (
-            <Row k="Event leads" v={ev.lead_ids.map(lid => profiles[lid] || '—').join(', ')} />
-          )}
+          {leads.length > 0 && <Row k="Event leads" v={leads.map((lid) => profiles[lid] || '—').join(', ')} />}
           {ev.description && <p className="text-ink-soft pt-2 whitespace-pre-wrap">{ev.description}</p>}
 
           <div className="flex flex-wrap gap-2 pt-3">
             {!ev.cancelled && (
-              <button onClick={togglePlan} disabled={busy} className={iPlanned ? btnGhost : btn}>
-                {iPlanned ? 'Remove from plan' : 'I plan to attend'}
+              <button onClick={toggleRsvp} disabled={busy} className={iRsvped ? btnGhost : btn}>
+                {iRsvped ? 'Remove RSVP' : 'I plan to attend'}
               </button>
             )}
-            {!ev.cancelled && !mineIn && (
-              <Link to="/outreach/check-in" className={btn}>Check in</Link>
-            )}
-            {mineIn && !myCheckin?.departed_at && (
-              <button onClick={() => markDeparture(myCheckin!.id)} disabled={busy} className={btnGhost}>
-                Record departure
-              </button>
-            )}
-            {mineIn && myCheckin?.departed_at && (
-              <span className="text-sm text-[#1a7f4b]">
-                Departed · {myCheckin.credited_minutes ?? '—'} min credited
-              </span>
-            )}
-            {mineIn && !myCheckin?.departed_at && (
+            {myAttendance && !myAttendance.departure && (
               <span className="text-sm text-[#1a7f4b]">Checked in</span>
+            )}
+            {myAttendance?.departure && (
+              <span className="text-sm text-[#1a7f4b]">
+                Attended · {myAttendance.credited_minutes ?? '—'} min credited
+              </span>
             )}
           </div>
 
@@ -146,46 +130,39 @@ function EventDetail() {
         </div>
       </section>
 
-      {/* Planned attendance */}
       <section className={card}>
         <div className={cardHead}>
-          <span className={cardTitle}>Planned attendance ({planned.length})</span>
+          <span className={cardTitle}>RSVPs ({rsvps.length})</span>
         </div>
         <div className="divide-y divide-line">
-          {planned.map(uid => (
-            <div key={uid} className="px-5 py-2.5 text-sm">{profiles[uid] || uid.slice(0, 8)}</div>
+          {rsvps.map((mid) => (
+            <div key={mid} className="px-5 py-2.5 text-sm">
+              {profiles[mid] || mid.slice(0, 8)}
+            </div>
           ))}
-          {planned.length === 0 && <div className="px-5 py-6 text-center text-ink-soft text-sm">No one has planned to attend yet.</div>}
+          {rsvps.length === 0 && <div className="px-5 py-6 text-center text-ink-soft text-sm">No RSVPs yet.</div>}
         </div>
       </section>
 
-      {/* Attendance */}
-      {(admin || canManageAttendance) && (
+      {canManageAttendance && (
         <section className={card}>
           <div className={cardHead}>
-            <span className={cardTitle}>Attendance ({checkins.length})</span>
+            <span className={cardTitle}>Attendance ({attendance.length})</span>
           </div>
           <div className="divide-y divide-line">
-            {checkins.map(c => (
+            {attendance.map((c) => (
               <div key={c.id} className="px-5 py-2.5 flex items-center justify-between gap-3 text-sm">
                 <div>
-                  <span className="font-medium">{profiles[c.user_id] || c.user_id.slice(0, 8)}</span>
-                  <span className="text-ink-soft ml-2">Arrived {fmtDateTime(c.checked_in_at)}</span>
-                  {c.departed_at && <span className="text-ink-soft ml-2">· Left {fmtDateTime(c.departed_at)}</span>}
+                  <span className="font-medium">{profiles[c.member_id] || c.member_id.slice(0, 8)}</span>
+                  <span className="text-ink-soft ml-2">Arrived {fmtDateTime(c.arrival)}</span>
+                  {c.departure && <span className="text-ink-soft ml-2">· Left {fmtDateTime(c.departure)}</span>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {c.credited_minutes != null && (
-                    <span className="text-xs font-mono text-ink-soft">{c.credited_minutes} min</span>
-                  )}
-                  {!c.departed_at && canManageAttendance && (
-                    <button onClick={() => markDeparture(c.id)} disabled={busy} className={btnGhost}>
-                      Depart
-                    </button>
-                  )}
+                  {c.credited_minutes != null && <span className="text-xs font-mono text-ink-soft">{c.credited_minutes} min</span>}
                 </div>
               </div>
             ))}
-            {checkins.length === 0 && <div className="px-5 py-6 text-center text-ink-soft text-sm">No check-ins yet.</div>}
+            {attendance.length === 0 && <div className="px-5 py-6 text-center text-ink-soft text-sm">No attendance records.</div>}
           </div>
         </section>
       )}

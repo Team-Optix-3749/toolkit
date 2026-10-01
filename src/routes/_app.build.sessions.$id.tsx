@@ -5,7 +5,7 @@ import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { isAdmin } from '~/lib/rbac'
 import { fmtDateTime, hoursFromMinutes } from '~/lib/format'
-import type { BuildSession, Zone, BuildCheckin, ProfileRow } from '~/lib/types'
+import type { BuildSession, BuildLocation, BuildRecord, ProfileRow } from '~/lib/types'
 import { card, cardHead, cardTitle } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/build/sessions/$id')({
@@ -17,37 +17,35 @@ function SessionDetail() {
   const { role, profile } = useAuth()
   const { flash, Toast } = useToast()
   const [session, setSession] = useState<BuildSession | null>(null)
-  const [zone, setZone] = useState<Zone | null>(null)
-  const [attendees, setAttendees] = useState<(BuildCheckin & { name?: string })[]>([])
+  const [location, setLocation] = useState<BuildLocation | null>(null)
+  const [attendees, setAttendees] = useState<(BuildRecord & { name?: string })[]>([])
   const admin = isAdmin(role)
 
   useEffect(() => {
     ;(async () => {
-      const { data: s, error } = await supabase.from('build_schedule').select('*').eq('id', id).maybeSingle()
+      const { data: s, error } = await supabase.from('build_sessions').select('*').eq('id', id).maybeSingle()
       if (error) return flash(error.message, true)
       setSession(s as BuildSession)
-      if (s?.zone_id) {
-        const { data: z } = await supabase.from('build_zones').select('*').eq('id', s.zone_id).maybeSingle()
-        setZone(z as Zone)
+      if (s?.location_id) {
+        const { data: loc } = await supabase.from('build_locations').select('*').eq('id', s.location_id).maybeSingle()
+        setLocation(loc as BuildLocation)
       }
-      if (admin) {
-        const { data: ci } = await supabase.from('build_checkins').select('*').eq('session_id', id)
-        const list = (ci as BuildCheckin[]) || []
-        const ids = [...new Set(list.map((c) => c.user_id))]
+      if (admin || profile?.permissions?.includes('manage_build_hours')) {
+        const { data: ci } = await supabase.from('build_records').select('*').eq('session_id', id)
+        const list = (ci as BuildRecord[]) || []
+        const ids = [...new Set(list.map((c) => c.member_id))]
         let names: Record<string, string> = {}
         if (ids.length) {
           const { data: p } = await supabase.from('profiles').select('id, display_name').in('id', ids)
           names = Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '-']))
         }
-        setAttendees(list.map((c) => ({ ...c, name: names[c.user_id] })))
+        setAttendees(list.map((c) => ({ ...c, name: names[c.member_id] })))
       }
     })()
   }, [id, admin])
 
   if (!session) {
-    return (
-      <div className="bg-panel border border-line p-8 text-center text-sm text-ink-soft">Loading…</div>
-    )
+    return <div className="bg-panel border border-line p-8 text-center text-sm text-ink-soft">Loading…</div>
   }
 
   return (
@@ -57,21 +55,14 @@ function SessionDetail() {
           <span className={cardTitle}>{session.title}</span>
         </div>
         <div className="p-5 space-y-2 text-sm">
-          <Row k="Starts" v={fmtDateTime(session.starts_at)} />
-          <Row k="Ends" v={session.ends_at ? fmtDateTime(session.ends_at) : '-'} />
-          <Row k="Zone" v={zone ? zone.name : '-'} />
-          {zone?.gps_lat != null && <Row k="Location" v={`${zone.gps_lat.toFixed(4)}, ${zone.gps_lng?.toFixed(4)} (${zone.gps_radius_m}m)`} />}
-          {session.is_recurring && <Row k="Recurring" v="Yes" />}
-          {zone?.qr_token && (admin || profile?.permissions?.includes('manage_build_hours')) && (
-            <div className="pt-3 border-t border-line mt-3">
-              <div className="text-[11px] font-mono uppercase text-ink-soft mb-2">QR Token (for check-in)</div>
-              <code className="text-sm bg-canvas border border-line px-3 py-2 block font-mono select-all break-all">{zone.qr_token}</code>
-            </div>
-          )}
+          <Row k="Opens" v={fmtDateTime(session.opens_at)} />
+          <Row k="Closes" v={session.closes_at ? fmtDateTime(session.closes_at) : '-'} />
+          <Row k="Location" v={location ? location.name : '-'} />
+          {session.cancelled && <Row k="Status" v="Cancelled" />}
         </div>
       </section>
 
-      {admin && (
+      {(admin || profile?.permissions?.includes('manage_build_hours')) && (
         <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>Attendees ({attendees.length})</span>
@@ -79,8 +70,11 @@ function SessionDetail() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-ink-soft">
-                {['Member', 'Checked in', 'Method', 'Hours'].map((h) => (
-                  <th key={h} className={`py-2 px-5 font-mono text-[11px] uppercase tracking-[0.06em] border-b border-line ${h === 'Hours' ? 'text-right' : 'text-left'}`}>
+                {['Member', 'Check-in', 'Method', 'Hours'].map((h) => (
+                  <th
+                    key={h}
+                    className={`py-2 px-5 font-mono text-[11px] uppercase tracking-[0.06em] border-b border-line ${h === 'Hours' ? 'text-right' : 'text-left'}`}
+                  >
                     {h}
                   </th>
                 ))}
@@ -89,17 +83,19 @@ function SessionDetail() {
             <tbody>
               {attendees.map((a) => (
                 <tr key={a.id} className="border-b border-line">
-                  <td className="py-2 px-5">{a.name || a.user_id.slice(0, 8)}</td>
-                  <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(a.checked_in_at)}</td>
-                  <td className="py-2 px-5 font-mono text-xs uppercase text-ink-soft">{a.method}</td>
+                  <td className="py-2 px-5">{a.name || a.member_id.slice(0, 8)}</td>
+                  <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(a.check_in)}</td>
+                  <td className="py-2 px-5 font-mono text-xs uppercase text-ink-soft">{a.checkout_method}</td>
                   <td className="py-2 px-5 text-right font-mono tabular-nums">
-                    {a.minutes_logged != null ? hoursFromMinutes(a.minutes_logged) : '-'}
+                    {a.credited_minutes != null ? hoursFromMinutes(a.credited_minutes) : '-'}
                   </td>
                 </tr>
               ))}
               {attendees.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-ink-soft text-sm">No check-ins.</td>
+                  <td colSpan={4} className="py-6 text-center text-ink-soft text-sm">
+                    No check-ins.
+                  </td>
                 </tr>
               )}
             </tbody>
