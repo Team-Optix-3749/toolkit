@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
@@ -55,16 +56,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const profileLock = useRef(false)
   const ensureProfile = useCallback(async (user: User) => {
-    let { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
-    if (!data) {
-      const meta = user.user_metadata ?? {}
-      const name =
-        meta.display_name || meta.full_name || meta.name || (user.email || 'member').split('@')[0]
-      await supabase.from('profiles').insert({ id: user.id, display_name: name })
-      ;({ data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle())
+    if (profileLock.current) return
+    profileLock.current = true
+    try {
+      let { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+      if (!data) {
+        const meta = user.user_metadata ?? {}
+        const name =
+          meta.display_name || meta.full_name || meta.name || (user.email || 'member').split('@')[0]
+        await supabase.from('profiles').insert({ id: user.id, display_name: name })
+        ;({ data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle())
+      }
+      setProfile((data as Profile) ?? null)
+    } finally {
+      profileLock.current = false
     }
-    setProfile((data as Profile) ?? null)
   }, [])
 
   const refresh = useCallback(async () => {
@@ -76,10 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true
+    let initialDone = false
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return
       setSession(data.session)
       if (data.session?.user) await ensureProfile(data.session.user)
+      initialDone = true
       if (active) setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
@@ -87,10 +97,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s)
       if (s?.user) await ensureProfile(s.user)
       else setProfile(null)
-      if (active) setLoading(false)
+      if (active && !initialDone) setLoading(false)
+      initialDone = true
     })
+    const timeout = setTimeout(() => {
+      if (active) setLoading(false)
+    }, 5000)
     return () => {
       active = false
+      clearTimeout(timeout)
       sub.subscription.unsubscribe()
     }
   }, [ensureProfile])

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optix Toolkit — Liquid Glass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --void: #06080b;
+  --surface: #10131a;
+  --raised: #1a1e28;
+  --ink: #e8eaef;
+  --ink-soft: #8b90a0;
+  --line: #252a36;
+  --accent: #b4f54e;
+  --cyan: #4dd8e0;
+  --danger: #f55e5e;
+
+  --glass-bg: rgba(16, 19, 26, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.04);
+  --glass-blur: 24px;
+  --glass-blur-heavy: 40px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: var(--void);
+  color: var(--ink);
+  overflow-x: hidden;
+  min-height: 100dvh;
+}
+
+h1, h2, h3, h4 { font-family: 'Space Grotesk', system-ui, sans-serif; }
+
+/* ─── Animated background ─── */
+.bg-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.35;
+  animation: float 20s ease-in-out infinite;
+}
+
+.bg-orb--accent {
+  width: clamp(300px, 40vw, 600px);
+  height: clamp(300px, 40vw, 600px);
+  background: var(--accent);
+  top: -10%;
+  right: -5%;
+  animation-delay: 0s;
+}
+
+.bg-orb--cyan {
+  width: clamp(250px, 35vw, 500px);
+  height: clamp(250px, 35vw, 500px);
+  background: var(--cyan);
+  bottom: 0%;
+  left: -10%;
+  animation-delay: -7s;
+}
+
+.bg-orb--purple {
+  width: clamp(200px, 30vw, 400px);
+  height: clamp(200px, 30vw, 400px);
+  background: #7c4dff;
+  top: 40%;
+  left: 50%;
+  animation-delay: -14s;
+  opacity: 0.2;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -40px) scale(1.05); }
+  50% { transform: translate(-20px, 20px) scale(0.95); }
+  75% { transform: translate(15px, 35px) scale(1.02); }
+}
+
+/* ─── Grid overlay ─── */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* ─── Glass panel ─── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.3),
+    inset 0 1px 0 var(--glass-highlight);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.glass:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 16px 48px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.glass--heavy {
+  backdrop-filter: blur(var(--glass-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+}
+
+.glass--nav {
+  border-radius: 16px;
+}
+
+/* ─── Layout ─── */
+.page { position: relative; z-index: 2; }
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 40px);
+}
+
+/* ─── Nav ─── */
+.nav {
+  position: sticky;
+  top: 16px;
+  z-index: 50;
+  margin: 16px auto 0;
+  max-width: 1200px;
+  padding: 0 clamp(16px, 4vw, 40px);
+}
+
+.nav__inner {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  gap: 12px;
+}
+
+.nav__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.nav__badge {
+  width: 36px;
+  height: 36px;
+  background: var(--accent);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--void);
+}
+
+.nav__title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.nav__sep {
+  color: var(--ink-soft);
+  opacity: 0.3;
+  font-size: 20px;
+}
+
+.nav__sub {
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.nav__links {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav__link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.nav__link:hover {
+  color: var(--ink);
+  background: rgba(255,255,255,0.05);
+}
+
+.nav__cta {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--void);
+  background: var(--accent);
+  text-decoration: none;
+  padding: 8px 20px;
+  border-radius: 10px;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.nav__cta:hover {
+  background: #c8ff6e;
+  transform: translateY(-1px);
+}
+
+/* ─── Hero ─── */
+.hero {
+  padding: clamp(80px, 12vh, 160px) 0 clamp(60px, 8vh, 100px);
+  text-align: center;
+}
+
+.hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+  padding: 6px 16px;
+  border-radius: 100px;
+  background: rgba(180, 245, 78, 0.08);
+  border: 1px solid rgba(180, 245, 78, 0.15);
+}
+
+.hero__eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.hero__heading {
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero__heading-highlight {
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero__sub {
+  font-size: clamp(16px, 2vw, 20px);
+  color: var(--ink-soft);
+  max-width: 560px;
+  margin: 20px auto 0;
+  line-height: 1.6;
+}
+
+.hero__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--void);
+  background: var(--accent);
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: #c8ff6e;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(180, 245, 78, 0.25);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-1px);
+}
+
+/* ─── Features grid ─── */
+.features {
+  padding: clamp(40px, 6vh, 80px) 0;
+}
+
+.features__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.feature-card {
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.feature-card__icon--build {
+  background: rgba(180, 245, 78, 0.12);
+  color: var(--accent);
+}
+
+.feature-card__icon--outreach {
+  background: rgba(77, 216, 224, 0.12);
+  color: var(--cyan);
+}
+
+.feature-card__icon--opi {
+  background: rgba(124, 77, 255, 0.12);
+  color: #a78bfa;
+}
+
+.feature-card__title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.feature-card__desc {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+/* ─── Stats bar ─── */
+.stats {
+  padding: clamp(40px, 6vh, 80px) 0;
+}
+
+.stats__bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px;
+  padding: 8px;
+}
+
+.stat {
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.stat__value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--ink), var(--ink-soft));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat__value--accent {
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat__label {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+
+/* ─── CTA section ─── */
+.cta-section {
+  padding: clamp(60px, 10vh, 120px) 0;
+}
+
+.cta-card {
+  padding: clamp(40px, 6vw, 80px);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 50%, rgba(180, 245, 78, 0.06) 0%, transparent 50%),
+              radial-gradient(circle at 70% 50%, rgba(77, 216, 224, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.cta-card__heading {
+  font-size: clamp(24px, 3.5vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  position: relative;
+}
+
+.cta-card__sub {
+  font-size: 16px;
+  color: var(--ink-soft);
+  margin: 16px auto 0;
+  max-width: 440px;
+  line-height: 1.6;
+  position: relative;
+}
+
+.cta-card__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+/* ─── Footer ─── */
+.footer {
+  padding: 40px 0 clamp(40px, 6vh, 60px);
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.footer a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: var(--ink);
+}
+
+/* ─── Mobile nav ─── */
+.nav__mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 8px;
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .nav__links { display: none; }
+  .nav__mobile-toggle { display: block; }
+  .nav__links--open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 16px;
+    right: 16px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(16, 19, 26, 0.85);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    gap: 4px;
+  }
+  .nav__links--open .nav__link,
+  .nav__links--open .nav__cta {
+    width: 100%;
+    text-align: center;
+    padding: 12px;
+  }
+  .nav__sep, .nav__sub { display: none; }
+  .stat { padding: 20px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-scene" aria-hidden="true">
+  <div class="bg-orb bg-orb--accent"></div>
+  <div class="bg-orb bg-orb--cyan"></div>
+  <div class="bg-orb bg-orb--purple"></div>
+</div>
+<div class="bg-grid" aria-hidden="true"></div>
+
+<div class="page">
+
+  <!-- Nav -->
+  <nav class="nav" aria-label="Main">
+    <div class="nav__inner glass glass--nav glass--heavy">
+      <a href="/" class="nav__logo">
+        <div class="nav__badge">O</div>
+        <span class="nav__title">Optix</span>
+      </a>
+      <span class="nav__sep">/</span>
+      <span class="nav__sub">Team 3749</span>
+
+      <button class="nav__mobile-toggle" onclick="document.querySelector('.nav__links').classList.toggle('nav__links--open')" aria-label="Toggle menu">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+
+      <div class="nav__links">
+        <a href="#features" class="nav__link">Features</a>
+        <a href="#stats" class="nav__link">Stats</a>
+        <a href="/login" class="nav__link">Log in</a>
+        <a href="/signup" class="nav__cta">Sign up</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero container">
+    <div class="hero__eyebrow">
+      <span class="hero__eyebrow-dot"></span>
+      FRC Team 3749
+    </div>
+    <h1 class="hero__heading">
+      Your team's<br>
+      <span class="hero__heading-highlight">command center</span>
+    </h1>
+    <p class="hero__sub">
+      Track build hours, coordinate outreach, manage initiatives, and keep ~120 members in sync &mdash; all in one place.
+    </p>
+    <div class="hero__actions">
+      <a href="/signup" class="btn-primary">
+        Get started
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </a>
+      <a href="/login" class="btn-secondary">Log in</a>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features container" id="features">
+    <div class="features__grid">
+      <div class="glass feature-card">
+        <div class="feature-card__icon feature-card__icon--build">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        </div>
+        <h3 class="feature-card__title">Build hours</h3>
+        <p class="feature-card__desc">
+          GPS-verified check-ins at Del Norte HS with rotating QR codes. 3-hour auto-timeout keeps records clean.
+        </p>
+      </div>
+
+      <div class="glass feature-card">
+        <div class="feature-card__icon feature-card__icon--outreach">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <h3 class="feature-card__title">Outreach events</h3>
+        <p class="feature-card__desc">
+          Plan events, track RSVPs, log attendance with location verification. Credited minutes calculated automatically.
+        </p>
+      </div>
+
+      <div class="glass feature-card">
+        <div class="feature-card__icon feature-card__icon--opi">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+        </div>
+        <h3 class="feature-card__title">OPI initiatives</h3>
+        <p class="feature-card__desc">
+          Submit proposals, get feedback, track approvals. Convert approved initiatives directly into outreach events.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats container" id="stats">
+    <div class="glass stats__bar">
+      <div class="stat">
+        <div class="stat__value stat__value--accent">120+</div>
+        <div class="stat__label">Team members</div>
+      </div>
+      <div class="stat">
+        <div class="stat__value">6</div>
+        <div class="stat__label">Departments</div>
+      </div>
+      <div class="stat">
+        <div class="stat__value stat__value--accent">1000+</div>
+        <div class="stat__label">Build hours</div>
+      </div>
+      <div class="stat">
+        <div class="stat__value">50+</div>
+        <div class="stat__label">Outreach events</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section container">
+    <div class="glass cta-card">
+      <h2 class="cta-card__heading">Ready to build something?</h2>
+      <p class="cta-card__sub">
+        Join Team Optix 3749 and start tracking your contributions today.
+      </p>
+      <div class="cta-card__actions">
+        <a href="/signup" class="btn-primary">
+          Create account
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        <a href="/login" class="btn-secondary">Already a member?</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer container">
+    <p>Team Optix 3749 &middot; Del Norte High School &middot; San Diego, CA</p>
+  </footer>
+
+</div>
+
+<script>
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const el = document.querySelector(a.getAttribute('href'));
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // close mobile menu
+    document.querySelector('.nav__links')?.classList.remove('nav__links--open');
+  });
+});
+</script>
+</body>
+</html>

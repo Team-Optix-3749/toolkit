@@ -5,7 +5,7 @@ import { useToast } from '~/lib/toast'
 import { fmtDate } from '~/lib/format'
 import { Badge } from '~/components/Badge'
 import type { Opi, ProfileRow } from '~/lib/types'
-import { card, cardHead, cardTitle } from '~/lib/ui'
+import { card, cardHead, cardTitle, btnGhost } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/admin/opi/')({
   component: OpiQueue,
@@ -34,6 +34,16 @@ function OpiQueue() {
     load()
   }, [])
 
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+
+  async function deleteOpi(id: string) {
+    const { error } = await supabase.from('opis').delete().eq('id', id)
+    setConfirmId(null)
+    if (error) return flash('Delete failed: ' + error.message, true)
+    flash('OPI deleted')
+    load()
+  }
+
   const shown = useMemo(() => (filter === 'ALL' ? rows : rows.filter((r) => r.status === filter)), [rows, filter])
 
   return (
@@ -56,15 +66,46 @@ function OpiQueue() {
       </div>
       <div className="divide-y divide-line">
         {shown.map((r) => (
-          <Link key={r.id} to="/admin/opi/$id/review" params={{ id: r.id }} className="px-5 py-3 flex items-center gap-3 hover:bg-canvas">
-            <div className="flex-1 min-w-0">
+          <div key={r.id} className="px-5 py-3 flex items-center gap-3 group">
+            <Link to="/admin/opi/$id/review" params={{ id: r.id }} className="flex-1 min-w-0 hover:opacity-80">
               <div className="font-medium">{r.title}</div>
               <div className="text-sm text-ink-soft font-mono">
                 {names[r.submitter_id] || 'member'} · {fmtDate(r.created_at ?? '')}
               </div>
-            </div>
+            </Link>
             <Badge label={r.status.replace('_', ' ')} tone={r.status} />
-          </Link>
+            {confirmId === r.id ? (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-[#c0392b]">Delete?</span>
+                <button
+                  onClick={() => deleteOpi(r.id)}
+                  className="w-6 h-6 flex items-center justify-center text-xs border border-[#c0392b] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f5d5d1]"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setConfirmId(null)}
+                  className="w-6 h-6 flex items-center justify-center text-xs border border-line text-ink-soft hover:bg-canvas"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmId(r.id)}
+                className="w-7 h-7 flex items-center justify-center text-ink-soft hover:text-[#c0392b] hover:bg-[#fbeeec] border border-transparent hover:border-[#e3a9a1] opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Delete"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         ))}
         {shown.length === 0 && <div className="px-5 py-8 text-center text-ink-soft text-sm">Nothing here.</div>}
       </div>

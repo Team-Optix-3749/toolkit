@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
@@ -32,11 +32,13 @@ function docPreview(url: string): string | null {
 function OpiReview() {
   const { id } = Route.useParams()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const { flash, Toast } = useToast()
   const [opi, setOpi] = useState<Opi | null>(null)
   const [feedback, setFeedback] = useState('')
   const [busy, setBusy] = useState(false)
   const [showConvert, setShowConvert] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [convertForm, setConvertForm] = useState({ title: '', location: '', starts_at: '', ends_at: '' })
 
   async function load() {
@@ -161,6 +163,36 @@ function OpiReview() {
           )}
 
           {opi.event_id && <div className="text-sm text-[#1a7f4b]">Linked to outreach event</div>}
+
+          <div className="border-t border-line pt-4">
+            {confirmDelete ? (
+              <div className="border border-[#c0392b]/30 bg-[#c0392b]/5 p-4 space-y-3">
+                <p className="text-sm font-medium">Permanently delete this OPI?</p>
+                <p className="text-sm text-ink-soft">This cannot be undone.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      setBusy(true)
+                      const { error } = await supabase.from('opis').delete().eq('id', id)
+                      setBusy(false)
+                      if (error) return flash('Delete failed: ' + error.message, true)
+                      flash('OPI deleted')
+                      navigate({ to: '/admin/opi' })
+                    }}
+                    disabled={busy}
+                    className="h-9 px-4 text-sm font-medium border border-[#c0392b] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f5d5d1]"
+                  >
+                    {busy ? '…' : 'Yes, delete'}
+                  </button>
+                  <button onClick={() => setConfirmDelete(false)} className={btnGhost}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} className="text-xs text-ink-soft hover:text-[#c0392b]">
+                Delete this OPI
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
