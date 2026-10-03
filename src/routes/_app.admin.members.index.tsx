@@ -142,7 +142,7 @@ function MemberRow({ m, assignable, setRole, confirmId, setConfirmId, onRemove, 
           {m.display_name || '-'}
         </Link>
         {inactive && (
-          <Badge label={m.account_status} tone="REJECTED" />
+          <span className="ml-2 inline-block align-middle"><Badge label={m.account_status} tone="REJECTED" /></span>
         )}
       </td>
       <td className="py-2 px-5 text-ink-soft">{m.grade || '-'}</td>

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
+import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
@@ -34,6 +35,7 @@ const ZERO: Stats = {
 }
 
 function AdminDashboard() {
+  const { profile } = useAuth()
   const { flash, Toast } = useToast()
   const [s, setS] = useState<Stats>(ZERO)
   const [loading, setLoading] = useState(true)
@@ -117,13 +119,14 @@ function AdminDashboard() {
   }
 
   const needsAttention = s.pending + s.openOpis + s.openTasks + s.pendingPurchases + s.pendingIndividual
+  const firstName = profile?.display_name?.split(' ')[0] || 'Admin'
 
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Admin overview</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Hey, {firstName}</h1>
           <p className="text-sm text-ink-soft mt-0.5">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
@@ -134,7 +137,7 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-line border border-line">
         <Stat label="Active members" value={s.members} loading={loading} />
         <Stat label="Checked in now" value={s.activeCheckins} loading={loading} accent />
@@ -285,9 +288,9 @@ function AdminDashboard() {
         </section>
       </div>
 
-      {/* Quick links footer */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-line border border-line">
-        <QuickLink to="/admin/build/qr" label="QR code display" />
+      {/* Quick links */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px bg-line border border-line">
+        <QuickLink to="/admin/build/qr" label="QR code" />
         <QuickLink to="/admin/build/zones" label="Locations" />
         <QuickLink to="/admin/build/attendance" label="Live attendance" />
         <QuickLink to="/admin/reports/hours" label="Hours report" />
