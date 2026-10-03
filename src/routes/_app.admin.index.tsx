@@ -5,6 +5,7 @@ import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
+import { isOwner } from '~/lib/rbac'
 import type { Opi, OutreachEvent, BuildSession, ProfileRow } from '~/lib/types'
 import { card, cardHead, cardTitle, btnGhost } from '~/lib/ui'
 
@@ -35,7 +36,8 @@ const ZERO: Stats = {
 }
 
 function AdminDashboard() {
-  const { profile } = useAuth()
+  const { profile, role } = useAuth()
+  const owner = isOwner(role)
   const { flash, Toast } = useToast()
   const [s, setS] = useState<Stats>(ZERO)
   const [loading, setLoading] = useState(true)
@@ -138,16 +140,35 @@ function AdminDashboard() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-line border border-line">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat label="Active members" value={s.members} loading={loading} />
         <Stat label="Checked in now" value={s.activeCheckins} loading={loading} accent />
         <Stat label="Upcoming events" value={s.upcomingOutreach} loading={loading} />
         <Stat label="Needs attention" value={needsAttention} loading={loading} warn={needsAttention > 0} />
       </div>
 
+      {/* Owner shortcut */}
+      {owner && (
+        <Link
+          to="/owner"
+          className="flex items-center justify-between gap-3 bg-panel backdrop-blur-xl border border-accent/20 rounded-2xl px-5 py-3.5 hover:bg-accent/5 hover:border-accent/30 transition-all duration-150 shadow-[0_2px_16px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(180,245,78,0.08)]"
+        >
+          <div className="flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-accent" />
+            <div>
+              <div className="text-sm font-semibold text-accent">Owner console</div>
+              <div className="text-xs text-ink-soft mt-0.5">Full read/write access to every record · hard-delete rows</div>
+            </div>
+          </div>
+          <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      )}
+
       {/* Action queue */}
       {!loading && needsAttention > 0 && (
-        <section className="border border-[#e67e22]/30 bg-[#e67e22]/5">
+        <section className="border border-[#e67e22]/30 bg-[#e67e22]/5 rounded-2xl overflow-hidden">
           <div className="px-5 py-2.5 border-b border-[#e67e22]/20">
             <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#e67e22]">
               Action required
@@ -171,9 +192,9 @@ function AdminDashboard() {
             <span className={cardTitle}>Open OPIs</span>
             <Link to="/admin/opi" className="text-[11px] font-mono uppercase text-accent hover:underline">All OPIs</Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-white/4">
             {recentOpis.map((o) => (
-              <div key={o.id} className="px-5 py-3 flex items-center justify-between gap-3 group">
+              <div key={o.id} className="px-5 py-3 flex items-center justify-between gap-3 group transition-colors duration-150 hover:bg-white/[0.03]">
                 <Link to="/admin/opi/$id/review" params={{ id: o.id }} className="min-w-0 flex-1">
                   <div className="text-sm truncate group-hover:text-ink">{o.title}</div>
                   <div className="text-xs text-ink-soft mt-0.5">{fmtDateTime(o.created_at)}</div>
@@ -202,9 +223,9 @@ function AdminDashboard() {
             <span className={cardTitle}>Upcoming outreach</span>
             <Link to="/admin/outreach/events" className="text-[11px] font-mono uppercase text-accent hover:underline">All events</Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-white/4">
             {upcomingEvents.map((ev) => (
-              <div key={ev.id} className="px-5 py-3 flex items-center justify-between gap-3 group">
+              <div key={ev.id} className="px-5 py-3 flex items-center justify-between gap-3 group transition-colors duration-150 hover:bg-white/[0.03]">
                 <Link to="/outreach/events/$id" params={{ id: ev.id }} className="min-w-0 flex-1">
                   <div className="text-sm truncate group-hover:text-ink">{ev.title}</div>
                   {ev.location && <div className="text-xs text-ink-soft mt-0.5">{ev.location}</div>}
@@ -233,9 +254,9 @@ function AdminDashboard() {
             <span className={cardTitle}>Upcoming sessions</span>
             <Link to="/admin/build/schedule" className="text-[11px] font-mono uppercase text-accent hover:underline">Schedule</Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-white/4">
             {upcomingSessions.map((sess) => (
-              <div key={sess.id} className="px-5 py-3 flex items-center justify-between gap-3 group">
+              <div key={sess.id} className="px-5 py-3 flex items-center justify-between gap-3 group transition-colors duration-150 hover:bg-white/[0.03]">
                 <div className="min-w-0 flex-1">
                   <div className="text-sm truncate">{sess.title}</div>
                 </div>
@@ -263,14 +284,14 @@ function AdminDashboard() {
             <span className={cardTitle}>Recent members</span>
             <Link to="/admin/members" className="text-[11px] font-mono uppercase text-accent hover:underline">All members</Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-white/4">
             {recentMembers.map((m) => (
-              <div key={m.id} className="px-5 py-3 flex items-center justify-between gap-3 group">
+              <div key={m.id} className="px-5 py-3 flex items-center justify-between gap-3 group transition-colors duration-150 hover:bg-white/[0.03]">
                 <Link to="/admin/members/$id" params={{ id: m.id }} className="text-sm truncate group-hover:text-ink flex-1 min-w-0">
                   {m.display_name || m.id.slice(0, 8)}
                 </Link>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] font-mono uppercase px-1.5 py-0.5 border border-line text-ink-soft">{m.role}</span>
+                  <span className="text-[11px] font-mono uppercase px-2 py-0.5 border border-white/10 rounded-md text-ink-soft">{m.role}</span>
                   {confirmId === `mem-${m.id}` ? (
                     <ConfirmInline
                       onConfirm={() => deactivateMember(m.id)}
@@ -289,7 +310,7 @@ function AdminDashboard() {
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px bg-line border border-line">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <QuickLink to="/admin/build/qr" label="QR code" />
         <QuickLink to="/admin/build/zones" label="Locations" />
         <QuickLink to="/admin/build/attendance" label="Live attendance" />
@@ -310,7 +331,7 @@ function RemoveBtn({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={(e) => { e.preventDefault(); onClick() }}
-      className="w-7 h-7 flex items-center justify-center text-ink-soft hover:text-[#c0392b] hover:bg-[#fbeeec] border border-transparent hover:border-[#e3a9a1] opacity-0 group-hover:opacity-100 transition-opacity"
+      className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-soft hover:text-[#c0392b] hover:bg-[#c0392b]/10 border border-transparent hover:border-[#c0392b]/20 opacity-0 group-hover:opacity-100 transition-all"
       title="Remove"
     >
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -326,7 +347,7 @@ function ConfirmInline({ onConfirm, onCancel, label }: { onConfirm: () => void; 
       <span className="text-xs text-[#c0392b]">{label}</span>
       <button
         onClick={(e) => { e.preventDefault(); onConfirm() }}
-        className="w-6 h-6 flex items-center justify-center text-xs border border-[#c0392b] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f5d5d1]"
+        className="w-6 h-6 rounded-md flex items-center justify-center text-xs border border-[#c0392b]/30 text-[#c0392b] bg-[#c0392b]/10 hover:bg-[#c0392b]/20 transition-all"
       >
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -334,7 +355,7 @@ function ConfirmInline({ onConfirm, onCancel, label }: { onConfirm: () => void; 
       </button>
       <button
         onClick={(e) => { e.preventDefault(); onCancel() }}
-        className="w-6 h-6 flex items-center justify-center text-xs border border-line text-ink-soft hover:bg-canvas"
+        className="w-6 h-6 rounded-md flex items-center justify-center text-xs border border-white/10 text-ink-soft hover:bg-white/10 transition-all"
       >
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -348,10 +369,14 @@ function Stat({ label, value, loading, accent, warn }: {
   label: string; value: number; loading: boolean; accent?: boolean; warn?: boolean
 }) {
   return (
-    <div className="bg-panel px-4 py-4">
-      <div className={`font-mono text-2xl tabular-nums ${warn ? 'text-[#e67e22]' : accent ? 'text-accent' : ''}`}>
-        {loading ? '—' : value}
-      </div>
+    <div className="bg-panel backdrop-blur-xl border border-white/8 rounded-2xl px-4 py-4">
+      {loading ? (
+        <div className="skeleton h-7 w-10 mb-1" />
+      ) : (
+        <div className={`font-mono text-2xl tabular-nums ${warn ? 'text-[#e67e22]' : accent ? 'text-accent' : ''}`}>
+          {value}
+        </div>
+      )}
       <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft mt-1">{label}</div>
     </div>
   )
@@ -359,9 +384,9 @@ function Stat({ label, value, loading, accent, warn }: {
 
 function QueueRow({ to, label, count }: { to: string; label: string; count: number }) {
   return (
-    <Link to={to} className="flex items-center justify-between px-5 py-3 hover:bg-[#e67e22]/10 group">
+    <Link to={to} className="flex items-center justify-between px-5 py-3 hover:bg-[#e67e22]/10 transition-colors duration-150 group">
       <span className="text-sm">{label}</span>
-      <span className="text-xs font-mono font-medium px-2 py-0.5 bg-[#e67e22]/15 text-[#e67e22] border border-[#e67e22]/30">
+      <span className="text-xs font-mono font-medium px-2 py-0.5 bg-[#e67e22]/15 text-[#e67e22] border border-[#e67e22]/30 rounded-md">
         {count}
       </span>
     </Link>
@@ -370,7 +395,7 @@ function QueueRow({ to, label, count }: { to: string; label: string; count: numb
 
 function QuickLink({ to, label }: { to: string; label: string }) {
   return (
-    <Link to={to} className="bg-panel px-4 py-3 text-sm text-ink-soft hover:text-ink hover:bg-canvas">
+    <Link to={to} className="bg-panel backdrop-blur-xl border border-white/8 rounded-xl px-4 py-3 text-sm text-ink-soft hover:text-ink hover:bg-white/10 hover:border-white/12 active:scale-[0.98] transition-all duration-150">
       {label}
     </Link>
   )

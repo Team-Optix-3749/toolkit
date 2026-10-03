@@ -23,3 +23,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   OFFICER: 'Officer',
   OWNER: 'Owner',
 }
+
+/** The role to show to other members. Falls back to real role when unset. */
+export const publicRole = (p: { role: string; displayed_role?: string | null } | null | undefined): string =>
+  p?.displayed_role ?? p?.role ?? 'PENDING'

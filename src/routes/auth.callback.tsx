@@ -10,14 +10,14 @@ export const Route = createFileRoute('/auth/callback')({
 // OAuth providers redirect here. supabase-js (detectSessionInUrl) consumes the
 // hash/code automatically; once a session exists we route by role.
 function CallbackPage() {
-  const { loading, user, role } = useAuth()
+  const { loading, user, role, profile } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
     if (loading) return
     if (!user) navigate({ to: '/login' })
-    else navigate({ to: isApproved(role) ? '/dashboard' : '/pending-approval' })
-  }, [loading, user, role, navigate])
+    else if (profile) navigate({ to: isApproved(role) ? '/dashboard' : '/pending-approval' })
+  }, [loading, user, role, profile, navigate])
 
   return (
     <div className="min-h-dvh grid place-items-center bg-canvas text-ink-soft font-mono text-sm">

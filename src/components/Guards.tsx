@@ -16,19 +16,21 @@ function Loading() {
 export function RequireApproved({ children }: { children: ReactNode }) {
   const { loading, user, role, profile } = useAuth()
   const navigate = useNavigate()
+  const profileReady = !loading && user && profile
   useEffect(() => {
     if (loading) return
     if (!user) return void navigate({ to: '/login' })
-    const status = profile?.account_status
+    if (!profile) return
+    const status = profile.account_status
     if (status === 'deactivated' || status === 'rejected') {
       return void navigate({ to: '/account-blocked' })
     }
     if (!isApproved(role)) navigate({ to: '/pending-approval' })
   }, [loading, user, role, profile, navigate])
 
-  if (loading) return <Loading />
-  if (!user || !isApproved(role)) return <Loading />
-  if (profile?.account_status !== 'active') return <Loading />
+  if (!profileReady) return <Loading />
+  if (!isApproved(role)) return <Loading />
+  if (profile.account_status !== 'active') return <Loading />
   return <>{children}</>
 }
 

@@ -58,10 +58,10 @@ function PurchaseReview() {
           </div>
           {p.status === 'PENDING' && (
             <div className="flex gap-2 pt-3">
-              <button onClick={() => decide('APPROVED')} className="h-9 px-4 text-sm font-medium bg-brand text-white hover:bg-black">
+              <button onClick={() => decide('APPROVED')} className="h-9 px-4 text-sm font-medium bg-accent text-[#06080b] rounded-lg hover:brightness-110 inline-flex items-center justify-center transition-all">
                 Approve
               </button>
-              <button onClick={() => decide('REJECTED')} className="h-9 px-4 text-sm font-medium border border-[#e3a9a1] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f7e2de]">
+              <button onClick={() => decide('REJECTED')} className="h-9 px-4 text-sm font-medium border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10 rounded-lg hover:bg-[#c0392b]/20 inline-flex items-center justify-center transition-all">
                 Reject
               </button>
             </div>

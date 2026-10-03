@@ -5,7 +5,7 @@ export function OpiTimeline({ status }: { status: string }) {
   if (status === 'REJECTED') {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-mono uppercase tracking-wide px-2 py-1 border border-[#e3a9a1] text-[#c0392b] bg-[#fbeeec]">
+        <span className="text-[11px] font-mono uppercase tracking-wide px-2 py-1 rounded-md border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10">
           Rejected
         </span>
       </div>
@@ -22,8 +22,8 @@ export function OpiTimeline({ status }: { status: string }) {
         {REVIEW_FLOW.map((s, i) => (
           <div key={s} className="flex items-center gap-1">
             <span
-              className={`text-[11px] font-mono uppercase tracking-wide px-2 py-1 border ${
-                i <= reviewIdx ? 'border-accent text-accent bg-accent-soft' : 'border-line text-ink-soft bg-panel'
+              className={`text-[11px] font-mono uppercase tracking-wide px-2 py-1 rounded-md border ${
+                i <= reviewIdx ? 'border-accent/30 text-accent bg-accent/10' : 'border-white/10 text-ink-soft bg-white/5'
               }`}
             >
               {s.replace(/_/g, ' ')}
@@ -40,8 +40,8 @@ export function OpiTimeline({ status }: { status: string }) {
       {FLOW.map((s, i) => (
         <div key={s} className="flex items-center gap-1">
           <span
-            className={`text-[11px] font-mono uppercase tracking-wide px-2 py-1 border ${
-              i <= idx ? 'border-accent text-accent bg-accent-soft' : 'border-line text-ink-soft bg-panel'
+            className={`text-[11px] font-mono uppercase tracking-wide px-2 py-1 rounded-md border ${
+              i <= idx ? 'border-accent/30 text-accent bg-accent/10' : 'border-white/10 text-ink-soft bg-white/5'
             }`}
           >
             {s.replace(/_/g, ' ')}

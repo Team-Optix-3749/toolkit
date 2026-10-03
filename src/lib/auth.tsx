@@ -13,6 +13,7 @@ import { supabase, setRemember } from './supabase'
 export type Profile = {
   id: string
   role: string
+  displayed_role: string | null
   display_name: string | null
   avatar_url: string | null
   grade: string | null

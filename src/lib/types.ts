@@ -144,6 +144,7 @@ export type ProfileRow = {
   display_name: string | null
   grade: string | null
   role: string
+  displayed_role: string | null
   special_perms: string[] | null
   permissions: string[]
   account_status: 'active' | 'deactivated' | 'rejected'

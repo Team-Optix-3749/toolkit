@@ -63,9 +63,9 @@ function Templates() {
             New
           </button>
         </div>
-        <div className="divide-y divide-line">
+        <div className="divide-y divide-white/4">
           {rows.map((t) => (
-            <button key={t.id} onClick={() => setSel(t)} className="w-full text-left px-5 py-3 hover:bg-canvas">
+            <button key={t.id} onClick={() => setSel(t)} className="w-full text-left px-5 py-3 hover:bg-white/[0.03] transition-colors duration-150">
               <div className="font-medium">{t.name}</div>
               <div className="text-sm text-ink-soft truncate">{t.subject}</div>
             </button>
@@ -100,11 +100,11 @@ function Templates() {
                   Save
                 </button>
                 {sel.id && (
-                  <button onClick={() => del(sel.id)} className="h-10 px-4 text-sm border border-[#e3a9a1] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f7e2de]">
+                  <button onClick={() => del(sel.id)} className="h-10 px-4 text-sm border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10 rounded-lg hover:bg-[#c0392b]/20 inline-flex items-center justify-center transition-all">
                     Delete
                   </button>
                 )}
-                <button onClick={() => setSel(null)} className="h-10 px-4 text-sm text-ink-soft hover:text-ink">
+                <button onClick={() => setSel(null)} className="h-10 px-4 text-sm text-ink-soft hover:text-ink rounded-lg inline-flex items-center justify-center transition-all">
                   Cancel
                 </button>
               </div>

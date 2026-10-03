@@ -29,10 +29,10 @@ function PendingPage() {
         </p>
         <p className="text-sm text-ink-soft">Signed in as {user?.email}.</p>
         <div className="flex gap-3">
-          <button onClick={() => refresh()} className="h-9 px-4 text-sm border border-line bg-panel hover:bg-canvas">
+          <button onClick={() => refresh()} className="h-9 px-4 text-sm font-medium border border-white/10 bg-white/5 rounded-lg hover:bg-white/10 inline-flex items-center justify-center transition-all">
             Check again
           </button>
-          <button onClick={() => signOut()} className="h-9 px-4 text-sm text-ink-soft hover:text-ink">
+          <button onClick={() => signOut()} className="h-9 px-4 text-sm text-ink-soft hover:text-ink rounded-lg inline-flex items-center justify-center transition-all">
             Sign out
           </button>
         </div>

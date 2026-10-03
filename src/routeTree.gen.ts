@@ -21,11 +21,13 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
+import { Route as AppOwnerRouteImport } from './routes/_app.owner'
 import { Route as AppHoursRouteImport } from './routes/_app.hours'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as AppTasksIndexRouteImport } from './routes/_app.tasks.index'
 import { Route as AppPurchasesIndexRouteImport } from './routes/_app.purchases.index'
+import { Route as AppOwnerIndexRouteImport } from './routes/_app.owner.index'
 import { Route as AppOutreachIndexRouteImport } from './routes/_app.outreach.index'
 import { Route as AppOpiIndexRouteImport } from './routes/_app.opi.index'
 import { Route as AppNotificationsIndexRouteImport } from './routes/_app.notifications.index'
@@ -35,6 +37,11 @@ import { Route as AppTasksNewRouteImport } from './routes/_app.tasks.new'
 import { Route as AppTasksIdRouteImport } from './routes/_app.tasks.$id'
 import { Route as AppPurchasesNewRouteImport } from './routes/_app.purchases.new'
 import { Route as AppPurchasesIdRouteImport } from './routes/_app.purchases.$id'
+import { Route as AppOwnerTasksRouteImport } from './routes/_app.owner.tasks'
+import { Route as AppOwnerPurchasesRouteImport } from './routes/_app.owner.purchases'
+import { Route as AppOwnerOpisRouteImport } from './routes/_app.owner.opis'
+import { Route as AppOwnerMembersRouteImport } from './routes/_app.owner.members'
+import { Route as AppOwnerEventsRouteImport } from './routes/_app.owner.events'
 import { Route as AppOutreachLogRouteImport } from './routes/_app.outreach.log'
 import { Route as AppOutreachHistoryRouteImport } from './routes/_app.outreach.history'
 import { Route as AppOutreachCheckInRouteImport } from './routes/_app.outreach.check-in'
@@ -128,6 +135,11 @@ const AppProfileRoute = AppProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOwnerRoute = AppOwnerRouteImport.update({
+  id: '/owner',
+  path: '/owner',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppHoursRoute = AppHoursRouteImport.update({
   id: '/hours',
   path: '/hours',
@@ -152,6 +164,11 @@ const AppPurchasesIndexRoute = AppPurchasesIndexRouteImport.update({
   id: '/purchases/',
   path: '/purchases/',
   getParentRoute: () => AppRoute,
+} as any)
+const AppOwnerIndexRoute = AppOwnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppOwnerRoute,
 } as any)
 const AppOutreachIndexRoute = AppOutreachIndexRouteImport.update({
   id: '/outreach/',
@@ -197,6 +214,31 @@ const AppPurchasesIdRoute = AppPurchasesIdRouteImport.update({
   id: '/purchases/$id',
   path: '/purchases/$id',
   getParentRoute: () => AppRoute,
+} as any)
+const AppOwnerTasksRoute = AppOwnerTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AppOwnerRoute,
+} as any)
+const AppOwnerPurchasesRoute = AppOwnerPurchasesRouteImport.update({
+  id: '/purchases',
+  path: '/purchases',
+  getParentRoute: () => AppOwnerRoute,
+} as any)
+const AppOwnerOpisRoute = AppOwnerOpisRouteImport.update({
+  id: '/opis',
+  path: '/opis',
+  getParentRoute: () => AppOwnerRoute,
+} as any)
+const AppOwnerMembersRoute = AppOwnerMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AppOwnerRoute,
+} as any)
+const AppOwnerEventsRoute = AppOwnerEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AppOwnerRoute,
 } as any)
 const AppOutreachLogRoute = AppOutreachLogRouteImport.update({
   id: '/outreach/log',
@@ -388,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AppAdminRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
   '/hours': typeof AppHoursRoute
+  '/owner': typeof AppOwnerRouteWithChildren
   '/profile': typeof AppProfileRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/cron-jobs': typeof AppAdminCronJobsRoute
@@ -400,6 +443,11 @@ export interface FileRoutesByFullPath {
   '/outreach/check-in': typeof AppOutreachCheckInRoute
   '/outreach/history': typeof AppOutreachHistoryRoute
   '/outreach/log': typeof AppOutreachLogRoute
+  '/owner/events': typeof AppOwnerEventsRoute
+  '/owner/members': typeof AppOwnerMembersRoute
+  '/owner/opis': typeof AppOwnerOpisRoute
+  '/owner/purchases': typeof AppOwnerPurchasesRoute
+  '/owner/tasks': typeof AppOwnerTasksRoute
   '/purchases/$id': typeof AppPurchasesIdRoute
   '/purchases/new': typeof AppPurchasesNewRoute
   '/tasks/$id': typeof AppTasksIdRoute
@@ -409,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/notifications/': typeof AppNotificationsIndexRoute
   '/opi/': typeof AppOpiIndexRoute
   '/outreach/': typeof AppOutreachIndexRoute
+  '/owner/': typeof AppOwnerIndexRoute
   '/purchases/': typeof AppPurchasesIndexRoute
   '/tasks/': typeof AppTasksIndexRoute
   '/admin/build/attendance': typeof AppAdminBuildAttendanceRoute
@@ -459,6 +508,11 @@ export interface FileRoutesByTo {
   '/outreach/check-in': typeof AppOutreachCheckInRoute
   '/outreach/history': typeof AppOutreachHistoryRoute
   '/outreach/log': typeof AppOutreachLogRoute
+  '/owner/events': typeof AppOwnerEventsRoute
+  '/owner/members': typeof AppOwnerMembersRoute
+  '/owner/opis': typeof AppOwnerOpisRoute
+  '/owner/purchases': typeof AppOwnerPurchasesRoute
+  '/owner/tasks': typeof AppOwnerTasksRoute
   '/purchases/$id': typeof AppPurchasesIdRoute
   '/purchases/new': typeof AppPurchasesNewRoute
   '/tasks/$id': typeof AppTasksIdRoute
@@ -468,6 +522,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AppNotificationsIndexRoute
   '/opi': typeof AppOpiIndexRoute
   '/outreach': typeof AppOutreachIndexRoute
+  '/owner': typeof AppOwnerIndexRoute
   '/purchases': typeof AppPurchasesIndexRoute
   '/tasks': typeof AppTasksIndexRoute
   '/admin/build/attendance': typeof AppAdminBuildAttendanceRoute
@@ -509,6 +564,7 @@ export interface FileRoutesById {
   '/_app/admin': typeof AppAdminRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/hours': typeof AppHoursRoute
+  '/_app/owner': typeof AppOwnerRouteWithChildren
   '/_app/profile': typeof AppProfileRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_app/admin/cron-jobs': typeof AppAdminCronJobsRoute
@@ -521,6 +577,11 @@ export interface FileRoutesById {
   '/_app/outreach/check-in': typeof AppOutreachCheckInRoute
   '/_app/outreach/history': typeof AppOutreachHistoryRoute
   '/_app/outreach/log': typeof AppOutreachLogRoute
+  '/_app/owner/events': typeof AppOwnerEventsRoute
+  '/_app/owner/members': typeof AppOwnerMembersRoute
+  '/_app/owner/opis': typeof AppOwnerOpisRoute
+  '/_app/owner/purchases': typeof AppOwnerPurchasesRoute
+  '/_app/owner/tasks': typeof AppOwnerTasksRoute
   '/_app/purchases/$id': typeof AppPurchasesIdRoute
   '/_app/purchases/new': typeof AppPurchasesNewRoute
   '/_app/tasks/$id': typeof AppTasksIdRoute
@@ -530,6 +591,7 @@ export interface FileRoutesById {
   '/_app/notifications/': typeof AppNotificationsIndexRoute
   '/_app/opi/': typeof AppOpiIndexRoute
   '/_app/outreach/': typeof AppOutreachIndexRoute
+  '/_app/owner/': typeof AppOwnerIndexRoute
   '/_app/purchases/': typeof AppPurchasesIndexRoute
   '/_app/tasks/': typeof AppTasksIndexRoute
   '/_app/admin/build/attendance': typeof AppAdminBuildAttendanceRoute
@@ -571,6 +633,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/hours'
+    | '/owner'
     | '/profile'
     | '/auth/callback'
     | '/admin/cron-jobs'
@@ -583,6 +646,11 @@ export interface FileRouteTypes {
     | '/outreach/check-in'
     | '/outreach/history'
     | '/outreach/log'
+    | '/owner/events'
+    | '/owner/members'
+    | '/owner/opis'
+    | '/owner/purchases'
+    | '/owner/tasks'
     | '/purchases/$id'
     | '/purchases/new'
     | '/tasks/$id'
@@ -592,6 +660,7 @@ export interface FileRouteTypes {
     | '/notifications/'
     | '/opi/'
     | '/outreach/'
+    | '/owner/'
     | '/purchases/'
     | '/tasks/'
     | '/admin/build/attendance'
@@ -642,6 +711,11 @@ export interface FileRouteTypes {
     | '/outreach/check-in'
     | '/outreach/history'
     | '/outreach/log'
+    | '/owner/events'
+    | '/owner/members'
+    | '/owner/opis'
+    | '/owner/purchases'
+    | '/owner/tasks'
     | '/purchases/$id'
     | '/purchases/new'
     | '/tasks/$id'
@@ -651,6 +725,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/opi'
     | '/outreach'
+    | '/owner'
     | '/purchases'
     | '/tasks'
     | '/admin/build/attendance'
@@ -691,6 +766,7 @@ export interface FileRouteTypes {
     | '/_app/admin'
     | '/_app/dashboard'
     | '/_app/hours'
+    | '/_app/owner'
     | '/_app/profile'
     | '/auth/callback'
     | '/_app/admin/cron-jobs'
@@ -703,6 +779,11 @@ export interface FileRouteTypes {
     | '/_app/outreach/check-in'
     | '/_app/outreach/history'
     | '/_app/outreach/log'
+    | '/_app/owner/events'
+    | '/_app/owner/members'
+    | '/_app/owner/opis'
+    | '/_app/owner/purchases'
+    | '/_app/owner/tasks'
     | '/_app/purchases/$id'
     | '/_app/purchases/new'
     | '/_app/tasks/$id'
@@ -712,6 +793,7 @@ export interface FileRouteTypes {
     | '/_app/notifications/'
     | '/_app/opi/'
     | '/_app/outreach/'
+    | '/_app/owner/'
     | '/_app/purchases/'
     | '/_app/tasks/'
     | '/_app/admin/build/attendance'
@@ -839,6 +921,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/owner': {
+      id: '/_app/owner'
+      path: '/owner'
+      fullPath: '/owner'
+      preLoaderRoute: typeof AppOwnerRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/hours': {
       id: '/_app/hours'
       path: '/hours'
@@ -873,6 +962,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/purchases/'
       preLoaderRoute: typeof AppPurchasesIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/owner/': {
+      id: '/_app/owner/'
+      path: '/'
+      fullPath: '/owner/'
+      preLoaderRoute: typeof AppOwnerIndexRouteImport
+      parentRoute: typeof AppOwnerRoute
     }
     '/_app/outreach/': {
       id: '/_app/outreach/'
@@ -936,6 +1032,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/purchases/$id'
       preLoaderRoute: typeof AppPurchasesIdRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/owner/tasks': {
+      id: '/_app/owner/tasks'
+      path: '/tasks'
+      fullPath: '/owner/tasks'
+      preLoaderRoute: typeof AppOwnerTasksRouteImport
+      parentRoute: typeof AppOwnerRoute
+    }
+    '/_app/owner/purchases': {
+      id: '/_app/owner/purchases'
+      path: '/purchases'
+      fullPath: '/owner/purchases'
+      preLoaderRoute: typeof AppOwnerPurchasesRouteImport
+      parentRoute: typeof AppOwnerRoute
+    }
+    '/_app/owner/opis': {
+      id: '/_app/owner/opis'
+      path: '/opis'
+      fullPath: '/owner/opis'
+      preLoaderRoute: typeof AppOwnerOpisRouteImport
+      parentRoute: typeof AppOwnerRoute
+    }
+    '/_app/owner/members': {
+      id: '/_app/owner/members'
+      path: '/members'
+      fullPath: '/owner/members'
+      preLoaderRoute: typeof AppOwnerMembersRouteImport
+      parentRoute: typeof AppOwnerRoute
+    }
+    '/_app/owner/events': {
+      id: '/_app/owner/events'
+      path: '/events'
+      fullPath: '/owner/events'
+      preLoaderRoute: typeof AppOwnerEventsRouteImport
+      parentRoute: typeof AppOwnerRoute
     }
     '/_app/outreach/log': {
       id: '/_app/outreach/log'
@@ -1230,10 +1361,33 @@ const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(
   AppAdminRouteChildren,
 )
 
+interface AppOwnerRouteChildren {
+  AppOwnerEventsRoute: typeof AppOwnerEventsRoute
+  AppOwnerMembersRoute: typeof AppOwnerMembersRoute
+  AppOwnerOpisRoute: typeof AppOwnerOpisRoute
+  AppOwnerPurchasesRoute: typeof AppOwnerPurchasesRoute
+  AppOwnerTasksRoute: typeof AppOwnerTasksRoute
+  AppOwnerIndexRoute: typeof AppOwnerIndexRoute
+}
+
+const AppOwnerRouteChildren: AppOwnerRouteChildren = {
+  AppOwnerEventsRoute: AppOwnerEventsRoute,
+  AppOwnerMembersRoute: AppOwnerMembersRoute,
+  AppOwnerOpisRoute: AppOwnerOpisRoute,
+  AppOwnerPurchasesRoute: AppOwnerPurchasesRoute,
+  AppOwnerTasksRoute: AppOwnerTasksRoute,
+  AppOwnerIndexRoute: AppOwnerIndexRoute,
+}
+
+const AppOwnerRouteWithChildren = AppOwnerRoute._addFileChildren(
+  AppOwnerRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRouteWithChildren
   AppDashboardRoute: typeof AppDashboardRoute
   AppHoursRoute: typeof AppHoursRoute
+  AppOwnerRoute: typeof AppOwnerRouteWithChildren
   AppProfileRoute: typeof AppProfileRoute
   AppBuildCheckInRoute: typeof AppBuildCheckInRoute
   AppBuildHistoryRoute: typeof AppBuildHistoryRoute
@@ -1261,6 +1415,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdminRoute: AppAdminRouteWithChildren,
   AppDashboardRoute: AppDashboardRoute,
   AppHoursRoute: AppHoursRoute,
+  AppOwnerRoute: AppOwnerRouteWithChildren,
   AppProfileRoute: AppProfileRoute,
   AppBuildCheckInRoute: AppBuildCheckInRoute,
   AppBuildHistoryRoute: AppBuildHistoryRoute,

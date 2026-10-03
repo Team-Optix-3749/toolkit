@@ -79,7 +79,7 @@ function OpiQueue() {
                 <span className="text-xs text-[#c0392b]">Delete?</span>
                 <button
                   onClick={() => deleteOpi(r.id)}
-                  className="w-6 h-6 flex items-center justify-center text-xs border border-[#c0392b] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f5d5d1]"
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-xs border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10 hover:bg-[#c0392b]/20 transition-all"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -87,7 +87,7 @@ function OpiQueue() {
                 </button>
                 <button
                   onClick={() => setConfirmId(null)}
-                  className="w-6 h-6 flex items-center justify-center text-xs border border-line text-ink-soft hover:bg-canvas"
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-xs border border-white/10 text-ink-soft hover:bg-white/10 transition-all"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -97,7 +97,7 @@ function OpiQueue() {
             ) : (
               <button
                 onClick={() => setConfirmId(r.id)}
-                className="w-7 h-7 flex items-center justify-center text-ink-soft hover:text-[#c0392b] hover:bg-[#fbeeec] border border-transparent hover:border-[#e3a9a1] opacity-0 group-hover:opacity-100 transition-opacity"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-soft hover:text-[#f07070] hover:bg-[#c0392b]/10 border border-transparent hover:border-[#c0392b]/20 opacity-0 group-hover:opacity-100 transition-all"
                 title="Delete"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

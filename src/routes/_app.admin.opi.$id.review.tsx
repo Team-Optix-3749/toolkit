@@ -146,7 +146,7 @@ function OpiReview() {
                       disabled={busy}
                       className={
                         s === 'REJECTED'
-                          ? `h-9 px-4 text-sm font-medium border border-[#e3a9a1] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f7e2de]`
+                          ? `h-9 px-4 text-sm font-medium border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10 rounded-lg hover:bg-[#c0392b]/20 inline-flex items-center justify-center transition-all`
                           : btn
                       }
                     >
@@ -180,7 +180,7 @@ function OpiReview() {
                       navigate({ to: '/admin/opi' })
                     }}
                     disabled={busy}
-                    className="h-9 px-4 text-sm font-medium border border-[#c0392b] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f5d5d1]"
+                    className="h-9 px-4 text-sm font-medium border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10 rounded-lg hover:bg-[#c0392b]/20 inline-flex items-center justify-center transition-all"
                   >
                     {busy ? '…' : 'Yes, delete'}
                   </button>

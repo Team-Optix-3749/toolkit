@@ -105,7 +105,7 @@ function Dashboard() {
 
       {/* Active check-in */}
       {activeCheckin && (
-        <section className="bg-lime/10 border border-lime/30 p-4 flex items-center justify-between gap-4 flex-wrap">
+        <section className="bg-lime/10 border border-lime/30 rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <span className="relative flex h-2.5 w-2.5 shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lime opacity-75" />
@@ -121,22 +121,22 @@ function Dashboard() {
       )}
 
       {/* Hours */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-line border border-line">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <HoursTile label="Build hrs" value={summary.build_hours} target={targets.build} loading={loading} />
         <HoursTile label="Outreach hrs" value={summary.outreach_hours} target={targets.outreach} loading={loading} />
-        <div className="bg-panel px-4 py-4">
-          <div className="font-mono text-2xl tabular-nums">{loading ? '—' : summary.total_hours}</div>
+        <div className="bg-panel backdrop-blur-xl border border-white/8 rounded-2xl px-4 py-4">
+          {loading ? <div className="skeleton h-7 w-12 mb-1" /> : <div className="font-mono text-2xl tabular-nums">{summary.total_hours}</div>}
           <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft mt-1">Total hrs</div>
         </div>
-        <div className="bg-panel px-4 py-4">
-          <div className="font-mono text-2xl tabular-nums">{loading ? '—' : pendingOpi.length}</div>
+        <div className="bg-panel backdrop-blur-xl border border-white/8 rounded-2xl px-4 py-4">
+          {loading ? <div className="skeleton h-7 w-8 mb-1" /> : <div className="font-mono text-2xl tabular-nums">{pendingOpi.length}</div>}
           <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft mt-1">Open OPIs</div>
         </div>
       </div>
 
       {/* Alerts — only show if there's something actionable */}
       {!loading && (overdueTasks.length > 0 || reviewTasks.length > 0 || pendingOpi.some(o => o.status === 'CHANGES_REQUESTED')) && (
-        <div className="border border-[#e67e22]/30 bg-[#e67e22]/5 divide-y divide-[#e67e22]/10">
+        <div className="border border-[#e67e22]/30 bg-[#e67e22]/5 rounded-2xl divide-y divide-[#e67e22]/10 overflow-hidden">
           {overdueTasks.length > 0 && (
             <Link to="/tasks" className="flex items-center justify-between px-5 py-3 hover:bg-[#e67e22]/10">
               <span className="text-sm">{overdueTasks.length} overdue task{overdueTasks.length > 1 ? 's' : ''}</span>
@@ -158,17 +158,17 @@ function Dashboard() {
       )}
 
       {/* Tasks + Outreach */}
-      <div className="grid md:grid-cols-2 gap-px bg-line border border-line">
-        <section className="bg-panel">
+      <div className="grid md:grid-cols-2 gap-4">
+        <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>My tasks</span>
             <Link to="/tasks" className="text-[11px] font-mono uppercase text-accent hover:underline">View</Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-white/4">
             {myTasks.slice(0, 5).map((t) => {
               const overdue = t.deadline && new Date(t.deadline) < new Date()
               return (
-                <Link key={t.id} to="/tasks/$id" params={{ id: t.id }} className="px-5 py-2.5 flex items-center justify-between gap-2 hover:bg-canvas">
+                <Link key={t.id} to="/tasks/$id" params={{ id: t.id }} className="px-5 py-2.5 flex items-center justify-between gap-2 hover:bg-white/[0.03] transition-colors duration-150">
                   <span className={`text-sm truncate ${overdue ? 'text-danger font-medium' : ''}`}>{t.title}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     {t.deadline && (
@@ -185,14 +185,14 @@ function Dashboard() {
           </div>
         </section>
 
-        <section className="bg-panel">
+        <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>Upcoming outreach</span>
             <Link to="/outreach" className="text-[11px] font-mono uppercase text-accent hover:underline">View</Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-white/4">
             {upcomingOutreach.slice(0, 5).map((ev) => (
-              <Link key={ev.id} to="/outreach/events/$id" params={{ id: ev.id }} className="px-5 py-2.5 flex items-center justify-between gap-2 hover:bg-canvas">
+              <Link key={ev.id} to="/outreach/events/$id" params={{ id: ev.id }} className="px-5 py-2.5 flex items-center justify-between gap-2 hover:bg-white/[0.03] transition-colors duration-150">
                 <span className="text-sm truncate">{ev.title}</span>
                 <span className="text-xs font-mono text-ink-soft whitespace-nowrap">{fmtDateTime(ev.starts_at)}</span>
               </Link>
@@ -203,13 +203,13 @@ function Dashboard() {
       </div>
 
       {/* Sessions + OPIs */}
-      <div className="grid md:grid-cols-2 gap-px bg-line border border-line">
-        <section className="bg-panel">
+      <div className="grid md:grid-cols-2 gap-4">
+        <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>Upcoming sessions</span>
             <Link to="/build" className="text-[11px] font-mono uppercase text-accent hover:underline">View</Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-white/4">
             {sessions.slice(0, 5).map((s) => (
               <div key={s.id} className="px-5 py-2.5 flex items-center justify-between gap-2">
                 <span className="text-sm truncate">{s.title}</span>
@@ -220,14 +220,14 @@ function Dashboard() {
           </div>
         </section>
 
-        <section className="bg-panel">
+        <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>My OPIs</span>
             <Link to="/opi" className="text-[11px] font-mono uppercase text-accent hover:underline">View all</Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-white/4">
             {opis.slice(0, 5).map((o) => (
-              <Link key={o.id} to="/opi/$id" params={{ id: o.id }} className="px-5 py-2.5 flex items-center justify-between hover:bg-canvas">
+              <Link key={o.id} to="/opi/$id" params={{ id: o.id }} className="px-5 py-2.5 flex items-center justify-between hover:bg-white/[0.03] transition-colors duration-150">
                 <span className="text-sm truncate">{o.title}</span>
                 <Badge label={o.status.replace('_', ' ')} tone={o.status} />
               </Link>
@@ -244,7 +244,7 @@ function Dashboard() {
             <span className={cardTitle}>Notifications</span>
             <Link to="/notifications" className="text-[11px] font-mono uppercase text-accent hover:underline">View</Link>
           </div>
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-white/4">
             {notifs.map((n) => (
               <div key={n.id} className="px-5 py-2.5">
                 <div className="text-sm font-medium">{n.title}</div>
@@ -263,21 +263,31 @@ function HoursTile({ label, value, target, loading }: {
 }) {
   const pct = target > 0 ? Math.min(100, Math.round((value / target) * 100)) : 0
   return (
-    <div className="bg-panel px-4 py-4">
-      <div className="flex items-baseline gap-1.5">
-        <span className="font-mono text-2xl tabular-nums">{loading ? '—' : value}</span>
-        {target > 0 && !loading && (
-          <span className="text-xs font-mono text-ink-soft">/ {target}</span>
-        )}
-      </div>
-      <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft mt-1">{label}</div>
-      {target > 0 && !loading && (
-        <div className="mt-2 h-1 bg-line overflow-hidden">
-          <div
-            className={`h-full ${pct >= 100 ? 'bg-lime' : 'bg-ink-soft/40'}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
+    <div className="bg-panel backdrop-blur-xl border border-white/8 rounded-2xl px-4 py-4">
+      {loading ? (
+        <>
+          <div className="skeleton h-7 w-14 mb-1" />
+          <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft mt-1">{label}</div>
+          <div className="mt-2 skeleton h-1 w-full rounded-full" />
+        </>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-mono text-2xl tabular-nums">{value}</span>
+            {target > 0 && (
+              <span className="text-xs font-mono text-ink-soft">/ {target}</span>
+            )}
+          </div>
+          <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft mt-1">{label}</div>
+          {target > 0 && (
+            <div className="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${pct >= 100 ? 'bg-lime' : 'bg-ink-soft/40'}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   )

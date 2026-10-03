@@ -11,7 +11,7 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
-  const { user, role, loading, signInPassword, signInOAuth } = useAuth()
+  const { user, role, profile, loading, signInPassword, signInOAuth } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,14 +19,13 @@ function LoginPage() {
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  // Reflect the last-used choice (e.g. if they previously unchecked it).
   useEffect(() => setRememberMe(isRemembered()), [])
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && profile) {
       navigate({ to: isApproved(role) ? '/dashboard' : '/pending-approval' })
     }
-  }, [loading, user, role, navigate])
+  }, [loading, user, role, profile, navigate])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,11 +54,11 @@ function LoginPage() {
             type="checkbox"
             checked={remember}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="h-4 w-4 accent-accent"
+            className="h-4 w-4 accent-accent rounded"
           />
           Remember me on this device
         </label>
-        {err && <p className="text-sm text-[#c0392b]">{err}</p>}
+        {err && <p className="text-sm text-danger">{err}</p>}
         <button disabled={busy} className={`w-full ${btn}`}>
           {busy ? '…' : 'Sign in'}
         </button>
@@ -84,11 +83,11 @@ function LoginPage() {
 
 export function AuthShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh grid place-items-center bg-canvas px-4 py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+    <div className="min-h-dvh grid place-items-center bg-canvas bg-ambient px-4 py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className="w-full max-w-sm">
         <div className="flex items-center mb-5">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-brand text-white grid place-items-center font-mono font-semibold">
+            <div className="w-8 h-8 bg-accent rounded-lg text-[#06080b] grid place-items-center font-mono font-semibold">
               O
             </div>
             <div className="leading-tight">
@@ -96,10 +95,10 @@ export function AuthShell({ title, children }: { title: string; children: React.
               <div className="text-xs text-ink-soft">Robotics</div>
             </div>
           </Link>
-          <ThemeToggle className="ml-auto h-8 w-8 grid place-items-center border border-line bg-panel text-ink-soft hover:text-ink text-sm" />
+          <ThemeToggle className="ml-auto h-8 w-8 grid place-items-center border border-white/10 bg-white/5 rounded-lg text-ink-soft hover:text-ink text-sm transition-all" />
         </div>
-        <div className="bg-panel border border-line">
-          <div className="px-5 py-3 border-b border-line">
+        <div className="bg-panel backdrop-blur-xl border border-white/8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <div className="px-5 py-3 border-b border-white/6">
             <h1 className="text-sm font-semibold">{title}</h1>
           </div>
           <div className="p-5">{children}</div>
@@ -117,7 +116,7 @@ export function OAuthButtons({ onClick }: { onClick: (p: 'google' | 'discord') =
           key={p}
           type="button"
           onClick={() => onClick(p)}
-          className="h-10 border border-line bg-panel text-sm font-medium hover:bg-canvas capitalize"
+          className="h-10 border border-white/10 bg-white/5 rounded-lg text-sm font-medium hover:bg-white/10 capitalize transition-all"
         >
           {p}
         </button>
@@ -129,7 +128,7 @@ export function OAuthButtons({ onClick }: { onClick: (p: 'google' | 'discord') =
 function Divider() {
   return (
     <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-wide text-ink-soft">
-      <span className="h-px bg-line flex-1" /> or <span className="h-px bg-line flex-1" />
+      <span className="h-px bg-white/8 flex-1" /> or <span className="h-px bg-white/8 flex-1" />
     </div>
   )
 }

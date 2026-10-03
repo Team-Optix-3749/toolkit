@@ -1,7 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '~/lib/auth'
-import { isAdmin, ROLE_LABEL, type Role } from '~/lib/rbac'
+import { isAdmin, isOwner, ROLE_LABEL, type Role } from '~/lib/rbac'
 import type { Permission } from '~/lib/types'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -28,7 +28,6 @@ const ADMIN_NAV: AdminItem[] = [
   ['/admin/settings', 'Settings', null],
 ]
 
-// Primary destinations for the mobile bottom tab bar (native-app style).
 const TABS: [string, string, ReactNode][] = [
   ['/dashboard', 'Home', <HomeIcon key="h" />],
   ['/build', 'Build', <BuildIcon key="b" />],
@@ -40,87 +39,107 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { profile, role, signOut } = useAuth()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const admin = isAdmin(role)
+  const owner = isOwner(role)
   const [open, setOpen] = useState(false)
 
-  // Close the drawer on navigation.
   useEffect(() => setOpen(false), [pathname])
 
   const perms = profile?.permissions ?? []
   const hasPerm = (p: Permission | null) => p === null || perms.includes(p)
   const visibleAdmin = admin ? ADMIN_NAV.filter(([, , p]) => hasPerm(p)) : []
-  const topItems = visibleAdmin.length > 0 ? [...NAV, ['/admin/members', 'Admin'] as [string, string]] : NAV
+  const topItems: [string, string][] = [...NAV]
+  if (visibleAdmin.length > 0) topItems.push(['/admin', 'Admin'])
+  if (owner) topItems.push(['/owner', 'Owner'])
 
   const topLinkCls = (active: boolean) =>
-    `px-3 h-9 inline-flex items-center text-[12px] font-mono uppercase tracking-[0.08em] border-b-2 whitespace-nowrap ${
-      active ? 'border-accent text-ink' : 'border-transparent text-ink-soft hover:text-ink'
+    `px-3 py-1 h-8 my-1 inline-flex items-center text-[12px] font-mono uppercase tracking-[0.08em] rounded-lg whitespace-nowrap transition-all duration-150 ${
+      active ? 'bg-white/10 text-ink' : 'text-ink-soft hover:text-ink hover:bg-white/5'
     }`
 
   const drawerLinkCls = (active: boolean) =>
-    `px-4 py-2.5 text-sm font-medium border-l-2 ${
+    `px-4 py-2.5 text-sm font-medium rounded-lg mx-2 transition-all duration-150 ${
       active
-        ? 'border-accent text-ink bg-accent-soft'
-        : 'border-transparent text-ink-soft hover:text-ink hover:bg-canvas'
+        ? 'text-ink bg-white/10'
+        : 'text-ink-soft hover:text-ink hover:bg-white/5'
     }`
 
   const tabCls = (active: boolean) =>
-    `flex flex-col items-center justify-center gap-1 text-[10px] font-medium tracking-tight transition-colors ${
-      active ? 'text-accent' : 'text-ink-soft'
+    `flex flex-col items-center justify-center gap-1 text-[10px] font-medium tracking-tight transition-all duration-150 ${
+      active ? 'text-accent' : 'text-ink-soft active:scale-95'
     }`
 
   return (
-    <div className="min-h-dvh bg-canvas text-ink">
+    <div className="min-h-dvh bg-canvas text-ink bg-ambient">
       <a href="#main-content" className="skip-link">Skip to content</a>
-      <header role="banner" className="bg-brand text-white sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-5 h-[52px] flex items-center gap-3">
-          <Link to="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-accent grid place-items-center font-mono font-semibold text-[13px]">
-              O
+
+      {/* Header — glass */}
+      <header role="banner" className="sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+        <div className="bg-panel backdrop-blur-xl border-b border-white/6">
+          <div className="max-w-6xl mx-auto px-4 sm:px-5 h-[52px] flex items-center gap-3">
+            <Link to="/dashboard" className="flex items-center gap-2.5">
+              <div className="w-7 h-7 bg-accent rounded-lg grid place-items-center font-mono font-semibold text-[13px] text-[#06080b]">
+                O
+              </div>
+              <span className="font-semibold tracking-tight">Optix</span>
+            </Link>
+
+            {/* Desktop actions */}
+            <div className="ml-auto hidden sm:flex items-center gap-3">
+              <Link to="/notifications" className="text-ink-soft hover:text-ink transition-colors" title="Notifications">
+                <BellIcon />
+              </Link>
+              <span className="font-mono text-[11px] text-ink-soft uppercase tracking-wide">
+                {ROLE_LABEL[role as Role] ?? role}
+              </span>
+              <Link to="/profile" className="font-mono text-xs text-ink-soft hover:text-ink transition-colors">
+                {profile?.display_name || 'profile'}
+              </Link>
+              <ThemeToggle className="h-8 w-8 grid place-items-center border border-white/10 rounded-lg text-ink-soft hover:text-ink hover:bg-white/10 text-sm transition-all" />
+              <button
+                onClick={() => signOut()}
+                className="border border-white/10 hover:bg-white/10 rounded-lg text-[11px] font-mono uppercase tracking-[0.08em] px-3 py-1.5 transition-all"
+              >
+                Sign out
+              </button>
             </div>
-            <span className="font-semibold tracking-tight">Optix</span>
-          </Link>
 
-          {/* Desktop actions */}
-          <div className="ml-auto hidden sm:flex items-center gap-3">
-            <Link to="/notifications" className="text-white/70 hover:text-white" title="Notifications">
-              <span className="text-lg leading-none">◔</span>
-            </Link>
-            <span className="font-mono text-[11px] text-white/55 uppercase tracking-wide">
-              {ROLE_LABEL[role as Role] ?? role}
-            </span>
-            <Link to="/profile" className="font-mono text-xs text-white/70 hover:text-white">
-              {profile?.display_name || 'profile'}
-            </Link>
-            <ThemeToggle className="h-8 w-8 grid place-items-center border border-white/20 text-white/70 hover:text-white hover:bg-white/10 text-sm" />
-            <button
-              onClick={() => signOut()}
-              className="border border-white/20 hover:bg-white/10 text-[11px] font-mono uppercase tracking-[0.08em] px-3 py-1.5"
-            >
-              Sign out
-            </button>
-          </div>
-
-          {/* Mobile: notifications + theme toggle on the right */}
-          <div className="ml-auto flex items-center gap-1 sm:hidden">
-            <Link
-              to="/notifications"
-              aria-label="Notifications"
-              className="h-9 w-9 grid place-items-center text-white/80 hover:bg-white/10"
-            >
-              <BellIcon />
-            </Link>
-            <ThemeToggle className="h-8 w-8 grid place-items-center border border-white/20 text-white/70 hover:bg-white/10 text-sm" />
+            {/* Mobile */}
+            <div className="ml-auto flex items-center gap-1 sm:hidden">
+              <Link
+                to="/notifications"
+                aria-label="Notifications"
+                className="h-9 w-9 grid place-items-center text-ink-soft hover:text-ink hover:bg-white/10 rounded-lg transition-all"
+              >
+                <BellIcon />
+              </Link>
+              <ThemeToggle className="h-8 w-8 grid place-items-center border border-white/10 rounded-lg text-ink-soft hover:bg-white/10 text-sm transition-all" />
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Desktop horizontal nav */}
-      <nav aria-label="Main navigation" className="hidden sm:block bg-panel border-b border-line sticky top-[52px] z-30">
-        <div className="max-w-6xl mx-auto px-5 flex gap-1">
-          {topItems.map(([to, label]) => (
-            <Link key={to} to={to} className={topLinkCls(pathname.startsWith(to))}>
-              {label}
-            </Link>
-          ))}
+      {/* Desktop nav — glass */}
+      <nav aria-label="Main navigation" className="hidden sm:block sticky top-[52px] z-30">
+        <div className="bg-panel/50 backdrop-blur-lg border-b border-white/[0.04]">
+          <div className="max-w-6xl mx-auto px-5 flex gap-1">
+            {topItems.map(([to, label]) => {
+              const active = pathname.startsWith(to)
+              const isOwnerLink = to === '/owner'
+              const cls = isOwnerLink
+                ? `px-3 py-1 h-8 my-1 inline-flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-[0.08em] rounded-lg whitespace-nowrap transition-all duration-150 ${
+                    active
+                      ? 'bg-accent/15 text-accent border border-accent/25'
+                      : 'text-accent/70 hover:text-accent hover:bg-accent/5 border border-transparent'
+                  }`
+                : topLinkCls(active)
+              return (
+                <Link key={to} to={to} className={cls}>
+                  {isOwnerLink && <span className="w-1 h-1 rounded-full bg-accent" />}
+                  {label}
+                </Link>
+              )
+            })}
+          </div>
         </div>
       </nav>
 
@@ -128,8 +147,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      {/* Mobile bottom tab bar (native-app style) */}
-      <nav aria-label="Tab bar" className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-panel border-t border-line pb-[env(safe-area-inset-bottom)]">
+      {/* Mobile bottom tab bar — glass */}
+      <nav aria-label="Tab bar" className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-panel backdrop-blur-xl border-t border-white/6 pb-[env(safe-area-inset-bottom)]">
         <div className="grid grid-cols-5 h-14">
           {TABS.map(([to, label, icon]) => {
             const active = pathname.startsWith(to)
@@ -147,39 +166,39 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      {/* Mobile drawer (full menu, opened from the More tab) */}
+      {/* Mobile drawer — glass */}
       <div
         className={`sm:hidden fixed inset-0 z-50 ${open ? '' : 'pointer-events-none'}`}
         aria-hidden={!open}
       >
         <div
           onClick={() => setOpen(false)}
-          className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
+          className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
             open ? 'opacity-100' : 'opacity-0'
           }`}
         />
         <aside
-          className={`absolute left-0 top-0 bottom-0 w-72 max-w-[82%] bg-panel border-r border-line flex flex-col transition-transform duration-200 ${
+          className={`absolute left-0 top-0 bottom-0 w-72 max-w-[82%] bg-panel backdrop-blur-xl border-r border-white/8 flex flex-col transition-transform duration-200 ${
             open ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          <div className="px-4 flex items-center gap-2.5 bg-brand text-white shrink-0 pt-[env(safe-area-inset-top)]">
+          <div className="px-4 flex items-center gap-2.5 border-b border-white/6 shrink-0 pt-[env(safe-area-inset-top)]">
             <div className="h-[52px] flex items-center gap-2.5 w-full">
-              <div className="w-7 h-7 bg-accent grid place-items-center font-mono font-semibold text-[13px]">
+              <div className="w-7 h-7 bg-accent rounded-lg grid place-items-center font-mono font-semibold text-[13px] text-[#06080b]">
                 O
               </div>
               <span className="font-semibold tracking-tight">Optix</span>
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close menu"
-                className="ml-auto h-9 w-9 grid place-items-center text-white/80 hover:bg-white/10 text-xl"
+                className="ml-auto h-9 w-9 grid place-items-center text-ink-soft hover:text-ink hover:bg-white/10 rounded-lg text-xl transition-all"
               >
                 ✕
               </button>
             </div>
           </div>
 
-          <div className="px-4 py-3 border-b border-line">
+          <div className="px-4 py-3 border-b border-white/6">
             <div className="text-sm font-medium">{profile?.display_name || 'Member'}</div>
             <div className="text-[11px] font-mono uppercase tracking-wide text-ink-soft">
               {ROLE_LABEL[role as Role] ?? role}
@@ -218,15 +237,36 @@ export function AppShell({ children }: { children: ReactNode }) {
                 ))}
               </>
             )}
+
+            {owner && (
+              <>
+                <div className="px-4 pt-4 pb-1 text-[11px] font-mono uppercase tracking-[0.08em] text-accent flex items-center gap-1.5">
+                  <span className="w-1 h-1 rounded-full bg-accent" />
+                  Owner
+                </div>
+                {(['/owner', '/owner/members', '/owner/opis', '/owner/purchases', '/owner/events', '/owner/tasks'] as const).map((to) => {
+                  const label = to === '/owner' ? 'Console' : to.replace('/owner/', '').replace(/^./, (c) => c.toUpperCase())
+                  return (
+                    <Link
+                      key={to}
+                      to={to}
+                      className={`block ${drawerLinkCls(pathname === to || (to !== '/owner' && pathname.startsWith(to)))}`}
+                    >
+                      {label}
+                    </Link>
+                  )
+                })}
+              </>
+            )}
           </nav>
 
-          <div className="p-3 border-t border-line shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <div className="p-3 border-t border-white/6 shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
             <button
               onClick={() => {
                 setOpen(false)
                 signOut()
               }}
-              className="w-full h-10 border border-line bg-panel hover:bg-canvas text-sm font-medium"
+              className="w-full h-10 border border-white/10 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-medium transition-all"
             >
               Sign out
             </button>

@@ -50,7 +50,7 @@ function PendingMembers() {
       <div className={cardHead}>
         <span className={cardTitle}>Pending approval ({rows.length})</span>
       </div>
-      <div className="divide-y divide-line">
+      <div className="divide-y divide-white/4">
         {rows.map((m) => (
           <div key={m.id} className="px-5 py-3 flex flex-wrap items-center gap-2">
             <span className="flex-1 min-w-0">{m.display_name || m.id.slice(0, 8)}</span>
@@ -59,7 +59,7 @@ function PendingMembers() {
                 <span className="text-sm text-ink-soft">Reject this member?</span>
                 <button
                   onClick={() => reject(m.id)}
-                  className="h-8 px-3 text-xs font-medium border border-[#c0392b] text-[#c0392b] bg-[#fbeeec] hover:bg-[#f5d5d1]"
+                  className="h-8 px-3 text-xs font-medium border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10 rounded-lg hover:bg-[#c0392b]/20 inline-flex items-center justify-center transition-all"
                 >
                   Yes, reject
                 </button>
@@ -77,7 +77,7 @@ function PendingMembers() {
                 </button>
                 <button
                   onClick={() => setRejectId(m.id)}
-                  className="h-8 px-3 text-xs border border-line text-ink-soft hover:text-[#c0392b] hover:border-[#c0392b]"
+                  className="h-8 px-3 text-xs border border-white/10 rounded-lg text-ink-soft hover:text-[#f07070] hover:border-[#c0392b]/30 hover:bg-[#c0392b]/10 inline-flex items-center justify-center transition-all"
                 >
                   Reject
                 </button>

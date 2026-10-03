@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '~/lib/auth'
 import { supabase } from '~/lib/supabase'
 import { card, cardHead, cardTitle, label, input, textarea, btn } from '~/lib/ui'
-import { ROLE_LABEL, type Role } from '~/lib/rbac'
+import { ROLES, ROLE_LABEL, roleLevel, type Role } from '~/lib/rbac'
 import { DEPARTMENTS } from '~/lib/types'
+import { Select } from '~/components/Select'
 
 export const Route = createFileRoute('/_app/profile')({
   component: ProfilePage,
@@ -12,7 +13,7 @@ export const Route = createFileRoute('/_app/profile')({
 
 function ProfilePage() {
   const { user, profile, role, refresh } = useAuth()
-  const [form, setForm] = useState({ display_name: '', department: '', grade: '', avatar_url: '', bio: '' })
+  const [form, setForm] = useState({ display_name: '', department: '', grade: '', avatar_url: '', bio: '', displayed_role: '' })
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [pw, setPw] = useState('')
@@ -37,6 +38,7 @@ function ProfilePage() {
         grade: profile.grade || '',
         avatar_url: profile.avatar_url || '',
         bio: profile.bio || '',
+        displayed_role: profile.displayed_role || '',
       })
   }, [profile])
 
@@ -52,6 +54,7 @@ function ProfilePage() {
         grade: form.grade || null,
         avatar_url: form.avatar_url || null,
         bio: form.bio || null,
+        displayed_role: form.displayed_role || null,
       })
       .eq('id', user!.id)
     setBusy(false)
@@ -79,12 +82,11 @@ function ProfilePage() {
             </div>
             <div>
               <label className={label}>Department</label>
-              <select className={input} value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
-                <option value="">—</option>
-                {DEPARTMENTS.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
+              <Select
+                value={form.department}
+                onChange={(v) => setForm({ ...form, department: v })}
+                options={[{ value: '', label: '—' }, ...DEPARTMENTS.map((d) => ({ value: d, label: d }))]}
+              />
             </div>
           </div>
           <div className="mt-4">
@@ -99,6 +101,25 @@ function ProfilePage() {
             <label className={label}>Bio</label>
             <textarea rows={4} className={textarea} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
           </div>
+
+          {roleLevel(role) > roleLevel('MEMBER') && (
+            <div className="mt-4">
+              <label className={label}>Displayed role</label>
+              <Select
+                value={form.displayed_role}
+                onChange={(v) => setForm({ ...form, displayed_role: v })}
+                options={[
+                  { value: '', label: `Default (${ROLE_LABEL[role as Role] ?? role})` },
+                  ...ROLES
+                    .filter((r) => r !== 'PENDING' && roleLevel(r) <= roleLevel(role))
+                    .map((r) => ({ value: r, label: ROLE_LABEL[r] })),
+                ]}
+              />
+              <p className="text-xs text-ink-soft mt-1.5">
+                Other members see this role next to your name. Admin tools still use your real role.
+              </p>
+            </div>
+          )}
           {msg && <p className="mt-3 text-sm text-ink-soft">{msg}</p>}
           <button onClick={save} disabled={busy} className={`mt-5 ${btn}`}>
             {busy ? 'Saving…' : 'Save profile'}
