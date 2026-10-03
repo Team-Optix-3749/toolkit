@@ -78,6 +78,10 @@ function OwnerMembers() {
                 </div>
                 {isSelf ? (
                   <span className="text-[11px] font-mono uppercase text-ink-soft">You</span>
+                ) : m.role === 'OWNER' ? (
+                  <span className="text-[11px] font-mono uppercase tracking-wide px-2 py-1 rounded-md border border-accent/25 text-accent bg-accent/10">
+                    Protected
+                  </span>
                 ) : confirming ? null : (
                   <button
                     onClick={() => { setConfirmId(m.id); setTyped('') }}
