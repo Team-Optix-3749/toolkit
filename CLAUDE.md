@@ -121,3 +121,75 @@ This is a multi-session effort to bring the app in line with the full PRD.
 - [x] Confirmation dialogs for destructive actions (account deactivation, rejection, event cancellation)
 - [x] Define loading/empty/populated/error/not-found states for all surfaces
 - [x] No false success — only confirm after server success (all flows check error before flash)
+
+---
+
+## Recent session recap (2026-10-04)
+
+The repo is now on the **glass UI** (dark-first glassmorphism). The pre-glass look is preserved on branch `backup-pre-glass` — restore with `git reset --hard origin/backup-pre-glass && git push --force` if needed. A parallel copy of the glass tree also lives at `../optixtk-glass/` (not git-tracked) as a scratch sandbox.
+
+### Design system in use
+- Tokens in `src/styles.css`: translucent surfaces (`--color-panel: rgba(16,19,26,0.65)`), hairline borders (`--color-line: rgba(255,255,255,0.08)`), lime accent `#b4f54e`, radii `--radius`/`--radius-lg`/`--radius-xl`.
+- `.glass` utility: `backdrop-filter: blur(20px) saturate(1.4)` + inner-shadow highlight.
+- `.bg-ambient::before`: subtle fixed radial-gradient wash (lime + cyan) sitting behind content for refraction.
+- Global 150ms transitions on all interactive elements, focus-visible accent rings, custom slim scrollbar, skeleton shimmer keyframe, `prefers-reduced-motion` respected.
+- Shared Tailwind strings in `src/lib/ui.ts` (`card`, `btn`, `btnGhost`, `input`, `textarea`, `cardHead`, `cardTitle`, `label`). All include `rounded-lg`/`rounded-2xl`, hover border-brightening, `active:scale-[0.98]` press feedback.
+
+### Custom components
+- `src/components/Select.tsx` — glass-themed custom dropdown. Replaces native `<select>` because `<option>` can't be styled on Chromium. Keyboard-accessible (Arrow / Enter / Esc), checkmark on selected, click-outside closes. Size variants `sm` / `md`.
+- `src/components/OwnerTable.tsx` — reusable owner-only table with per-row hard-delete via `owner_delete_row` RPC. Used by OPIs / Purchases / Events pages.
+- `src/components/AppShell.tsx` — glass header + pill-style top nav. Dedicated **Owner** entry with accent dot when `isOwner(role)`.
+- `src/components/Badge.tsx` — dark-glass tone map (`bg-[#c0392b]/10 text-[#f07070]` etc.) — never `bg-[#fbeeec]`.
+
+### Owner console (`/owner`)
+Owner-only area (hard-guarded in `_app.owner.tsx`, redirects non-owners to `/dashboard`). Routes:
+- `/owner` — overview with live row counts, danger-zone links, admin shortcuts
+- `/owner/members` — all profiles; type-the-name confirm → hard-delete
+- `/owner/opis`, `/owner/purchases`, `/owner/events`, `/owner/tasks` — generic OwnerTable per entity (tasks has an extra Calendar/List view, see below)
+
+### Hard-delete model (DB)
+Two `SECURITY DEFINER` plpgsql functions, both role-gated to `OWNER`:
+
+- `owner_delete_member(target_id uuid)` — self-delete blocked, OWNER targets blocked (raises `'Owners cannot be hard-deleted'`). SET NULL on history/metadata (`reviewer_id`, `created_by`, `awarded_by` across `opis`, `purchases`, `individual_outreach`, `outreach_events`, `build_sessions`, `events`, `invitations`, `tasks`, `hours_log`). DELETE on user-owned rows across `build_records`, `outreach_attendance`/`leads`/`rsvps`, `event_checkins`, `task_*` tables, `individual_outreach`, `purchases`, `opi_feedback`, `opi_versions`, `opis`, `notifications`, `notification_preferences`, `group_members`, `login_events`. Then `profiles` + `auth.users`.
+- `owner_delete_row(table_name text, row_id uuid)` — whitelisted tables only: `opis, purchases, individual_outreach, outreach_events, build_sessions, build_records, tasks, task_groups, seasons, invitations, groups, notifications`.
+
+If a new FK referencing `auth.users` or `profiles` is ever added, extend `owner_delete_member` — otherwise cascade will raise an FK violation.
+
+### Role masking (`displayed_role`)
+- `profiles.displayed_role` column (nullable text) with trigger `check_displayed_role` enforcing the displayed role is at or below the real role in `ROLES` order.
+- Helper `publicRole(profile)` in `src/lib/rbac.ts` returns `displayed_role || role`.
+- UI in `/profile`: LEADERSHIP+ users see a "Displayed role" `<Select>` with options from their actual role down to MEMBER, plus a "Default" entry that clears the override.
+- `useAuth()` still exposes the **real** `role` — admin guards and permission checks use that. Only *public* displays of someone else's role should use `publicRole`.
+
+### Auth race-condition fix
+`auth.tsx` returns `role: profile?.role ?? 'PENDING'` as a fallback. Previously `Guards.tsx` / `login.tsx` / `auth.callback.tsx` would act on this fallback during the brief window after `loading=false` but before the profile row loaded, routing legit members to `/pending-approval`. All three now wait for `profile` to be non-null before deciding.
+
+### Admin nav
+- `_app.admin.tsx` sub-nav is a scrollable glass pill rail wrapped in a single card, each item has an icon (home / people / wrench / megaphone / spark / cart / chart / gear). Active state is tinted lime (`bg-accent/15 border-accent/25`). Mobile version is an icon-prefixed dropdown button with "Admin / {CurrentPage}" and an animated panel.
+- The top-level **Admin** nav link in `AppShell` now goes to `/admin` (overview), not `/admin/members`.
+
+### RLS policy fixes
+Four task policies had a `ta.task_id = ta.task_id` self-reference bug (always true, and recursive on `task_assignees`/`task_reviewers` themselves). Rewritten:
+- `task_assignees.ta_select` / `task_reviewers.tr_select` → `has_perm('manage_tasks') OR user_id = auth.uid()` (no self-reference, no recursion).
+- `task_evidence.te_select` / `task_history.th_select` → `EXISTS (… WHERE ta.task_id = task_evidence.task_id …)` properly bound to the outer row.
+
+### Owner tasks calendar
+`/owner/tasks` has a **Calendar / List** toggle:
+- Calendar: month grid, prev/next/today controls, each day shows up to 2 task chips + "+N more". Today highlighted. Clicking a day pins it and reveals a per-day task list below with status + assignee names.
+- List: flat list with inline hard-delete.
+- Assignees resolved via join on `task_assignees → profiles`.
+
+### Dashboards
+Both the user dashboard (`_app.dashboard.tsx`) and admin dashboard (`_app.admin.index.tsx`) use glass stat tiles with skeleton loaders during load, subtle `hover:bg-white/[0.03]` row shifts, thinner `divide-white/4` dividers, animated progress bars (500ms fill). The admin dashboard shows a prominent lime-tinted "Owner console" card linking to `/owner` when `isOwner(role)`.
+
+### Light-mode leftovers
+If you see `bg-[#fbeeec]` / `border-[#e3a9a1]` / `text-[#c0392b]` on dark bg, convert to translucent pairs:
+```
+bg-[#c0392b]/10  text-[#f07070]  border-[#c0392b]/30  (danger)
+bg-accent/10     text-accent      border-accent/25     (primary accent)
+bg-white/5       text-ink-soft    border-white/10      (neutral ghost)
+```
+`bg-canvas` for hover is also wrong on glass surfaces — use `bg-white/[0.03]`.
+
+### Attribution preference
+The user prefers commits pushed from their own account with no Co-Authored-By / Claude-Session trailers. Don't add them.
