@@ -8,3 +8,9 @@ dist
 !.env.example
 .DS_Store
 *.local
+
+# Claude Code
+CLAUDE.md
+.claude/
+.claude-*
+claude.md
