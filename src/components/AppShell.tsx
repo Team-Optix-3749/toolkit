@@ -1,6 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '~/lib/auth'
+import { supabase } from '~/lib/supabase'
 import { isAdmin, isOwner, ROLE_LABEL, type Role } from '~/lib/rbac'
 import type { Permission } from '~/lib/types'
 import { ThemeToggle } from './ThemeToggle'
@@ -10,6 +11,7 @@ const NAV: [string, string][] = [
   ['/build', 'Build'],
   ['/outreach', 'Outreach'],
   ['/tasks', 'Tasks'],
+  ['/scouting', 'Scouting'],
   ['/opi', 'OPI'],
   ['/purchases', 'Purchases'],
   ['/hours', 'Hours'],
@@ -36,13 +38,26 @@ const TABS: [string, string, ReactNode][] = [
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { profile, role, signOut } = useAuth()
+  const { user, profile, role, signOut } = useAuth()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const admin = isAdmin(role)
   const owner = isOwner(role)
   const [open, setOpen] = useState(false)
 
   useEffect(() => setOpen(false), [pathname])
+
+  // Unread count for the bell. Re-checked on navigation, which also covers
+  // marking things read on /notifications.
+  const [unread, setUnread] = useState(0)
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('read_at', null)
+      .then(({ count }) => setUnread(count ?? 0))
+  }, [user?.id, pathname])
 
   const perms = profile?.permissions ?? []
   const hasPerm = (p: Permission | null) => p === null || perms.includes(p)
@@ -85,8 +100,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             {/* Desktop actions */}
             <div className="ml-auto hidden sm:flex items-center gap-3">
-              <Link to="/notifications" className="text-ink-soft hover:text-ink transition-colors" title="Notifications">
+              <Link
+                to="/notifications"
+                className="relative text-ink-soft hover:text-ink transition-colors"
+                title="Notifications"
+                aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+              >
                 <BellIcon />
+                {unread > 0 && <UnreadDot n={unread} />}
               </Link>
               <span className="font-mono text-[11px] text-ink-soft uppercase tracking-wide">
                 {ROLE_LABEL[role as Role] ?? role}
@@ -107,10 +128,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="ml-auto flex items-center gap-1 sm:hidden">
               <Link
                 to="/notifications"
-                aria-label="Notifications"
-                className="h-9 w-9 grid place-items-center text-ink-soft hover:text-ink hover:bg-white/10 rounded-lg transition-all"
+                aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+                className="relative h-9 w-9 grid place-items-center text-ink-soft hover:text-ink hover:bg-white/10 rounded-lg transition-all"
               >
                 <BellIcon />
+                {unread > 0 && <UnreadDot n={unread} />}
               </Link>
               <ThemeToggle className="h-8 w-8 grid place-items-center border border-white/10 rounded-lg text-ink-soft hover:bg-white/10 text-sm transition-all" />
             </div>
@@ -274,6 +296,17 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
       </div>
     </div>
+  )
+}
+
+function UnreadDot({ n }: { n: number }) {
+  return (
+    <span
+      aria-hidden
+      className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-accent text-[#06080b] text-[10px] font-mono font-semibold grid place-items-center"
+    >
+      {n > 9 ? '9+' : n}
+    </span>
   )
 }
 

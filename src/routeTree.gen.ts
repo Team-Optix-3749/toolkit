@@ -26,6 +26,7 @@ import { Route as AppHoursRouteImport } from './routes/_app.hours'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as AppTasksIndexRouteImport } from './routes/_app.tasks.index'
+import { Route as AppScoutingIndexRouteImport } from './routes/_app.scouting.index'
 import { Route as AppPurchasesIndexRouteImport } from './routes/_app.purchases.index'
 import { Route as AppOwnerIndexRouteImport } from './routes/_app.owner.index'
 import { Route as AppOutreachIndexRouteImport } from './routes/_app.outreach.index'
@@ -35,6 +36,9 @@ import { Route as AppBuildIndexRouteImport } from './routes/_app.build.index'
 import { Route as AppAdminIndexRouteImport } from './routes/_app.admin.index'
 import { Route as AppTasksNewRouteImport } from './routes/_app.tasks.new'
 import { Route as AppTasksIdRouteImport } from './routes/_app.tasks.$id'
+import { Route as AppScoutingPitRouteImport } from './routes/_app.scouting.pit'
+import { Route as AppScoutingMatchRouteImport } from './routes/_app.scouting.match'
+import { Route as AppScoutingManageRouteImport } from './routes/_app.scouting.manage'
 import { Route as AppPurchasesNewRouteImport } from './routes/_app.purchases.new'
 import { Route as AppPurchasesIdRouteImport } from './routes/_app.purchases.$id'
 import { Route as AppOwnerTasksRouteImport } from './routes/_app.owner.tasks'
@@ -52,9 +56,11 @@ import { Route as AppBuildHistoryRouteImport } from './routes/_app.build.history
 import { Route as AppBuildCheckInRouteImport } from './routes/_app.build.check-in'
 import { Route as AppAdminSettingsRouteImport } from './routes/_app.admin.settings'
 import { Route as AppAdminCronJobsRouteImport } from './routes/_app.admin.cron-jobs'
+import { Route as AppScoutingTeamsIndexRouteImport } from './routes/_app.scouting.teams.index'
 import { Route as AppAdminPurchasesIndexRouteImport } from './routes/_app.admin.purchases.index'
 import { Route as AppAdminOpiIndexRouteImport } from './routes/_app.admin.opi.index'
 import { Route as AppAdminMembersIndexRouteImport } from './routes/_app.admin.members.index'
+import { Route as AppScoutingTeamsTeamRouteImport } from './routes/_app.scouting.teams.$team'
 import { Route as AppOutreachEventsIdRouteImport } from './routes/_app.outreach.events.$id'
 import { Route as AppBuildSessionsIdRouteImport } from './routes/_app.build.sessions.$id'
 import { Route as AppAdminReportsPurchasesRouteImport } from './routes/_app.admin.reports.purchases'
@@ -160,6 +166,11 @@ const AppTasksIndexRoute = AppTasksIndexRouteImport.update({
   path: '/tasks/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppScoutingIndexRoute = AppScoutingIndexRouteImport.update({
+  id: '/scouting/',
+  path: '/scouting/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPurchasesIndexRoute = AppPurchasesIndexRouteImport.update({
   id: '/purchases/',
   path: '/purchases/',
@@ -203,6 +214,21 @@ const AppTasksNewRoute = AppTasksNewRouteImport.update({
 const AppTasksIdRoute = AppTasksIdRouteImport.update({
   id: '/tasks/$id',
   path: '/tasks/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppScoutingPitRoute = AppScoutingPitRouteImport.update({
+  id: '/scouting/pit',
+  path: '/scouting/pit',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppScoutingMatchRoute = AppScoutingMatchRouteImport.update({
+  id: '/scouting/match',
+  path: '/scouting/match',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppScoutingManageRoute = AppScoutingManageRouteImport.update({
+  id: '/scouting/manage',
+  path: '/scouting/manage',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPurchasesNewRoute = AppPurchasesNewRouteImport.update({
@@ -291,6 +317,11 @@ const AppAdminCronJobsRoute = AppAdminCronJobsRouteImport.update({
   path: '/cron-jobs',
   getParentRoute: () => AppAdminRoute,
 } as any)
+const AppScoutingTeamsIndexRoute = AppScoutingTeamsIndexRouteImport.update({
+  id: '/scouting/teams/',
+  path: '/scouting/teams/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminPurchasesIndexRoute = AppAdminPurchasesIndexRouteImport.update({
   id: '/purchases/',
   path: '/purchases/',
@@ -305,6 +336,11 @@ const AppAdminMembersIndexRoute = AppAdminMembersIndexRouteImport.update({
   id: '/members/',
   path: '/members/',
   getParentRoute: () => AppAdminRoute,
+} as any)
+const AppScoutingTeamsTeamRoute = AppScoutingTeamsTeamRouteImport.update({
+  id: '/scouting/teams/$team',
+  path: '/scouting/teams/$team',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppOutreachEventsIdRoute = AppOutreachEventsIdRouteImport.update({
   id: '/outreach/events/$id',
@@ -450,6 +486,9 @@ export interface FileRoutesByFullPath {
   '/owner/tasks': typeof AppOwnerTasksRoute
   '/purchases/$id': typeof AppPurchasesIdRoute
   '/purchases/new': typeof AppPurchasesNewRoute
+  '/scouting/manage': typeof AppScoutingManageRoute
+  '/scouting/match': typeof AppScoutingMatchRoute
+  '/scouting/pit': typeof AppScoutingPitRoute
   '/tasks/$id': typeof AppTasksIdRoute
   '/tasks/new': typeof AppTasksNewRoute
   '/admin/': typeof AppAdminIndexRoute
@@ -459,6 +498,7 @@ export interface FileRoutesByFullPath {
   '/outreach/': typeof AppOutreachIndexRoute
   '/owner/': typeof AppOwnerIndexRoute
   '/purchases/': typeof AppPurchasesIndexRoute
+  '/scouting/': typeof AppScoutingIndexRoute
   '/tasks/': typeof AppTasksIndexRoute
   '/admin/build/attendance': typeof AppAdminBuildAttendanceRoute
   '/admin/build/qr': typeof AppAdminBuildQrRoute
@@ -472,9 +512,11 @@ export interface FileRoutesByFullPath {
   '/admin/reports/purchases': typeof AppAdminReportsPurchasesRoute
   '/build/sessions/$id': typeof AppBuildSessionsIdRoute
   '/outreach/events/$id': typeof AppOutreachEventsIdRoute
+  '/scouting/teams/$team': typeof AppScoutingTeamsTeamRoute
   '/admin/members/': typeof AppAdminMembersIndexRoute
   '/admin/opi/': typeof AppAdminOpiIndexRoute
   '/admin/purchases/': typeof AppAdminPurchasesIndexRoute
+  '/scouting/teams/': typeof AppScoutingTeamsIndexRoute
   '/admin/build/schedule/new': typeof AppAdminBuildScheduleNewRoute
   '/admin/opi/$id/review': typeof AppAdminOpiIdReviewRoute
   '/admin/outreach/events/new': typeof AppAdminOutreachEventsNewRoute
@@ -515,6 +557,9 @@ export interface FileRoutesByTo {
   '/owner/tasks': typeof AppOwnerTasksRoute
   '/purchases/$id': typeof AppPurchasesIdRoute
   '/purchases/new': typeof AppPurchasesNewRoute
+  '/scouting/manage': typeof AppScoutingManageRoute
+  '/scouting/match': typeof AppScoutingMatchRoute
+  '/scouting/pit': typeof AppScoutingPitRoute
   '/tasks/$id': typeof AppTasksIdRoute
   '/tasks/new': typeof AppTasksNewRoute
   '/admin': typeof AppAdminIndexRoute
@@ -524,6 +569,7 @@ export interface FileRoutesByTo {
   '/outreach': typeof AppOutreachIndexRoute
   '/owner': typeof AppOwnerIndexRoute
   '/purchases': typeof AppPurchasesIndexRoute
+  '/scouting': typeof AppScoutingIndexRoute
   '/tasks': typeof AppTasksIndexRoute
   '/admin/build/attendance': typeof AppAdminBuildAttendanceRoute
   '/admin/build/qr': typeof AppAdminBuildQrRoute
@@ -537,9 +583,11 @@ export interface FileRoutesByTo {
   '/admin/reports/purchases': typeof AppAdminReportsPurchasesRoute
   '/build/sessions/$id': typeof AppBuildSessionsIdRoute
   '/outreach/events/$id': typeof AppOutreachEventsIdRoute
+  '/scouting/teams/$team': typeof AppScoutingTeamsTeamRoute
   '/admin/members': typeof AppAdminMembersIndexRoute
   '/admin/opi': typeof AppAdminOpiIndexRoute
   '/admin/purchases': typeof AppAdminPurchasesIndexRoute
+  '/scouting/teams': typeof AppScoutingTeamsIndexRoute
   '/admin/build/schedule/new': typeof AppAdminBuildScheduleNewRoute
   '/admin/opi/$id/review': typeof AppAdminOpiIdReviewRoute
   '/admin/outreach/events/new': typeof AppAdminOutreachEventsNewRoute
@@ -584,6 +632,9 @@ export interface FileRoutesById {
   '/_app/owner/tasks': typeof AppOwnerTasksRoute
   '/_app/purchases/$id': typeof AppPurchasesIdRoute
   '/_app/purchases/new': typeof AppPurchasesNewRoute
+  '/_app/scouting/manage': typeof AppScoutingManageRoute
+  '/_app/scouting/match': typeof AppScoutingMatchRoute
+  '/_app/scouting/pit': typeof AppScoutingPitRoute
   '/_app/tasks/$id': typeof AppTasksIdRoute
   '/_app/tasks/new': typeof AppTasksNewRoute
   '/_app/admin/': typeof AppAdminIndexRoute
@@ -593,6 +644,7 @@ export interface FileRoutesById {
   '/_app/outreach/': typeof AppOutreachIndexRoute
   '/_app/owner/': typeof AppOwnerIndexRoute
   '/_app/purchases/': typeof AppPurchasesIndexRoute
+  '/_app/scouting/': typeof AppScoutingIndexRoute
   '/_app/tasks/': typeof AppTasksIndexRoute
   '/_app/admin/build/attendance': typeof AppAdminBuildAttendanceRoute
   '/_app/admin/build/qr': typeof AppAdminBuildQrRoute
@@ -606,9 +658,11 @@ export interface FileRoutesById {
   '/_app/admin/reports/purchases': typeof AppAdminReportsPurchasesRoute
   '/_app/build/sessions/$id': typeof AppBuildSessionsIdRoute
   '/_app/outreach/events/$id': typeof AppOutreachEventsIdRoute
+  '/_app/scouting/teams/$team': typeof AppScoutingTeamsTeamRoute
   '/_app/admin/members/': typeof AppAdminMembersIndexRoute
   '/_app/admin/opi/': typeof AppAdminOpiIndexRoute
   '/_app/admin/purchases/': typeof AppAdminPurchasesIndexRoute
+  '/_app/scouting/teams/': typeof AppScoutingTeamsIndexRoute
   '/_app/admin/build/schedule/new': typeof AppAdminBuildScheduleNewRoute
   '/_app/admin/opi/$id/review': typeof AppAdminOpiIdReviewRoute
   '/_app/admin/outreach/events/new': typeof AppAdminOutreachEventsNewRoute
@@ -653,6 +707,9 @@ export interface FileRouteTypes {
     | '/owner/tasks'
     | '/purchases/$id'
     | '/purchases/new'
+    | '/scouting/manage'
+    | '/scouting/match'
+    | '/scouting/pit'
     | '/tasks/$id'
     | '/tasks/new'
     | '/admin/'
@@ -662,6 +719,7 @@ export interface FileRouteTypes {
     | '/outreach/'
     | '/owner/'
     | '/purchases/'
+    | '/scouting/'
     | '/tasks/'
     | '/admin/build/attendance'
     | '/admin/build/qr'
@@ -675,9 +733,11 @@ export interface FileRouteTypes {
     | '/admin/reports/purchases'
     | '/build/sessions/$id'
     | '/outreach/events/$id'
+    | '/scouting/teams/$team'
     | '/admin/members/'
     | '/admin/opi/'
     | '/admin/purchases/'
+    | '/scouting/teams/'
     | '/admin/build/schedule/new'
     | '/admin/opi/$id/review'
     | '/admin/outreach/events/new'
@@ -718,6 +778,9 @@ export interface FileRouteTypes {
     | '/owner/tasks'
     | '/purchases/$id'
     | '/purchases/new'
+    | '/scouting/manage'
+    | '/scouting/match'
+    | '/scouting/pit'
     | '/tasks/$id'
     | '/tasks/new'
     | '/admin'
@@ -727,6 +790,7 @@ export interface FileRouteTypes {
     | '/outreach'
     | '/owner'
     | '/purchases'
+    | '/scouting'
     | '/tasks'
     | '/admin/build/attendance'
     | '/admin/build/qr'
@@ -740,9 +804,11 @@ export interface FileRouteTypes {
     | '/admin/reports/purchases'
     | '/build/sessions/$id'
     | '/outreach/events/$id'
+    | '/scouting/teams/$team'
     | '/admin/members'
     | '/admin/opi'
     | '/admin/purchases'
+    | '/scouting/teams'
     | '/admin/build/schedule/new'
     | '/admin/opi/$id/review'
     | '/admin/outreach/events/new'
@@ -786,6 +852,9 @@ export interface FileRouteTypes {
     | '/_app/owner/tasks'
     | '/_app/purchases/$id'
     | '/_app/purchases/new'
+    | '/_app/scouting/manage'
+    | '/_app/scouting/match'
+    | '/_app/scouting/pit'
     | '/_app/tasks/$id'
     | '/_app/tasks/new'
     | '/_app/admin/'
@@ -795,6 +864,7 @@ export interface FileRouteTypes {
     | '/_app/outreach/'
     | '/_app/owner/'
     | '/_app/purchases/'
+    | '/_app/scouting/'
     | '/_app/tasks/'
     | '/_app/admin/build/attendance'
     | '/_app/admin/build/qr'
@@ -808,9 +878,11 @@ export interface FileRouteTypes {
     | '/_app/admin/reports/purchases'
     | '/_app/build/sessions/$id'
     | '/_app/outreach/events/$id'
+    | '/_app/scouting/teams/$team'
     | '/_app/admin/members/'
     | '/_app/admin/opi/'
     | '/_app/admin/purchases/'
+    | '/_app/scouting/teams/'
     | '/_app/admin/build/schedule/new'
     | '/_app/admin/opi/$id/review'
     | '/_app/admin/outreach/events/new'
@@ -956,6 +1028,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTasksIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/scouting/': {
+      id: '/_app/scouting/'
+      path: '/scouting'
+      fullPath: '/scouting/'
+      preLoaderRoute: typeof AppScoutingIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/purchases/': {
       id: '/_app/purchases/'
       path: '/purchases'
@@ -1017,6 +1096,27 @@ declare module '@tanstack/react-router' {
       path: '/tasks/$id'
       fullPath: '/tasks/$id'
       preLoaderRoute: typeof AppTasksIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/scouting/pit': {
+      id: '/_app/scouting/pit'
+      path: '/scouting/pit'
+      fullPath: '/scouting/pit'
+      preLoaderRoute: typeof AppScoutingPitRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/scouting/match': {
+      id: '/_app/scouting/match'
+      path: '/scouting/match'
+      fullPath: '/scouting/match'
+      preLoaderRoute: typeof AppScoutingMatchRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/scouting/manage': {
+      id: '/_app/scouting/manage'
+      path: '/scouting/manage'
+      fullPath: '/scouting/manage'
+      preLoaderRoute: typeof AppScoutingManageRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/purchases/new': {
@@ -1138,6 +1238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminCronJobsRouteImport
       parentRoute: typeof AppAdminRoute
     }
+    '/_app/scouting/teams/': {
+      id: '/_app/scouting/teams/'
+      path: '/scouting/teams'
+      fullPath: '/scouting/teams/'
+      preLoaderRoute: typeof AppScoutingTeamsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/admin/purchases/': {
       id: '/_app/admin/purchases/'
       path: '/purchases'
@@ -1158,6 +1265,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/members/'
       preLoaderRoute: typeof AppAdminMembersIndexRouteImport
       parentRoute: typeof AppAdminRoute
+    }
+    '/_app/scouting/teams/$team': {
+      id: '/_app/scouting/teams/$team'
+      path: '/scouting/teams/$team'
+      fullPath: '/scouting/teams/$team'
+      preLoaderRoute: typeof AppScoutingTeamsTeamRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/outreach/events/$id': {
       id: '/_app/outreach/events/$id'
@@ -1399,6 +1513,9 @@ interface AppRouteChildren {
   AppOutreachLogRoute: typeof AppOutreachLogRoute
   AppPurchasesIdRoute: typeof AppPurchasesIdRoute
   AppPurchasesNewRoute: typeof AppPurchasesNewRoute
+  AppScoutingManageRoute: typeof AppScoutingManageRoute
+  AppScoutingMatchRoute: typeof AppScoutingMatchRoute
+  AppScoutingPitRoute: typeof AppScoutingPitRoute
   AppTasksIdRoute: typeof AppTasksIdRoute
   AppTasksNewRoute: typeof AppTasksNewRoute
   AppBuildIndexRoute: typeof AppBuildIndexRoute
@@ -1406,9 +1523,12 @@ interface AppRouteChildren {
   AppOpiIndexRoute: typeof AppOpiIndexRoute
   AppOutreachIndexRoute: typeof AppOutreachIndexRoute
   AppPurchasesIndexRoute: typeof AppPurchasesIndexRoute
+  AppScoutingIndexRoute: typeof AppScoutingIndexRoute
   AppTasksIndexRoute: typeof AppTasksIndexRoute
   AppBuildSessionsIdRoute: typeof AppBuildSessionsIdRoute
   AppOutreachEventsIdRoute: typeof AppOutreachEventsIdRoute
+  AppScoutingTeamsTeamRoute: typeof AppScoutingTeamsTeamRoute
+  AppScoutingTeamsIndexRoute: typeof AppScoutingTeamsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1427,6 +1547,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppOutreachLogRoute: AppOutreachLogRoute,
   AppPurchasesIdRoute: AppPurchasesIdRoute,
   AppPurchasesNewRoute: AppPurchasesNewRoute,
+  AppScoutingManageRoute: AppScoutingManageRoute,
+  AppScoutingMatchRoute: AppScoutingMatchRoute,
+  AppScoutingPitRoute: AppScoutingPitRoute,
   AppTasksIdRoute: AppTasksIdRoute,
   AppTasksNewRoute: AppTasksNewRoute,
   AppBuildIndexRoute: AppBuildIndexRoute,
@@ -1434,9 +1557,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppOpiIndexRoute: AppOpiIndexRoute,
   AppOutreachIndexRoute: AppOutreachIndexRoute,
   AppPurchasesIndexRoute: AppPurchasesIndexRoute,
+  AppScoutingIndexRoute: AppScoutingIndexRoute,
   AppTasksIndexRoute: AppTasksIndexRoute,
   AppBuildSessionsIdRoute: AppBuildSessionsIdRoute,
   AppOutreachEventsIdRoute: AppOutreachEventsIdRoute,
+  AppScoutingTeamsTeamRoute: AppScoutingTeamsTeamRoute,
+  AppScoutingTeamsIndexRoute: AppScoutingTeamsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

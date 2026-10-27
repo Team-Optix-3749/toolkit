@@ -55,16 +55,7 @@ function IndividualOutreachReview() {
       .update({ status, credited_hours, reviewer_id: user!.id, decided_at: new Date().toISOString() })
       .eq('id', id)
     if (error) return flash('Update failed: ' + error.message, true)
-    await supabase.from('notifications').insert({
-      user_id: r.user_id,
-      type: 'outreach',
-      title: status === 'APPROVED' ? 'Outreach hours approved' : 'Outreach hours rejected',
-      body:
-        status === 'APPROVED'
-          ? `Your individual outreach for "${r.event_name}" was approved — ${credited_hours} hr${credited_hours === 1 ? '' : 's'} credited.`
-          : `Your individual outreach for "${r.event_name}" was rejected.`,
-      link: '/outreach',
-    })
+    // The member is notified by the notify_individual_outreach DB trigger.
     flash(status === 'APPROVED' ? 'Approved' : 'Rejected')
     load()
   }

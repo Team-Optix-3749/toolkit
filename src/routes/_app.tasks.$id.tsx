@@ -14,6 +14,10 @@ export const Route = createFileRoute('/_app/tasks/$id')({
 
 type Assignee = { task_id: string; user_id: string }
 
+// task-evidence is a private bucket. Older rows stored a (non-working) public URL,
+// newer rows store the object path; both resolve to the same path here.
+const evidencePath = (fileUrl: string) => fileUrl.split('/task-evidence/').pop() ?? fileUrl
+
 const STATUS_ACTIONS: Record<string, { label: string; next: string }[]> = {
   assigned: [{ label: 'Start', next: 'in_progress' }],
   in_progress: [
@@ -49,6 +53,7 @@ function TaskDetail() {
   const [newNote, setNewNote] = useState('')
   const [newLink, setNewLink] = useState('')
   const [busy, setBusy] = useState(false)
+  const [signed, setSigned] = useState<Record<string, string>>({})
   const fileRef = useRef<HTMLInputElement>(null)
 
   const uid = user!.id
@@ -74,6 +79,13 @@ function TaskDetail() {
     setAssignees((a as Assignee[]) || [])
     setReviewers((r as Assignee[]) || [])
     setEvidence((e as TaskEvidence[]) || [])
+    const pics = ((e as TaskEvidence[]) || []).filter(x => x.kind === 'picture' && x.file_url)
+    if (pics.length) {
+      const { data: urls } = await supabase.storage
+        .from('task-evidence')
+        .createSignedUrls(pics.map(x => evidencePath(x.file_url!)), 60 * 60)
+      setSigned(Object.fromEntries(pics.map((x, i) => [x.id, urls?.[i]?.signedUrl ?? ''])))
+    }
     setHistory((h as TaskHistory[]) || [])
 
     const userIds = new Set<string>()
@@ -139,10 +151,8 @@ function TaskDetail() {
     const path = `${uid}/${id}/${Date.now()}-${file.name}`
     const { error: upErr } = await supabase.storage.from('task-evidence').upload(path, file)
     if (upErr) { setBusy(false); return flash('Upload failed: ' + upErr.message, true) }
-    const { data: urlData } = supabase.storage.from('task-evidence').getPublicUrl(path)
-    const fileUrl = urlData?.publicUrl ?? path
     const { error } = await supabase.from('task_evidence').insert({
-      task_id: id, user_id: uid, kind: 'picture', content: file.name, file_url: fileUrl,
+      task_id: id, user_id: uid, kind: 'picture', content: file.name, file_url: path,
     })
     setBusy(false)
     if (error) return flash(error.message, true)
@@ -270,11 +280,13 @@ function TaskDetail() {
                   {e.content}
                 </a>
               ) : e.kind === 'picture' && e.file_url ? (
-                <div>
-                  <a href={e.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline">
-                    {e.content}
+                signed[e.id] ? (
+                  <a href={signed[e.id]} target="_blank" rel="noopener noreferrer" className="block w-fit">
+                    <img src={signed[e.id]} alt={e.content} className="max-h-48 rounded-lg border border-white/10 mt-1" />
                   </a>
-                </div>
+                ) : (
+                  <span className="text-sm text-ink-soft">{e.content} (unavailable)</span>
+                )
               ) : (
                 <p className="text-sm whitespace-pre-wrap">{e.content}</p>
               )}

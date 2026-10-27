@@ -164,6 +164,7 @@ export const PERMISSIONS = [
   'manage_build_hours',
   'manage_opis',
   'export_records',
+  'manage_scouting',
 ] as const
 export type Permission = (typeof PERMISSIONS)[number]
 
@@ -178,6 +179,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   manage_build_hours: 'Manage build hours',
   manage_opis: 'Manage OPIs',
   export_records: 'Export records',
+  manage_scouting: 'Manage scouting',
 }
 
 export type Season = {

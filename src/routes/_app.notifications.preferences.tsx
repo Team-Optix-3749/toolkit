@@ -10,10 +10,13 @@ export const Route = createFileRoute('/_app/notifications/preferences')({
 })
 
 const TYPES: [string, string][] = [
+  ['task', 'Tasks & reviews'],
+  ['scouting', 'Scouting assignments'],
   ['build_session', 'Build sessions'],
-  ['outreach_event', 'Outreach events'],
+  ['outreach_event', 'Outreach events & hours'],
   ['opi_status', 'OPI status changes'],
-  ['purchase_status', 'Purchase decisions'],
+  ['purchase_status', 'Purchase requests & decisions'],
+  ['account', 'Account & approvals'],
   ['general', 'General announcements'],
 ]
 const CHANNELS: [string, string][] = [
