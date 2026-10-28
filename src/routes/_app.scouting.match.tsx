@@ -232,7 +232,7 @@ function MatchScout() {
         </div>
       </section>
 
-      <ScoutFields sections={MATCH_SECTIONS} data={data} onChange={setData} />
+      <ScoutFields sections={MATCH_SECTIONS} data={data} onChange={setData} alliance={alliance} />
 
       <section className={card}>
         <div className={cardHead}>

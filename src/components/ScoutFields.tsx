@@ -1,14 +1,17 @@
-import type { Field, ScoutData, Section } from '~/lib/scouting'
+import { isPath, type Field, type ScoutData, type Section } from '~/lib/scouting'
+import { AutoPathField } from './AutoPathField'
 import { card, cardHead, cardTitle, input, label } from '~/lib/ui'
 
 type Props = {
   sections: Section[]
   data: ScoutData
   onChange: (next: ScoutData) => void
+  /** Highlights the robot's side on drawn-path fields. */
+  alliance?: 'red' | 'blue' | ''
 }
 
 /** Renders a scouting form from a section config. Controls are sized for thumbs in the stands. */
-export function ScoutFields({ sections, data, onChange }: Props) {
+export function ScoutFields({ sections, data, onChange, alliance = '' }: Props) {
   const set = (key: string, v: ScoutData[string]) => onChange({ ...data, [key]: v })
 
   return (
@@ -20,7 +23,7 @@ export function ScoutFields({ sections, data, onChange }: Props) {
           </div>
           <div className="p-4 sm:p-5 grid sm:grid-cols-2 gap-4">
             {s.fields.map((f) => (
-              <FieldControl key={f.key} section={s.title} field={f} value={data[f.key]} set={(v) => set(f.key, v)} />
+              <FieldControl key={f.key} section={s.title} alliance={alliance} field={f} value={data[f.key]} set={(v) => set(f.key, v)} />
             ))}
           </div>
         </section>
@@ -31,15 +34,27 @@ export function ScoutFields({ sections, data, onChange }: Props) {
 
 function FieldControl({
   section,
+  alliance,
   field: f,
   value,
   set,
 }: {
   section: string
+  alliance: 'red' | 'blue' | ''
   field: Field
   value: ScoutData[string]
   set: (v: ScoutData[string]) => void
 }) {
+  if (f.kind === 'path') {
+    return (
+      <div className="sm:col-span-2">
+        <span className={label}>{f.label}</span>
+        {f.hint && <p className="text-xs text-ink-soft -mt-1 mb-2">{f.hint}</p>}
+        <AutoPathField value={isPath(value) ? value : null} onChange={set} alliance={alliance} />
+      </div>
+    )
+  }
+
   if (f.kind === 'counter') {
     const n = typeof value === 'number' ? value : 0
     return (

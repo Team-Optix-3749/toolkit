@@ -85,7 +85,13 @@ function TeamsTable() {
           team: e.team_number,
           alliance: e.alliance ?? '',
           scout: names[e.scout_id] ?? e.scout_id,
-          ...Object.fromEntries(keys.map((k) => [k, e.data[k] ?? ''])),
+          ...Object.fromEntries(
+            keys.map((k) => {
+              const v = e.data[k]
+              // Drawn paths export as JSON so they survive a round-trip through a spreadsheet.
+              return [k, v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : v]
+            }),
+          ),
           notes: e.notes ?? '',
           submitted: e.updated_at,
         })),

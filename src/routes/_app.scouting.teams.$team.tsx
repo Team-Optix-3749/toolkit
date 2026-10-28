@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { AutoPathField, mirrorToRed } from '~/components/AutoPathField'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
@@ -8,10 +9,12 @@ import { fmtDateTime } from '~/lib/format'
 import {
   MATCH_SECTIONS,
   PIT_SECTIONS,
+  isPath,
   matchLabel,
   one,
   pct,
   teamStats,
+  type AutoPath,
   type Field,
   type MatchEntry,
   type PitEntry,
@@ -23,8 +26,9 @@ export const Route = createFileRoute('/_app/scouting/teams/$team')({
   component: TeamDetail,
 })
 
-const fmtValue = (f: Field, v: ScoutData[string]) => {
+const fmtValue = (f: Field, v: ScoutData[string]): ReactNode => {
   if (v == null || v === '') return '—'
+  if (f.kind === 'path') return isPath(v) ? <AutoPathField value={v} className="w-28" /> : '—'
   if (f.kind === 'toggle') return v ? 'Yes' : 'No'
   if (f.kind === 'choice') return f.options.find(([k]) => k === v)?.[1] ?? String(v)
   if (f.kind === 'number' && f.suffix) return `${v} ${f.suffix}`
@@ -120,6 +124,8 @@ function TeamDetail() {
         ))}
       </div>
 
+      <AutoPaths entries={entries} pits={pits} />
+
       <section className={card}>
         <div className={cardHead}>
           <span className={cardTitle}>Pit reports</span>
@@ -208,5 +214,61 @@ function TeamDetail() {
       </section>
       {Toast}
     </>
+  )
+}
+
+/**
+ * Every scouted auto for this team on one field. Blue-alliance paths are moved
+ * to the red side so repeated routines stack up; tap a match to highlight it.
+ */
+function AutoPaths({ entries, pits }: { entries: MatchEntry[]; pits: PitEntry[] }) {
+  const [focus, setFocus] = useState<string | null>(null)
+  const runs = entries
+    .filter((e) => isPath(e.data.auto_path))
+    .map((e) => ({ id: e.id, label: matchLabel(e.match_type, e.match_number), path: mirrorToRed(e.data.auto_path as AutoPath, e.alliance) }))
+  const planned = pits.map((p) => p.data.planned_auto).filter(isPath)
+  if (!runs.length && !planned.length) return null
+
+  const focused = runs.find((r) => r.id === focus)
+  return (
+    <section className={card}>
+      <div className={cardHead}>
+        <span className={cardTitle}>Auto paths</span>
+        <span className="text-[11px] text-ink-soft">Shown from the red side · ○ start · ● end</span>
+      </div>
+      <div className={`p-4 sm:p-5 grid gap-4 ${planned.length ? 'lg:grid-cols-[2fr_1fr]' : ''}`}>
+        <div>
+          <AutoPathField
+            overlay={runs.filter((r) => r.id !== focus).map((r) => ({ path: r.path }))}
+            value={focused?.path ?? null}
+          />
+          {runs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {runs.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  aria-pressed={focus === r.id}
+                  onClick={() => setFocus(focus === r.id ? null : r.id)}
+                  className={`${btnGhost} ${focus === r.id ? 'bg-accent/15 border-accent/40 text-accent' : ''}`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {planned.length > 0 && (
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-ink-soft mb-2">Planned (pit)</div>
+            <div className="space-y-2">
+              {planned.map((p, i) => (
+                <AutoPathField key={i} value={p} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }

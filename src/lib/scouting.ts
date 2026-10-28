@@ -8,7 +8,18 @@ export type ChoiceField = { kind: 'choice'; key: string; label: string; options:
 export type RatingField = { kind: 'rating'; key: string; label: string; max: number }
 export type TextField = { kind: 'text'; key: string; label: string; placeholder?: string }
 export type NumberField = { kind: 'number'; key: string; label: string; suffix?: string }
-export type Field = CounterField | ToggleField | ChoiceField | RatingField | TextField | NumberField
+export type PathField = { kind: 'path'; key: string; label: string; hint?: string }
+export type Field = CounterField | ToggleField | ChoiceField | RatingField | TextField | NumberField | PathField
+
+/** Drawn strokes, each a list of [x, y] points normalized 0..1 in field space (red on the left). */
+export type AutoPath = number[][][]
+
+/**
+ * How the two halves of this year's field relate, used to line up blue paths
+ * with red ones on the team page. 'mirror' = flipped left/right (e.g. 2024),
+ * 'rotate' = turned 180° (e.g. 2023, 2025). Change when the game is revealed.
+ */
+export const FIELD_SYMMETRY: 'mirror' | 'rotate' = 'mirror'
 
 export type Section = { title: string; fields: Field[] }
 
@@ -16,6 +27,7 @@ export const MATCH_SECTIONS: Section[] = [
   {
     title: 'Autonomous',
     fields: [
+      { kind: 'path', key: 'auto_path', label: 'Auto path', hint: 'Draw where the robot started and drove. Tap once to mark just the start.' },
       { kind: 'toggle', key: 'auto_leave', label: 'Left starting zone' },
       { kind: 'counter', key: 'auto_scored', label: 'Pieces scored' },
       { kind: 'counter', key: 'auto_missed', label: 'Pieces missed' },
@@ -82,6 +94,7 @@ export const PIT_SECTIONS: Section[] = [
     title: 'Capabilities',
     fields: [
       { kind: 'text', key: 'auto_routines', label: 'Auto routines', placeholder: 'e.g. 3-piece from center' },
+      { kind: 'path', key: 'planned_auto', label: 'Planned auto path', hint: 'Have the team sketch their main auto.' },
       {
         kind: 'choice',
         key: 'endgame',
@@ -137,7 +150,7 @@ export type ScoutAssignment = {
   scout_id: string
 }
 
-export type ScoutData = Record<string, number | boolean | string | null>
+export type ScoutData = Record<string, number | boolean | string | AutoPath | null>
 
 export type MatchEntry = {
   id: string
@@ -178,10 +191,14 @@ export function emptyData(sections: Section[]): ScoutData {
       if (f.kind === 'counter') d[f.key] = 0
       else if (f.kind === 'toggle') d[f.key] = false
       else if (f.kind === 'choice') d[f.key] = f.options[0][0]
+      else if (f.kind === 'path') d[f.key] = null
       else d[f.key] = null
     }
   return d
 }
+
+export const isPath = (v: unknown): v is AutoPath =>
+  Array.isArray(v) && v.every((s) => Array.isArray(s) && s.every((p) => Array.isArray(p) && p.length === 2))
 
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
 
