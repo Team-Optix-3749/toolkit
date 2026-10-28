@@ -6,6 +6,7 @@ import { useToast } from '~/lib/toast'
 import { fmtDateTime } from '~/lib/format'
 import type { Notification } from '~/lib/types'
 import { card, cardHead, cardTitle, btnGhost } from '~/lib/ui'
+import { notifyUnreadChanged } from '~/components/AppShell'
 
 export const Route = createFileRoute('/_app/notifications/')({
   component: NotificationsFeed,
@@ -32,12 +33,14 @@ function NotificationsFeed() {
 
   async function markRead(id: string) {
     await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id)
+    notifyUnreadChanged()
     load()
   }
   async function markAll() {
     const unread = rows.filter((r) => !r.read_at).map((r) => r.id)
     if (!unread.length) return
     await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', unread)
+    notifyUnreadChanged()
     flash('All marked read')
     load()
   }
@@ -61,7 +64,17 @@ function NotificationsFeed() {
             <div className="flex-1 min-w-0">
               <div className="font-medium flex items-center gap-2">
                 {!n.read_at && <span className="w-1.5 h-1.5 rounded-full bg-accent inline-block" />}
-                {n.title}
+                {n.link ? (
+                  <Link
+                    to={n.link}
+                    onClick={() => !n.read_at && markRead(n.id)}
+                    className="hover:text-accent hover:underline"
+                  >
+                    {n.title}
+                  </Link>
+                ) : (
+                  n.title
+                )}
               </div>
               {n.body && <p className="text-sm text-ink-soft mt-0.5">{n.body}</p>}
               <div className="text-[11px] font-mono uppercase tracking-wide text-ink-soft mt-1">

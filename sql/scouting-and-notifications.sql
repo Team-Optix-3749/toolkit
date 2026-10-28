@@ -469,3 +469,21 @@ begin
     execute def;
   end if;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- 5. Missing FKs (2026-10-28): task_assignees/task_reviewers.user_id had no FK,
+-- so PostgREST joins to profiles (owner tasks calendar) failed with PGRST200.
+-- NOT YET APPLIED to the live DB. The calendar now works without it (it joins
+-- client-side); apply for referential integrity when convenient.
+-- ---------------------------------------------------------------------------
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'task_assignees_user_id_fkey') then
+    alter table task_assignees add constraint task_assignees_user_id_fkey
+      foreign key (user_id) references profiles(id) on delete cascade;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'task_reviewers_user_id_fkey') then
+    alter table task_reviewers add constraint task_reviewers_user_id_fkey
+      foreign key (user_id) references profiles(id) on delete cascade;
+  end if;
+end $$;
+notify pgrst, 'reload schema';

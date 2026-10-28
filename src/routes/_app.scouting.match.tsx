@@ -9,6 +9,7 @@ import {
   MATCH_SECTIONS,
   MATCH_TYPE_LABEL,
   emptyData,
+  matchLabel,
   type MatchEntry,
   type ScoutData,
   type ScoutMatch,
@@ -106,7 +107,7 @@ function MatchScout() {
     )
     setBusy(false)
     if (error) return flash('Save failed: ' + error.message, true)
-    flash(existing ? `Updated ${t} in ${matchType.toUpperCase()}${n}` : `Saved ${t} in ${matchType.toUpperCase()}${n}`)
+    flash(`${existing ? 'Updated' : 'Saved'} ${t} in ${matchLabel(matchType, n)}`)
     // Ready for the next match: keep alliance/type, advance the match number.
     setMatchNumber(String(n + 1))
     setTeam('')

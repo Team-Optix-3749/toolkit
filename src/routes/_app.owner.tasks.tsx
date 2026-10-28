@@ -34,16 +34,19 @@ function OwnerTasks() {
 
   async function load() {
     setLoading(true)
-    const [{ data: t }, { data: ta }] = await Promise.all([
+    // task_assignees.user_id has no FK to profiles, so PostgREST can't embed
+    // the join — fetch names separately and stitch them together.
+    const [{ data: t }, { data: ta }, { data: people }] = await Promise.all([
       supabase.from('tasks').select('id, title, status, deadline, created_at').order('deadline', { ascending: true, nullsFirst: false }),
-      supabase.from('task_assignees').select('task_id, user_id, profiles:profiles!task_assignees_user_id_fkey(id, display_name)'),
+      supabase.from('task_assignees').select('task_id, user_id'),
+      supabase.from('profiles').select('id, display_name'),
     ])
     setTasks((t as TaskRow[]) || [])
+    const names = new Map(((people as { id: string; display_name: string | null }[]) || []).map((p) => [p.id, p.display_name]))
     const map: AssigneeMap = {}
-    for (const row of (ta as { task_id: string; profiles: { id: string; display_name: string | null } | null }[]) || []) {
-      if (!row.profiles) continue
+    for (const row of (ta as { task_id: string; user_id: string }[]) || []) {
       map[row.task_id] ??= []
-      map[row.task_id].push({ id: row.profiles.id, name: row.profiles.display_name ?? 'Unknown' })
+      map[row.task_id].push({ id: row.user_id, name: names.get(row.user_id) ?? 'Unknown' })
     }
     setAssignees(map)
     setLoading(false)

@@ -46,17 +46,25 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => setOpen(false), [pathname])
 
-  // Unread count for the bell. Re-checked on navigation, which also covers
-  // marking things read on /notifications.
+  // Unread count for the bell. Re-checked on navigation, every minute, and
+  // whenever a page reports it changed read state (notifyUnreadChanged).
   const [unread, setUnread] = useState(0)
   useEffect(() => {
     if (!user) return
-    supabase
-      .from('notifications')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .is('read_at', null)
-      .then(({ count }) => setUnread(count ?? 0))
+    const check = () =>
+      supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .is('read_at', null)
+        .then(({ count }) => setUnread(count ?? 0))
+    check()
+    const timer = setInterval(check, 60_000)
+    window.addEventListener(UNREAD_EVENT, check)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener(UNREAD_EVENT, check)
+    }
   }, [user?.id, pathname])
 
   const perms = profile?.permissions ?? []
@@ -298,6 +306,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     </div>
   )
 }
+
+const UNREAD_EVENT = 'optix:unread-changed'
+
+/** Tell the shell to re-count unread notifications (call after marking read). */
+export const notifyUnreadChanged = () => window.dispatchEvent(new Event(UNREAD_EVENT))
 
 function UnreadDot({ n }: { n: number }) {
   return (

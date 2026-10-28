@@ -20,7 +20,7 @@ export function ScoutFields({ sections, data, onChange }: Props) {
           </div>
           <div className="p-4 sm:p-5 grid sm:grid-cols-2 gap-4">
             {s.fields.map((f) => (
-              <FieldControl key={f.key} field={f} value={data[f.key]} set={(v) => set(f.key, v)} />
+              <FieldControl key={f.key} section={s.title} field={f} value={data[f.key]} set={(v) => set(f.key, v)} />
             ))}
           </div>
         </section>
@@ -29,7 +29,17 @@ export function ScoutFields({ sections, data, onChange }: Props) {
   )
 }
 
-function FieldControl({ field: f, value, set }: { field: Field; value: ScoutData[string]; set: (v: ScoutData[string]) => void }) {
+function FieldControl({
+  section,
+  field: f,
+  value,
+  set,
+}: {
+  section: string
+  field: Field
+  value: ScoutData[string]
+  set: (v: ScoutData[string]) => void
+}) {
   if (f.kind === 'counter') {
     const n = typeof value === 'number' ? value : 0
     return (
@@ -38,7 +48,7 @@ function FieldControl({ field: f, value, set }: { field: Field; value: ScoutData
         <div className="flex items-stretch gap-2">
           <button
             type="button"
-            aria-label={`Decrease ${f.label}`}
+            aria-label={`Decrease ${section} ${f.label.toLowerCase()}`}
             onClick={() => set(Math.max(0, n - 1))}
             className="h-14 w-14 shrink-0 rounded-xl border border-white/10 bg-white/5 text-2xl font-semibold hover:bg-white/10 active:scale-95 transition-all"
           >
@@ -46,13 +56,14 @@ function FieldControl({ field: f, value, set }: { field: Field; value: ScoutData
           </button>
           <output
             aria-live="polite"
+            aria-label={`${section} ${f.label.toLowerCase()}`}
             className="flex-1 h-14 grid place-items-center rounded-xl border border-white/8 bg-white/[0.03] text-2xl font-mono tabular-nums"
           >
             {n}
           </output>
           <button
             type="button"
-            aria-label={`Increase ${f.label}`}
+            aria-label={`Increase ${section} ${f.label.toLowerCase()}`}
             onClick={() => set(n + 1)}
             className="h-14 w-20 shrink-0 rounded-xl bg-accent text-[#06080b] text-2xl font-semibold hover:brightness-110 active:scale-95 transition-all"
           >

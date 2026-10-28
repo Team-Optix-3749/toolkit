@@ -39,7 +39,8 @@ export function OwnerTable({
     const { data, error } = await supabase.from(table).select(select).order(orderBy, { ascending })
     setLoading(false)
     if (error) return flash(error.message, true)
-    setRows((data as Row[]) || [])
+    // `select` is a runtime string, so supabase-js can't infer the row shape.
+    setRows((data as unknown as Row[]) || [])
   }
   useEffect(() => { load() }, [table])
 

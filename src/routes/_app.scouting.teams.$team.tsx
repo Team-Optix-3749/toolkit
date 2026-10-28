@@ -75,7 +75,10 @@ function TeamDetail() {
   if (loading) return <div className={`${card} p-8 text-center text-sm text-ink-soft`}>Loading…</div>
 
   const s = teamStats(teamNumber, entries)
-  const matchFields = MATCH_SECTIONS.flatMap((sec) => sec.fields)
+  // Prefix with the section so "Pieces scored" (auto) and (teleop) are distinguishable.
+  const matchFields = MATCH_SECTIONS.flatMap((sec) =>
+    sec.fields.map((f) => ({ ...f, header: sec.fields.length > 1 && sec.title !== 'Performance' ? `${sec.title} · ${f.label}` : f.label })),
+  )
 
   return (
     <>
@@ -158,7 +161,7 @@ function TeamDetail() {
                 <tr className="border-b border-white/6 text-[11px] font-mono uppercase tracking-[0.08em] text-ink-soft">
                   <th scope="col" className="px-3 py-2 text-left">Match</th>
                   {matchFields.map((f) => (
-                    <th key={f.key} scope="col" className="px-3 py-2 text-left whitespace-nowrap">{f.label}</th>
+                    <th key={f.key} scope="col" className="px-3 py-2 text-left whitespace-nowrap">{f.header}</th>
                   ))}
                   <th scope="col" className="px-3 py-2 text-left">Scout</th>
                   <th scope="col" className="px-3 py-2 text-left">Notes</th>
