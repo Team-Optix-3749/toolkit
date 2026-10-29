@@ -101,9 +101,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (active && !initialDone) setLoading(false)
       initialDone = true
     })
-    const timeout = setTimeout(() => {
-      if (active) setLoading(false)
-    }, 5000)
+    // Safety net for a hung auth call. Only for guests: if a session is stored,
+    // a slow token refresh (Supabase cold start can take >5s) must not be
+    // mistaken for "signed out" and bounce the user to /login.
+    const hasStoredSession = (() => {
+      try {
+        return Object.keys(localStorage).concat(Object.keys(sessionStorage)).some((k) => /^sb-.*-auth-token$/.test(k))
+      } catch {
+        return false
+      }
+    })()
+    const timeout = setTimeout(
+      () => {
+        if (active) setLoading(false)
+      },
+      hasStoredSession ? 20000 : 5000,
+    )
     return () => {
       active = false
       clearTimeout(timeout)

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
-import { isAdmin } from '~/lib/rbac'
+import { can } from '~/lib/rbac'
 import { fmtDateTime, hoursFromMinutes } from '~/lib/format'
 import type { BuildSession, BuildLocation, BuildRecord, ProfileRow } from '~/lib/types'
 import { card, cardHead, cardTitle } from '~/lib/ui'
@@ -14,12 +14,11 @@ export const Route = createFileRoute('/_app/build/sessions/$id')({
 
 function SessionDetail() {
   const { id } = Route.useParams()
-  const { role, profile } = useAuth()
+  const { profile } = useAuth()
   const { flash, Toast } = useToast()
   const [session, setSession] = useState<BuildSession | null>(null)
   const [location, setLocation] = useState<BuildLocation | null>(null)
   const [attendees, setAttendees] = useState<(BuildRecord & { name?: string })[]>([])
-  const admin = isAdmin(role)
 
   useEffect(() => {
     ;(async () => {
@@ -30,7 +29,7 @@ function SessionDetail() {
         const { data: loc } = await supabase.from('build_locations').select('*').eq('id', s.location_id).maybeSingle()
         setLocation(loc as BuildLocation)
       }
-      if (admin || profile?.permissions?.includes('manage_build_hours')) {
+      if (can(profile, 'manage_build_hours')) {
         const { data: ci } = await supabase.from('build_records').select('*').eq('session_id', id)
         const list = (ci as BuildRecord[]) || []
         const ids = [...new Set(list.map((c) => c.member_id))]
@@ -42,7 +41,7 @@ function SessionDetail() {
         setAttendees(list.map((c) => ({ ...c, name: names[c.member_id] })))
       }
     })()
-  }, [id, admin])
+  }, [id, profile?.id])
 
   if (!session) {
     return <div className="bg-panel border border-line p-8 text-center text-sm text-ink-soft">Loading…</div>
@@ -62,7 +61,7 @@ function SessionDetail() {
         </div>
       </section>
 
-      {(admin || profile?.permissions?.includes('manage_build_hours')) && (
+      {(can(profile, 'manage_build_hours')) && (
         <section className={card}>
           <div className={cardHead}>
             <span className={cardTitle}>Attendees ({attendees.length})</span>

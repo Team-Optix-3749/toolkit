@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
+import { can } from '~/lib/rbac'
 import { useToast } from '~/lib/toast'
 import { useScoutEvents } from '~/lib/useScoutEvents'
 import { Select } from '~/components/Select'
@@ -23,10 +24,10 @@ export const Route = createFileRoute('/_app/scouting/manage')({
 })
 
 function ManageScouting() {
-  const { user, profile, role } = useAuth()
+  const { user, profile } = useAuth()
   const { flash, Toast } = useToast()
   const { events, event, eventId, setEventId, reload } = useScoutEvents()
-  const canManage = role === 'OFFICER' || role === 'OWNER' || !!profile?.permissions?.includes('manage_scouting')
+  const canManage = can(profile, 'manage_scouting')
 
   const [members, setMembers] = useState<ProfileRow[]>([])
   const [matches, setMatches] = useState<ScoutMatch[]>([])

@@ -54,6 +54,7 @@ import { Route as AppOpiIdRouteImport } from './routes/_app.opi.$id'
 import { Route as AppNotificationsPreferencesRouteImport } from './routes/_app.notifications.preferences'
 import { Route as AppBuildHistoryRouteImport } from './routes/_app.build.history'
 import { Route as AppBuildCheckInRouteImport } from './routes/_app.build.check-in'
+import { Route as AppAdminSetupRouteImport } from './routes/_app.admin.setup'
 import { Route as AppAdminSettingsRouteImport } from './routes/_app.admin.settings'
 import { Route as AppAdminCronJobsRouteImport } from './routes/_app.admin.cron-jobs'
 import { Route as AppScoutingTeamsIndexRouteImport } from './routes/_app.scouting.teams.index'
@@ -307,6 +308,11 @@ const AppBuildCheckInRoute = AppBuildCheckInRouteImport.update({
   path: '/build/check-in',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminSetupRoute = AppAdminSetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => AppAdminRoute,
+} as any)
 const AppAdminSettingsRoute = AppAdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -471,6 +477,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/cron-jobs': typeof AppAdminCronJobsRoute
   '/admin/settings': typeof AppAdminSettingsRoute
+  '/admin/setup': typeof AppAdminSetupRoute
   '/build/check-in': typeof AppBuildCheckInRoute
   '/build/history': typeof AppBuildHistoryRoute
   '/notifications/preferences': typeof AppNotificationsPreferencesRoute
@@ -542,6 +549,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/cron-jobs': typeof AppAdminCronJobsRoute
   '/admin/settings': typeof AppAdminSettingsRoute
+  '/admin/setup': typeof AppAdminSetupRoute
   '/build/check-in': typeof AppBuildCheckInRoute
   '/build/history': typeof AppBuildHistoryRoute
   '/notifications/preferences': typeof AppNotificationsPreferencesRoute
@@ -617,6 +625,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/_app/admin/cron-jobs': typeof AppAdminCronJobsRoute
   '/_app/admin/settings': typeof AppAdminSettingsRoute
+  '/_app/admin/setup': typeof AppAdminSetupRoute
   '/_app/build/check-in': typeof AppBuildCheckInRoute
   '/_app/build/history': typeof AppBuildHistoryRoute
   '/_app/notifications/preferences': typeof AppNotificationsPreferencesRoute
@@ -692,6 +701,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/admin/cron-jobs'
     | '/admin/settings'
+    | '/admin/setup'
     | '/build/check-in'
     | '/build/history'
     | '/notifications/preferences'
@@ -763,6 +773,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/admin/cron-jobs'
     | '/admin/settings'
+    | '/admin/setup'
     | '/build/check-in'
     | '/build/history'
     | '/notifications/preferences'
@@ -837,6 +848,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/_app/admin/cron-jobs'
     | '/_app/admin/settings'
+    | '/_app/admin/setup'
     | '/_app/build/check-in'
     | '/_app/build/history'
     | '/_app/notifications/preferences'
@@ -1224,6 +1236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBuildCheckInRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin/setup': {
+      id: '/_app/admin/setup'
+      path: '/setup'
+      fullPath: '/admin/setup'
+      preLoaderRoute: typeof AppAdminSetupRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
     '/_app/admin/settings': {
       id: '/_app/admin/settings'
       path: '/settings'
@@ -1419,6 +1438,7 @@ declare module '@tanstack/react-router' {
 interface AppAdminRouteChildren {
   AppAdminCronJobsRoute: typeof AppAdminCronJobsRoute
   AppAdminSettingsRoute: typeof AppAdminSettingsRoute
+  AppAdminSetupRoute: typeof AppAdminSetupRoute
   AppAdminIndexRoute: typeof AppAdminIndexRoute
   AppAdminBuildAttendanceRoute: typeof AppAdminBuildAttendanceRoute
   AppAdminBuildQrRoute: typeof AppAdminBuildQrRoute
@@ -1446,6 +1466,7 @@ interface AppAdminRouteChildren {
 const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminCronJobsRoute: AppAdminCronJobsRoute,
   AppAdminSettingsRoute: AppAdminSettingsRoute,
+  AppAdminSetupRoute: AppAdminSetupRoute,
   AppAdminIndexRoute: AppAdminIndexRoute,
   AppAdminBuildAttendanceRoute: AppAdminBuildAttendanceRoute,
   AppAdminBuildQrRoute: AppAdminBuildQrRoute,

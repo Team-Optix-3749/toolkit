@@ -24,6 +24,19 @@ export const ROLE_LABEL: Record<Role, string> = {
   OWNER: 'Owner',
 }
 
+/**
+ * Client mirror of the DB's has_perm(): OFFICER/OWNER implicitly hold every
+ * permission; everyone else needs it granted. Use this for any UI that leads
+ * to a has_perm-guarded write, so buttons never appear that the DB will reject.
+ */
+export const can = (
+  p: { role: string; permissions?: string[] | null; account_status?: string } | null | undefined,
+  perm: string,
+): boolean =>
+  !!p &&
+  (p.account_status ?? 'active') === 'active' &&
+  (p.role === 'OFFICER' || p.role === 'OWNER' || !!p.permissions?.includes(perm))
+
 /** The role to show to other members. Falls back to real role when unset. */
 export const publicRole = (p: { role: string; displayed_role?: string | null } | null | undefined): string =>
   p?.displayed_role ?? p?.role ?? 'PENDING'

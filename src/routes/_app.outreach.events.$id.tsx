@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
-import { isAdmin } from '~/lib/rbac'
+import { can } from '~/lib/rbac'
 import { fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
 import type { OutreachEvent, OutreachAttendance, OutreachLead, ProfileRow } from '~/lib/types'
@@ -15,7 +15,7 @@ export const Route = createFileRoute('/_app/outreach/events/$id')({
 
 function EventDetail() {
   const { id } = Route.useParams()
-  const { user, role, profile } = useAuth()
+  const { user, profile } = useAuth()
   const { flash, Toast } = useToast()
   const [ev, setEv] = useState<OutreachEvent | null>(null)
   const [attendance, setAttendance] = useState<OutreachAttendance[]>([])
@@ -23,7 +23,6 @@ function EventDetail() {
   const [leads, setLeads] = useState<string[]>([])
   const [profiles, setProfiles] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
-  const admin = isAdmin(role)
   const uid = user!.id
 
   async function load() {
@@ -59,7 +58,7 @@ function EventDetail() {
   const myAttendance = attendance.find((c) => c.member_id === uid)
   const iRsvped = rsvps.includes(uid)
   const isLead = leads.includes(uid)
-  const canManageAttendance = admin || isLead || profile?.permissions?.includes('manage_outreach_attendance')
+  const canManageAttendance = isLead || can(profile, 'manage_outreach_attendance')
 
   async function toggleRsvp() {
     setBusy(true)
@@ -120,7 +119,7 @@ function EventDetail() {
             )}
           </div>
 
-          {(admin || profile?.permissions?.includes('manage_outreach_events')) && (
+          {(can(profile, 'manage_outreach_events')) && (
             <div className="border-t border-line pt-3 flex gap-2">
               <button onClick={toggleCancel} disabled={busy} className={btnGhost}>
                 {ev.cancelled ? 'Restore event' : 'Cancel event'}

@@ -2,7 +2,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '~/lib/auth'
 import { supabase } from '~/lib/supabase'
-import { isAdmin, isOwner, ROLE_LABEL, type Role } from '~/lib/rbac'
+import { can, isAdmin, isOwner, ROLE_LABEL, type Role } from '~/lib/rbac'
 import type { Permission } from '~/lib/types'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -17,14 +17,17 @@ const NAV: [string, string][] = [
   ['/hours', 'Hours'],
 ]
 
-type AdminItem = [string, string, Permission | null]
+// Third entry: the permission needed (any one of a list), or null for every admin.
+type AdminItem = [string, string, Permission | Permission[] | null]
 const ADMIN_NAV: AdminItem[] = [
   ['/admin/members', 'Members', 'manage_accounts'],
+  ['/admin/setup', 'Setup', ['manage_seasons', 'manage_invitations', 'manage_groups', 'manage_tasks']],
   ['/admin/build/schedule', 'Build schedule', 'manage_build_hours'],
   ['/admin/build/attendance', 'Build attendance', 'manage_build_hours'],
   ['/admin/outreach/events', 'Outreach events', 'manage_outreach_events'],
   ['/admin/outreach/individual', 'Individual outreach', 'manage_outreach_attendance'],
   ['/admin/opi', 'OPI review', 'manage_opis'],
+  ['/scouting/manage', 'Scouting', 'manage_scouting'],
   ['/admin/purchases', 'Purchases', null],
   ['/admin/reports/hours', 'Reports', 'export_records'],
   ['/admin/settings', 'Settings', null],
@@ -67,8 +70,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [user?.id, pathname])
 
-  const perms = profile?.permissions ?? []
-  const hasPerm = (p: Permission | null) => p === null || perms.includes(p)
+  // Same rule as the DB's has_perm(): owners/officers see every admin page.
+  const hasPerm = (p: AdminItem[2]) =>
+    p === null || (Array.isArray(p) ? p.some((x) => can(profile, x)) : can(profile, p))
   const visibleAdmin = admin ? ADMIN_NAV.filter(([, , p]) => hasPerm(p)) : []
   const topItems: [string, string][] = [...NAV]
   if (visibleAdmin.length > 0) topItems.push(['/admin', 'Admin'])

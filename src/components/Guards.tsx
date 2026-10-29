@@ -36,15 +36,17 @@ export function RequireApproved({ children }: { children: ReactNode }) {
 
 /** LEADERSHIP+ only. */
 export function RequireAdmin({ children }: { children: ReactNode }) {
-  const { loading, user, role } = useAuth()
+  const { loading, user, role, profile } = useAuth()
   const navigate = useNavigate()
   useEffect(() => {
     if (loading) return
     if (!user) navigate({ to: '/login' })
-    else if (!isAdmin(role)) navigate({ to: '/dashboard' })
-  }, [loading, user, role, navigate])
+    // Wait for the profile: until it loads, `role` is the 'PENDING' fallback
+    // and would bounce real admins to /dashboard.
+    else if (profile && !isAdmin(role)) navigate({ to: '/dashboard' })
+  }, [loading, user, role, profile, navigate])
 
-  if (loading || !user || !isAdmin(role)) return <Loading />
+  if (loading || !user || !profile || !isAdmin(role)) return <Loading />
   return <>{children}</>
 }
 

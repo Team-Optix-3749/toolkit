@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
+import { can } from '~/lib/rbac'
 import { useScoutEvents } from '~/lib/useScoutEvents'
 import { Select } from '~/components/Select'
 import { Badge } from '~/components/Badge'
@@ -20,13 +21,13 @@ export const Route = createFileRoute('/_app/scouting/')({
 })
 
 function ScoutingHub() {
-  const { user, profile, role } = useAuth()
+  const { user, profile } = useAuth()
   const { events, event, eventId, setEventId, loading } = useScoutEvents()
   const [matches, setMatches] = useState<ScoutMatch[]>([])
   const [mine, setMine] = useState<ScoutAssignment[]>([])
   const [myEntries, setMyEntries] = useState<MatchEntry[]>([])
   const [counts, setCounts] = useState({ match: 0, pit: 0, teams: 0 })
-  const canManage = role === 'OFFICER' || role === 'OWNER' || !!profile?.permissions?.includes('manage_scouting')
+  const canManage = can(profile, 'manage_scouting')
 
   useEffect(() => {
     if (!eventId) return

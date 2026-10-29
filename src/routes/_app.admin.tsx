@@ -7,6 +7,7 @@ type AdminItem = { to: string; label: string; icon: React.ReactNode }
 const ADMIN_NAV: AdminItem[] = [
   { to: '/admin', label: 'Overview', icon: <HomeIcon /> },
   { to: '/admin/members', label: 'Members', icon: <PeopleIcon /> },
+  { to: '/admin/setup', label: 'Setup', icon: <SlidersIcon /> },
   { to: '/admin/build/schedule', label: 'Build', icon: <WrenchIcon /> },
   { to: '/admin/outreach/events', label: 'Outreach', icon: <MegaphoneIcon /> },
   { to: '/admin/opi', label: 'OPI', icon: <SparkIcon /> },
@@ -141,4 +142,5 @@ function MegaphoneIcon() { return <svg {...sv}><path d="M3 11v2a1 1 0 0 0 1 1h2l
 function SparkIcon() { return <svg {...sv}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.5 5.5l2.8 2.8M15.7 15.7l2.8 2.8M18.5 5.5l-2.8 2.8M8.3 15.7l-2.8 2.8" /></svg> }
 function CartIcon() { return <svg {...sv}><path d="M3 4h2l2.5 11h11l2-8H6" /><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /></svg> }
 function ChartIcon() { return <svg {...sv}><path d="M3 20h18" /><path d="M6 16V9M11 16V5M16 16v-5M21 16V3" /></svg> }
+function SlidersIcon() { return <svg {...sv}><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg> }
 function GearIcon() { return <svg {...sv}><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></svg> }

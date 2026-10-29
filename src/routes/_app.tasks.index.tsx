@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
+import { can } from '~/lib/rbac'
 import { Badge } from '~/components/Badge'
 import { fmtDate } from '~/lib/format'
 import type { Task, TaskGroup } from '~/lib/types'
@@ -28,7 +29,7 @@ function TasksIndex() {
   const [filter, setFilter] = useState<Filter>('mine')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active')
   const [groupFilter, setGroupFilter] = useState<string | null>(null)
-  const canManage = profile?.permissions?.includes('manage_tasks') || ['LEADERSHIP', 'OFFICER', 'OWNER'].includes(profile?.role ?? '')
+  const canManage = can(profile, 'manage_tasks')
 
   useEffect(() => {
     const uid = user!.id

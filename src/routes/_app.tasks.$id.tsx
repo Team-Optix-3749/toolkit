@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
+import { can } from '~/lib/rbac'
 import { useToast } from '~/lib/toast'
 import { Badge } from '~/components/Badge'
 import { fmtDate, fmtDateTime } from '~/lib/format'
@@ -57,7 +58,7 @@ function TaskDetail() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const uid = user!.id
-  const canManage = profile?.permissions?.includes('manage_tasks') || ['LEADERSHIP', 'OFFICER', 'OWNER'].includes(profile?.role ?? '')
+  const canManage = can(profile, 'manage_tasks')
   const isAssignee = assignees.some(a => a.user_id === uid)
   const isReviewer = reviewers.some(r => r.user_id === uid)
 

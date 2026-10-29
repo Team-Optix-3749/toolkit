@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { AutoPathField, mirrorToRed } from '~/components/AutoPathField'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
+import { can } from '~/lib/rbac'
 import { useToast } from '~/lib/toast'
 import { useScoutEvents } from '~/lib/useScoutEvents'
 import { fmtDateTime } from '~/lib/format'
@@ -39,13 +40,13 @@ const fmtValue = (f: Field, v: ScoutData[string]): ReactNode => {
 function TeamDetail() {
   const { team } = Route.useParams()
   const teamNumber = Number(team)
-  const { user, profile, role } = useAuth()
+  const { user, profile } = useAuth()
   const { flash, Toast } = useToast()
   const { event, eventId, loading } = useScoutEvents()
   const [entries, setEntries] = useState<MatchEntry[]>([])
   const [pits, setPits] = useState<PitEntry[]>([])
   const [names, setNames] = useState<Record<string, string>>({})
-  const canManage = role === 'OFFICER' || role === 'OWNER' || !!profile?.permissions?.includes('manage_scouting')
+  const canManage = can(profile, 'manage_scouting')
 
   async function load() {
     if (!eventId) return
