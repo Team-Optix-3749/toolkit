@@ -6,7 +6,9 @@ import { useToast } from '~/lib/toast'
 import { fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
 import type { Purchase } from '~/lib/types'
+import { PrivateAttachment } from '~/components/PrivateAttachment'
 import { card, cardHead, cardTitle } from '~/lib/ui'
+import {ConfirmDialog} from '~/components/ConfirmDialog'
 
 export const Route = createFileRoute('/_app/admin/purchases/$id/review')({
   component: PurchaseReview,
@@ -17,6 +19,7 @@ function PurchaseReview() {
   const { user } = useAuth()
   const { flash, Toast } = useToast()
   const [p, setP] = useState<Purchase | null>(null)
+  const [decision,setDecision]=useState<'APPROVED'|'REJECTED'|null>(null)
 
   async function load() {
     const { data, error } = await supabase.from('purchases').select('*').eq('id', id).maybeSingle()
@@ -28,21 +31,19 @@ function PurchaseReview() {
   }, [id])
 
   async function decide(status: 'APPROVED' | 'REJECTED') {
-    const { error } = await supabase
-      .from('purchases')
-      .update({ status, reviewer_id: user!.id, decided_at: new Date().toISOString() })
-      .eq('id', id)
+    const {error}=await supabase.rpc('purchase_action',{payload:{action:status==='APPROVED'?'approve':'reject',id}})
     if (error) return flash('Update failed: ' + error.message, true)
     flash(status === 'APPROVED' ? 'Approved' : 'Rejected')
+    setDecision(null)
     load()
   }
 
   if (!p) return <div className="bg-panel border border-line p-8 text-center text-sm text-ink-soft">Loading…</div>
 
-  const isImage = p.receipt_url && /\.(png|jpe?g|gif|webp)(\?|$)/i.test(p.receipt_url)
 
   return (
     <div className="grid md:grid-cols-2 gap-5">
+      <ConfirmDialog open={!!decision} title={decision==='APPROVED'?'Approve purchase?':'Reject purchase?'} description="This commits an immutable decision. The server rechecks pending state and purchase-review authority." onCancel={()=>setDecision(null)} onConfirm={()=>{if(decision)void decide(decision)}}/>
       <section className={card}>
         <div className={cardHead}>
           <span className={cardTitle}>Request</span>
@@ -58,10 +59,10 @@ function PurchaseReview() {
           </div>
           {p.status === 'PENDING' && (
             <div className="flex gap-2 pt-3">
-              <button onClick={() => decide('APPROVED')} className="h-9 px-4 text-sm font-medium bg-accent text-[#06080b] rounded-lg hover:brightness-110 inline-flex items-center justify-center transition-all">
+              <button onClick={() => setDecision('APPROVED')} className="h-9 px-4 text-sm font-medium bg-accent text-[#06080b] rounded-lg hover:brightness-110 inline-flex items-center justify-center transition-all">
                 Approve
               </button>
-              <button onClick={() => decide('REJECTED')} className="h-9 px-4 text-sm font-medium border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10 rounded-lg hover:bg-[#c0392b]/20 inline-flex items-center justify-center transition-all">
+              <button onClick={() => setDecision('REJECTED')} className="h-9 px-4 text-sm font-medium border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10 rounded-lg hover:bg-[#c0392b]/20 inline-flex items-center justify-center transition-all">
                 Reject
               </button>
             </div>
@@ -72,20 +73,9 @@ function PurchaseReview() {
       <section className={card}>
         <div className={cardHead}>
           <span className={cardTitle}>Receipt</span>
-          {p.receipt_url && (
-            <a href={p.receipt_url} target="_blank" rel="noreferrer" className="text-[11px] font-mono uppercase text-accent hover:underline">
-              Open ↗
-            </a>
-          )}
         </div>
         <div className="p-5">
-          {!p.receipt_url ? (
-            <p className="text-sm text-ink-soft">No receipt attached.</p>
-          ) : isImage ? (
-            <img src={p.receipt_url} alt="receipt" className="max-w-full border border-line" />
-          ) : (
-            <iframe title="receipt" src={p.receipt_url} className="w-full h-[420px] border border-line" />
-          )}
+          {p.receipt_url ? <PrivateAttachment bucket="receipts" reference={p.receipt_url} label="Receipt" /> : <p className="text-sm text-ink-soft">No receipt attached.</p>}
         </div>
       </section>
       {Toast}

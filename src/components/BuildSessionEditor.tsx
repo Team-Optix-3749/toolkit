@@ -1,0 +1,13 @@
+import {useState,useEffect} from 'react'
+import {supabase} from '~/lib/supabase'
+import {teamInput,teamDateTime} from '~/lib/time'
+import {TeamDateTimeInput,type TimeDisambiguation} from './TeamDateTimeInput'
+import type {BuildSession,Season,BuildLocation} from '~/lib/types'
+import {input,label,btn} from '~/lib/ui'
+export function BuildSessionEditor({session,onSaved}:{session:BuildSession;onSaved:()=>void}){
+ const [title,setTitle]=useState(session.title),[location,setLocation]=useState(session.location_id??''),[season,setSeason]=useState(session.season_id??''),[opens,setOpens]=useState(teamInput(session.opens_at)),[closes,setCloses]=useState(teamInput(session.closes_at))
+ const [locations,setLocations]=useState<BuildLocation[]>([]),[seasons,setSeasons]=useState<Season[]>([]),[oc,setOc]=useState<TimeDisambiguation>('reject'),[cc,setCc]=useState<TimeDisambiguation>('reject'),[error,setError]=useState(''),[busy,setBusy]=useState(false)
+ useEffect(()=>{void supabase.from('build_locations').select('*').then(({data})=>setLocations(data as BuildLocation[]??[]));void supabase.from('seasons').select('*').then(({data})=>setSeasons(data as Season[]??[]))},[])
+ async function save(){setBusy(true);setError('');try{const {error}=await supabase.rpc('build_action',{payload:{action:'edit_session',id:session.id,title,location_id:location,season_id:season,opens_at:teamDateTime(opens,oc),closes_at:teamDateTime(closes,cc)}});if(error)throw error;onSaved()}catch(cause){setError(cause&&typeof cause==='object'&&'message'in cause?String(cause.message):String(cause))}finally{setBusy(false)}}
+ return <div className="p-5 border-t border-line space-y-3"><h2>Edit session configuration</h2><label className={label}>Title<input className={input} value={title} onChange={e=>setTitle(e.target.value)}/></label><label className={label}>Location<select className={input} value={location} onChange={e=>setLocation(e.target.value)}>{locations.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label><label className={label}>Season<select className={input} value={season} onChange={e=>setSeason(e.target.value)}>{seasons.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label><TeamDateTimeInput label="Opens" value={opens} onChange={setOpens} disambiguation={oc} onDisambiguationChange={setOc}/><TeamDateTimeInput label="Closes" value={closes} onChange={setCloses} disambiguation={cc} onDisambiguationChange={setCc}/><p>Shortening closes every active record at the new configured close, even if that close is in the future. Historical authors remain unchanged.</p><button className={btn} disabled={busy} onClick={()=>void save()}>Save session configuration</button>{error&&<p role="alert">{error}</p>}</div>
+}

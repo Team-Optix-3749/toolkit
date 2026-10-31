@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useToast } from '~/lib/toast'
 import { card, cardHead, cardTitle, label, input, textarea, btn } from '~/lib/ui'
+import {docsDocumentId} from '~/components/OpiDocumentPreview'
 
 export const Route = createFileRoute('/_app/opi/new')({
   component: NewOpi,
@@ -14,24 +15,18 @@ function NewOpi() {
   const [f, setF] = useState({ title: '', document_url: '', summary: '' })
   const [busy, setBusy] = useState(false)
 
-  function normalizeUrl(raw: string): string | null {
-    const trimmed = raw.trim()
-    if (!trimmed) return null
-    const url = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`
-    if (!url.startsWith('https://docs.google.com/')) return '__invalid__'
-    return url
-  }
 
   async function submit() {
     if (!f.title.trim()) return flash('Title required', true)
-    const docUrl = normalizeUrl(f.document_url)
-    if (docUrl === '__invalid__') return flash('Link must be a Google Docs URL (docs.google.com)', true)
+    const docUrl = f.document_url.trim()
+    if(!f.summary.trim()) return flash('Short summary required',true)
+    if(!docsDocumentId(docUrl)) return flash('Use an HTTPS docs.google.com/document/d/<id> link',true)
     setBusy(true)
     const { data, error } = await supabase.rpc('opi_action', {
       payload: {
         action: 'submit',
         title: f.title.trim(),
-        summary: f.summary || null,
+        summary: f.summary.trim(),
         document_url: docUrl,
       },
     })

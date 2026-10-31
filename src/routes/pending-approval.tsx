@@ -9,7 +9,7 @@ export const Route = createFileRoute('/pending-approval')({
 })
 
 function PendingPage() {
-  const { loading, user, role, profile, refresh, signOut } = useAuth()
+  const { loading, user, role, profile, profileError, refresh, signOut } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -17,17 +17,18 @@ function PendingPage() {
     if (!user) navigate({ to: '/login' })
     else if (profile?.account_status === 'deactivated' || profile?.account_status === 'rejected') {
       navigate({ to: '/account-blocked' })
-    } else if (isApproved(role)) navigate({ to: '/dashboard' })
+    } else if (profile?.verified && isApproved(role)) navigate({ to: '/dashboard' })
   }, [loading, user, role, profile, navigate])
 
   return (
     <AuthShell title="Awaiting approval">
       <div className="space-y-4">
         <p className="text-sm text-ink-soft">
-          Your account is created and currently <strong>Pending</strong>. A team leader needs to
-          approve you and assign a role before you can access the app.
+          Your account is pending team admission. Verify your email, then an account manager can
+          approve ordinary membership. Account type does not grant administrative permissions.
         </p>
         <p className="text-sm text-ink-soft">Signed in as {user?.email}.</p>
+        {profileError && <p role="alert" className="text-sm text-red-400">{profileError}</p>}
         <div className="flex gap-3">
           <button onClick={() => refresh()} className="h-9 px-4 text-sm font-medium border border-white/10 bg-white/5 rounded-lg hover:bg-white/10 inline-flex items-center justify-center transition-all">
             Check again

@@ -40,7 +40,7 @@ function OpiReport() {
       <div className={cardHead}>
         <span className={cardTitle}>OPI analytics · {rows.length} total · {approvalRate}% approved</span>
         <button
-          onClick={() => downloadCsv('opi-report.csv', STAGES.map((s) => ({ status: s, count: counts[s] })))}
+          onClick={() => downloadCsv('opi-report.csv',['status','count'],STAGES.map(status=>[status,counts[status]]))}
           className={btnGhost}
         >
           Export CSV

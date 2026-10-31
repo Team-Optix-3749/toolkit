@@ -60,7 +60,7 @@ function TeamDetail() {
     setPits(ps)
     const ids = [...new Set([...ms, ...ps].map((r) => r.scout_id))]
     if (ids.length) {
-      const { data: pr } = await supabase.from('profiles').select('id, display_name').in('id', ids)
+      const { data: pr } = await supabase.from('historical_profiles').select('id, display_name').in('id', ids)
       setNames(Object.fromEntries(((pr as { id: string; display_name: string | null }[]) || []).map((x) => [x.id, x.display_name ?? ''])))
     }
   }

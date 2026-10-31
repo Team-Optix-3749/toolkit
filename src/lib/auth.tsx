@@ -1,169 +1,132 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-  type ReactNode,
-} from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase, setRemember } from './supabase'
+import { profileAction } from './actions'
+import type { ProfileRow } from './types'
+import { authReturn } from './invitation'
 
-export type Profile = {
-  id: string
-  role: string
-  displayed_role: string | null
-  display_name: string | null
-  avatar_url: string | null
-  grade: string | null
-  bio: string | null
-  department: string | null
-  special_perms: string[] | null
-  permissions: string[]
-  account_status: 'active' | 'deactivated' | 'rejected'
-}
-
+export type Profile = ProfileRow
 type AuthValue = {
   session: Session | null
   user: User | null
   profile: Profile | null
   role: string
   loading: boolean
+  profileError: string | null
+  identityEpoch: number
   refresh: () => Promise<void>
-  signInPassword: (
-    email: string,
-    password: string,
-    remember?: boolean,
-  ) => Promise<{ error: string | null }>
-  signUp: (
-    email: string,
-    password: string,
-    displayName?: string,
-  ) => Promise<{ error: string | null }>
+  signInPassword: (email: string, password: string, remember?: boolean) => Promise<{ error: string | null }>
+  signUp: (email: string, password: string, displayName?: string, accountType?: 'member' | 'mentor') => Promise<{ error: string | null }>
   signInOAuth: (provider: 'google' | 'discord', remember?: boolean) => Promise<void>
   signOut: () => Promise<void>
 }
-
 const Ctx = createContext<AuthValue | null>(null)
 export const useAuth = () => {
-  const v = useContext(Ctx)
-  if (!v) throw new Error('useAuth must be used within <AuthProvider>')
-  return v
+  const value = useContext(Ctx)
+  if (!value) throw new Error('useAuth must be used within <AuthProvider>')
+  return value
 }
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [identityEpoch, setIdentityEpoch] = useState(0)
+  const generation = useRef(0)
+  const identity = useRef<string | null>(null)
+  const mounted = useRef(true)
+  const authority = useRef('')
 
-  const profileLock = useRef(false)
-  const ensureProfile = useCallback(async (user: User) => {
-    if (profileLock.current) return
-    profileLock.current = true
-    try {
-      let { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
-      if (!data) {
-        const meta = user.user_metadata ?? {}
-        const name =
-          meta.display_name || meta.full_name || meta.name || (user.email || 'member').split('@')[0]
-        await supabase.from('profiles').insert({ id: user.id, display_name: name })
-        ;({ data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle())
-      }
-      setProfile((data as Profile) ?? null)
-    } finally {
-      profileLock.current = false
+  const loadProfile = useCallback(async (ticket: number) => {
+    const { data, error } = await profileAction({ action: 'get_self' })
+    if (!mounted.current || ticket !== generation.current) return
+    if (error || !data) {
+      authority.current = ''
+      setProfile(null)
+      setProfileError(error?.message ?? 'Your profile could not be loaded. Retry or sign in again.')
+    } else {
+      const nextAuthority = JSON.stringify([data.id,data.role,data.account_status,data.verified,data.permissions])
+      if (authority.current && authority.current !== nextAuthority) setIdentityEpoch(epoch => epoch + 1)
+      authority.current = nextAuthority
+      setProfile({ ...data, verified: data.verified === true } as Profile)
+      setProfileError(null)
     }
+    setLoading(false)
   }, [])
 
-  const refresh = useCallback(async () => {
-    const { data } = await supabase.auth.getSession()
-    setSession(data.session)
-    if (data.session?.user) await ensureProfile(data.session.user)
-    else setProfile(null)
-  }, [ensureProfile])
+  const acceptSession = useCallback((next: Session | null) => {
+    const nextIdentity = next?.user.id ?? null
+    const changed = identity.current !== nextIdentity
+    identity.current = nextIdentity
+    const ticket = ++generation.current
+    setSession(next)
+    if (changed || !next) setProfile(null)
+    setProfileError(null)
+    if (changed) {
+      authority.current = ''
+      setIdentityEpoch(epoch => epoch + 1)
+      // These are user-specific UI choices, not durable domain state.
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('optix-scout-event')
+        window.sessionStorage.removeItem('optix-scout-event')
+      }
+    }
+    if (changed || !next) setLoading(!!next)
+    // Do not await Supabase calls inside onAuthStateChange's internal auth lock.
+    if (next) queueMicrotask(() => { void loadProfile(ticket) })
+  }, [loadProfile])
 
   useEffect(() => {
-    let active = true
-    let initialDone = false
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!active) return
-      setSession(data.session)
-      if (data.session?.user) await ensureProfile(data.session.user)
-      initialDone = true
-      if (active) setLoading(false)
+    mounted.current = true
+    let receivedEvent = false
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => {
+      receivedEvent = true
+      acceptSession(next)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
-      if (!active) return
-      setSession(s)
-      if (s?.user) await ensureProfile(s.user)
-      else setProfile(null)
-      if (active && !initialDone) setLoading(false)
-      initialDone = true
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted.current || receivedEvent) return
+      if (error) { setLoading(false); setProfileError(error.message); return }
+      acceptSession(data.session)
     })
-    // Safety net for a hung auth call. Only for guests: if a session is stored,
-    // a slow token refresh (Supabase cold start can take >5s) must not be
-    // mistaken for "signed out" and bounce the user to /login.
-    const hasStoredSession = (() => {
-      try {
-        return Object.keys(localStorage).concat(Object.keys(sessionStorage)).some((k) => /^sb-.*-auth-token$/.test(k))
-      } catch {
-        return false
-      }
-    })()
-    const timeout = setTimeout(
-      () => {
-        if (active) setLoading(false)
-      },
-      hasStoredSession ? 20000 : 5000,
-    )
-    return () => {
-      active = false
-      clearTimeout(timeout)
-      sub.subscription.unsubscribe()
-    }
-  }, [ensureProfile])
+    return () => { mounted.current = false; generation.current++; subscription.unsubscribe() }
+  }, [acceptSession])
 
-  const value: AuthValue = {
-    session,
-    user: session?.user ?? null,
-    profile,
-    role: profile?.role ?? 'PENDING',
-    loading,
-    refresh,
-    async signInPassword(email, password, remember = true) {
-      setRemember(remember)
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (!error && data.session) {
-        setSession(data.session)
-        await ensureProfile(data.session.user)
-      }
-      return { error: error?.message ?? null }
-    },
-    async signUp(email, password, displayName) {
-      const name = displayName?.trim()
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: name ? { data: { display_name: name } } : undefined,
-      })
-      return { error: error?.message ?? null }
-    },
-    async signInOAuth(provider, remember = true) {
-      setRemember(remember)
-      await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo:
-            typeof window !== 'undefined' ? `${window.location.origin}${import.meta.env.BASE_URL}auth/callback` : undefined,
-        },
-      })
-    },
-    async signOut() {
-      await supabase.auth.signOut()
-      setProfile(null)
-    },
+  const refresh = useCallback(async () => {
+    const { data, error } = await supabase.auth.getSession()
+    if (error) { setProfile(null); setProfileError(error.message); setLoading(false); return }
+    acceptSession(data.session)
+  }, [acceptSession])
+
+  useEffect(() => {
+    if (!session) return
+    const revalidate = () => { if (document.visibilityState === 'visible') void refresh() }
+    window.addEventListener('focus', revalidate)
+    document.addEventListener('visibilitychange', revalidate)
+    const timer = window.setInterval(revalidate, 60_000)
+    return () => { window.removeEventListener('focus', revalidate); document.removeEventListener('visibilitychange', revalidate); window.clearInterval(timer) }
+  }, [session, refresh])
+
+  const signInPassword = async (email: string, password: string, remember = true) => {
+    setRemember(remember)
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    return { error: error?.message ?? null }
   }
-
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
+  const signUp = async (email: string, password: string, displayName?: string, accountType: 'member' | 'mentor' = 'member') => {
+    const { error } = await supabase.auth.signUp({ email, password, options: {
+      data: { display_name: displayName, account_type: accountType },
+      emailRedirectTo: authReturn(),
+    } })
+    return { error: error?.message ?? null }
+  }
+  const signInOAuth = async (provider: 'google' | 'discord', remember = true) => {
+    setRemember(remember)
+    const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: authReturn() } })
+    if (error) throw error
+  }
+  const signOut = async () => {
+    acceptSession(null)
+    const { error } = await supabase.auth.signOut()
+    if (error) setProfileError(error.message)
+  }
+  return <Ctx.Provider value={{session,user:session?.user ?? null,profile,role:profile?.role ?? 'PENDING',loading,profileError,identityEpoch,refresh,signInPassword,signUp,signInOAuth,signOut}}>{children}</Ctx.Provider>
 }

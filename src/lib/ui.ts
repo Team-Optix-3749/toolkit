@@ -14,5 +14,3 @@ export const btn =
 export const btnGhost =
   'h-8 px-3 border border-white/10 bg-white/5 backdrop-blur rounded-lg text-xs font-mono uppercase tracking-wide hover:bg-white/10 hover:border-white/15 active:scale-[0.98] inline-flex items-center justify-center transition-all duration-150'
 
-export const r1 = (n: number) => Math.round(n * 10) / 10
-export const todayStr = () => new Date().toISOString().slice(0, 10)

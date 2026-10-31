@@ -29,7 +29,7 @@ export function setRemember(value: boolean) {
 const hybridStorage = {
   getItem(k: string): string | null {
     if (typeof window === 'undefined') return null
-    return window.localStorage.getItem(k) ?? window.sessionStorage.getItem(k)
+    return (isRemembered() ? window.localStorage : window.sessionStorage).getItem(k)
   },
   setItem(k: string, v: string) {
     if (typeof window === 'undefined') return

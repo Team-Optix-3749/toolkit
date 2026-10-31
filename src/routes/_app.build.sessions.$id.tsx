@@ -7,6 +7,7 @@ import { can } from '~/lib/rbac'
 import { fmtDateTime, hoursFromMinutes } from '~/lib/format'
 import type { BuildSession, BuildLocation, BuildRecord, ProfileRow } from '~/lib/types'
 import { card, cardHead, cardTitle } from '~/lib/ui'
+import { BuildSessionEditor } from '~/components/BuildSessionEditor'
 
 export const Route = createFileRoute('/_app/build/sessions/$id')({
   component: SessionDetail,
@@ -35,7 +36,7 @@ function SessionDetail() {
         const ids = [...new Set(list.map((c) => c.member_id))]
         let names: Record<string, string> = {}
         if (ids.length) {
-          const { data: p } = await supabase.from('profiles').select('id, display_name').in('id', ids)
+          const { data: p } = await supabase.from('historical_profiles').select('id, display_name').in('id', ids)
           names = Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '-']))
         }
         setAttendees(list.map((c) => ({ ...c, name: names[c.member_id] })))
@@ -59,6 +60,7 @@ function SessionDetail() {
           <Row k="Location" v={location ? location.name : '-'} />
           {session.cancelled && <Row k="Status" v="Cancelled" />}
         </div>
+        {can(profile,'manage_build_hours') && <BuildSessionEditor session={session} onSaved={()=>window.location.reload()} />}
       </section>
 
       {(can(profile, 'manage_build_hours')) && (
@@ -86,7 +88,7 @@ function SessionDetail() {
                   <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(a.check_in)}</td>
                   <td className="py-2 px-5 font-mono text-xs uppercase text-ink-soft">{a.checkout_method}</td>
                   <td className="py-2 px-5 text-right font-mono tabular-nums">
-                    {a.credited_minutes != null ? hoursFromMinutes(a.credited_minutes) : '-'}
+                    {a.credited_minutes != null ? hoursFromMinutes(a.credited_minutes).toFixed(2) : '-'}
                   </td>
                 </tr>
               ))}

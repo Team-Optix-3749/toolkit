@@ -1,114 +1,43 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
-import { isApproved } from '~/lib/rbac'
+import { rememberInvitation, pendingInvitation, clearInvitation } from '~/lib/invitation'
 import { btn } from '~/lib/ui'
 import { AuthShell } from './login'
 
-export const Route = createFileRoute('/invite')({
-  component: InvitePage,
-  validateSearch: (s: Record<string, unknown>) => ({
-    code: (s.code as string) || '',
-  }),
-})
-
-type InviteState = 'loading' | 'valid' | 'invalid' | 'used'
-
+export const Route = createFileRoute('/invite')({ component: InvitePage, validateSearch:(search:Record<string,unknown>)=>({code:typeof search.code==='string'?search.code:''}) })
 function InvitePage() {
-  const { code } = Route.useSearch()
-  const { user, role, loading: authLoading } = useAuth()
-  const navigate = useNavigate()
-  const [state, setState] = useState<InviteState>('loading')
-
-  useEffect(() => {
-    if (!code) {
-      setState('invalid')
-      return
-    }
-    supabase
-      .from('invitations')
-      .select('id, code, expires_at, revoked')
-      .eq('code', code)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!data || data.revoked || new Date(data.expires_at) < new Date()) {
-          setState('invalid')
-        } else {
-          setState('valid')
-        }
-      })
-  }, [code])
-
-  useEffect(() => {
-    if (authLoading) return
-    if (user && isApproved(role)) {
-      setState('used')
-    }
-  }, [authLoading, user, role])
-
-  if (state === 'loading') {
-    return (
-      <AuthShell title="Invitation">
-        <p className="text-sm text-ink-soft">Verifying invite…</p>
-      </AuthShell>
-    )
+  const search=Route.useSearch()
+  const code=search.code || pendingInvitation()
+  const { user,profile,refresh }=useAuth()
+  const [state,setState]=useState('loading')
+  const [error,setError]=useState('')
+  const [busy,setBusy]=useState(false)
+  const [attempt,setAttempt]=useState(0)
+  useEffect(()=>{
+    rememberInvitation(code)
+    let active=true
+    void supabase.rpc('invitation_action',{payload:{action:'inspect',code}}).then(({data,error})=>{
+      if(!active)return
+      if(error){setError(error.message);setState('error')}else setState(data.state)
+    })
+    return ()=>{active=false}
+  },[code,attempt])
+  async function redeem(){
+    setBusy(true);setError('')
+    const {data,error}=await supabase.rpc('invitation_action',{payload:{action:'redeem',code}})
+    setBusy(false)
+    if(error){setError(error.message);return}
+    setState(data.state)
+    if(data.state==='admitted'){clearInvitation();await refresh()}
   }
-
-  if (state === 'invalid') {
-    return (
-      <AuthShell title="Invalid invitation">
-        <div className="space-y-4">
-          <p className="text-sm text-ink-soft">
-            This invitation link is invalid, expired, or has been revoked.
-            Ask a team leader for a new one.
-          </p>
-          <Link to="/login" className="text-sm text-accent font-medium hover:underline">
-            Go to sign in
-          </Link>
-        </div>
-      </AuthShell>
-    )
-  }
-
-  if (state === 'used') {
-    return (
-      <AuthShell title="You're in!">
-        <div className="space-y-4">
-          <p className="text-sm text-[#1a7f4b]">
-            You already have an approved account.
-          </p>
-          <button onClick={() => navigate({ to: '/dashboard' })} className={`w-full ${btn}`}>
-            Go to dashboard
-          </button>
-        </div>
-      </AuthShell>
-    )
-  }
-
-  return (
-    <AuthShell title="You're invited!">
-      <div className="space-y-4">
-        <p className="text-sm text-ink-soft">
-          You've been invited to join <strong>Team Optix 3749</strong>'s toolkit.
-          Create an account or sign in to get started.
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <Link
-            to="/signup"
-            search={{ code }}
-            className={`${btn} text-center`}
-          >
-            Sign up
-          </Link>
-          <Link
-            to="/login"
-            className="h-10 px-6 border border-line bg-panel text-sm font-medium hover:bg-canvas inline-flex items-center justify-center"
-          >
-            Sign in
-          </Link>
-        </div>
-      </div>
-    </AuthShell>
-  )
+  return <AuthShell title="Team invitation"><div className="space-y-4">
+    {state==='loading' ? <p role="status">Checking invitation…</p> : state==='expired' ? <p>This invitation has expired. Ask for a new link.</p> : state==='invalid' ? <p>This invitation is invalid or revoked. Ask for a new link.</p> : state==='admitted' ? <><p>Membership admitted. No administrative permissions were assigned.</p><Link to="/dashboard" className={btn}>Open Toolkit</Link></> : state==='valid' ? <>
+      <p>This reusable invitation admits verified ordinary membership.</p>
+      {!user ? <div className="flex gap-4"><Link to="/signup" className={btn}>Create account</Link><Link to="/login">Sign in</Link></div> : profile?.role!=='PENDING' ? <><p>Your account is already admitted or unavailable for invitation admission.</p><Link to="/dashboard">Open Toolkit</Link></> : !profile?.verified ? <Link to="/resend-verification">Verify your email before joining</Link> : <button disabled={busy} onClick={()=>void redeem()} className={btn}>{busy?'Joining…':'Accept invitation'}</button>}
+    </> : null}
+    {error && <p role="alert" className="text-danger">{error}</p>}
+    {(error || state==='error') && <button onClick={()=>{setError('');setAttempt(value=>value+1)}}>Retry invitation</button>}
+  </div></AuthShell>
 }

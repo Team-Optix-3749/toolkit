@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { label, input, btn } from '~/lib/ui'
 import { AuthShell } from './login'
+import { authReturn } from '~/lib/invitation'
 
 export const Route = createFileRoute('/resend-verification')({
   component: ResendVerificationPage,
@@ -22,6 +23,7 @@ function ResendVerificationPage() {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: email.trim(),
+      options: { emailRedirectTo: authReturn() },
     })
     setBusy(false)
     if (error) return setErr(error.message)

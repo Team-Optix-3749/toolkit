@@ -31,7 +31,7 @@ function BuildHistory() {
   }, [])
 
   const totalH = useMemo(
-    () => hoursFromMinutes(rows.reduce((s, r) => s + (r.credited_minutes || 0), 0)),
+    () => hoursFromMinutes(rows.reduce((s, r) => s + (r.credited_minutes || 0), 0)).toFixed(2),
     [rows],
   )
 
@@ -69,7 +69,7 @@ function BuildHistory() {
                 {r.check_out ? <Badge label="closed" tone="APPROVED" /> : <Badge label="open" tone="accent" />}
               </td>
               <td className="py-2 px-5 text-right font-mono tabular-nums">
-                {r.credited_minutes != null ? hoursFromMinutes(r.credited_minutes) : '-'}
+                {r.credited_minutes != null ? hoursFromMinutes(r.credited_minutes).toFixed(2) : '-'}
               </td>
             </tr>
           ))}

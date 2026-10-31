@@ -1,171 +1,111 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
+import { individualCredit, individualOutreachAction } from '~/lib/actions'
 import { card, cardHead, cardTitle, label, input, textarea, btn } from '~/lib/ui'
-import { DEPARTMENTS } from '~/lib/types'
+import { DEPARTMENTS, type IndividualCredit, type Season } from '~/lib/types'
 
-export const Route = createFileRoute('/_app/outreach/log')({
-  component: LogIndividualOutreach,
-})
-
-const MAX_FILES = 5
+export const Route = createFileRoute('/_app/outreach/log')({ component: LogIndividualOutreach })
+const VISUAL_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'video/mp4', 'video/webm', 'video/quicktime']
+const hours = (minutes: number) => (Number(minutes) / 60).toFixed(2)
 
 function LogIndividualOutreach() {
   const { user, profile } = useAuth()
   const { flash, Toast } = useToast()
-  const navigate = useNavigate()
-  const [f, setF] = useState({
-    full_name: '',
-    department: '',
-    event_name: '',
-    what_you_did: '',
-    impact: '',
-    hours: '',
-    event_date: '',
-    people_impacted: '',
-  })
+  const [f, setF] = useState({ full_name: '', department: '', event_name: '', what_you_did: '', impact: '', hours: '', event_date: '', people_impacted: '' })
   const [files, setFiles] = useState<File[]>([])
+  const [seasons, setSeasons] = useState<Season[]>([])
+  const [seasonId, setSeasonId] = useState('')
+  const [credit, setCredit] = useState<IndividualCredit | null>(null)
   const [busy, setBusy] = useState(false)
-
-  // Pre-fill name + department from the member's profile.
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   useEffect(() => {
-    if (profile)
-      setF((prev) => ({
-        ...prev,
-        full_name: prev.full_name || profile.display_name || '',
-        department: prev.department || profile.department || '',
-      }))
+    if (profile) setF(prev => ({ ...prev, full_name: prev.full_name || profile.display_name || '', department: prev.department || profile.department || '' }))
   }, [profile])
-
-  async function submit() {
-    if (!f.full_name.trim()) return flash('Full name required', true)
-    if (!f.event_name.trim()) return flash('Event name required', true)
-    if (!f.what_you_did.trim()) return flash('Describe what you did', true)
-    if (!f.impact.trim()) return flash('Describe the community impact', true)
-    const hours = parseFloat(f.hours)
-    if (!hours || hours <= 0) return flash('Enter the hours you did', true)
-    if (!f.event_date) return flash('Date of event required', true)
-    if (!files.length) return flash('Visual proof is required', true)
-    if (files.length > MAX_FILES) return flash(`Upload at most ${MAX_FILES} files`, true)
-    const people = parseInt(f.people_impacted, 10)
-    if (!Number.isFinite(people) || people < 0) return flash('Enter how many people you impacted', true)
-
-    setBusy(true)
-    const proof_urls: string[] = []
-    for (const file of files) {
-      const path = `${user!.id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, '_')}`
-      const { error: upErr } = await supabase.storage.from('outreach-proofs').upload(path, file)
-      if (upErr) {
-        setBusy(false)
-        return flash('Upload failed: ' + upErr.message, true)
-      }
-      proof_urls.push(supabase.storage.from('outreach-proofs').getPublicUrl(path).data.publicUrl)
-    }
-
-    const { error } = await supabase.from('individual_outreach').insert({
-      user_id: user!.id,
-      full_name: f.full_name.trim(),
-      department: f.department || null,
-      event_name: f.event_name.trim(),
-      what_you_did: f.what_you_did.trim(),
-      impact: f.impact.trim(),
-      hours,
-      event_date: f.event_date,
-      proof_urls,
-      people_impacted: people,
-      status: 'PENDING',
+  useEffect(() => {
+    void supabase.from('seasons').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+      if (error) { setError(error.message); return }
+      const list = (data || []) as Season[]
+      setSeasons(list); setSeasonId(list.find(s => s.is_current)?.id || '')
     })
-    setBusy(false)
-    if (error) return flash('Submit failed: ' + error.message, true)
-    flash('Submitted for review')
-    navigate({ to: '/outreach' })
+  }, [])
+  useEffect(() => {
+    let active = true
+    setCredit(null)
+    if (seasonId) void individualCredit({ season_id: seasonId }).then(({ data, error }) => {
+      if (!active) return
+      if (error) setError(error.message)
+      else setCredit(data)
+    })
+    return () => { active = false }
+  }, [seasonId, success])
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault(); setError(''); setSuccess(false)
+    const amount = Number(f.hours) * 60
+    const people = Number(f.people_impacted)
+    if (!user || !seasonId) { setError('Select an existing season. If none exist, season setup is required.'); return }
+    if (![f.full_name, f.event_name, f.what_you_did, f.impact].every(v => v.trim()) || !f.event_date) { setError('Complete all required fields.'); return }
+    if (!Number.isFinite(amount) || amount <= 0) { setError('Enter positive finite hours.'); return }
+    if (!f.people_impacted || !Number.isInteger(people) || people < 0) { setError('Enter a nonnegative whole number of people impacted.'); return }
+    if (!files.length || files.length > 5 || files.some(file => !VISUAL_TYPES.includes(file.type) || file.size <= 0 || file.size > 50 * 1024 * 1024)) {
+      setError('Choose one to five supported images or videos, each nonempty and at most 50 MiB.'); return
+    }
+    setBusy(true)
+    const uploaded: string[] = []
+    try {
+      for (const file of files) {
+        const path = `${user.id}/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]/g, '_')}`
+        const { error } = await supabase.storage.from('outreach-proofs').upload(path, file, { contentType: file.type })
+        if (error) throw error
+        uploaded.push(path)
+      }
+      const { error } = await individualOutreachAction({ action: 'submit', season_id: seasonId, full_name: f.full_name.trim(), department: f.department || null,
+        event_name: f.event_name.trim(), what_you_did: f.what_you_did.trim(), impact: f.impact.trim(), claimed_minutes: amount,
+        event_date: f.event_date, people_impacted: people, proof_urls: uploaded })
+      if (error) throw error
+      setSuccess(true); setFiles([]); setF(prev => ({ ...prev, event_name: '', what_you_did: '', impact: '', hours: '', event_date: '', people_impacted: '' }))
+      flash('Submitted for review')
+    } catch (failure) {
+      let message = failure instanceof Error ? failure.message : failure && typeof failure === 'object' && 'message' in failure ? String(failure.message) : 'Submission failed'
+      if (uploaded.length) {
+        const { error } = await supabase.storage.from('outreach-proofs').remove(uploaded)
+        if (error) message += ` Uploaded proof cleanup failed: ${error.message}`
+      }
+      setError(message)
+    } finally { setBusy(false) }
   }
 
-  return (
-    <section className={card}>
-      <div className={cardHead}>
-        <span className={cardTitle}>Log individual outreach hours</span>
+  return <section className={card}>
+    <div className={cardHead}><h1 className={cardTitle}>Log individual outreach hours</h1></div>
+    <form onSubmit={submit} className="p-5 space-y-5">
+      <p className="text-sm text-ink-soft">Approved individual outreach counts toward your selected season's official outreach total, up to its uniform cap. Requests may still be approved in full after you reach the cap.</p>
+      <label className={label}>Season<select required className={input} value={seasonId} onChange={e => setSeasonId(e.target.value)}><option value="">Select a season</option>{seasons.map(s => <option key={s.id} value={s.id}>{s.name}{s.is_current ? ' · Current' : ''}</option>)}</select></label>
+      {!seasons.length && <p className="text-sm text-ink-soft">Season setup is required before submitting.</p>}
+      {credit && <dl className="grid sm:grid-cols-2 gap-3 text-sm bg-surface p-4 border border-line">
+        <div><dt>Raw approved individual hours</dt><dd>{hours(credit.raw_approved_minutes)}</dd></div>
+        <div><dt>Season individual cap (hours)</dt><dd>{hours(credit.cap_minutes)}</dd></div>
+        <div><dt>Counted individual hours</dt><dd>{hours(credit.counted_individual_minutes)}</dd></div>
+        <div><dt>Official outreach hours (events + counted individual)</dt><dd>{hours(credit.official_outreach_minutes)}</dd></div>
+      </dl>}
+      <div className="grid sm:grid-cols-2 gap-4">
+        <label className={label}>Full name<input required className={input} value={f.full_name} onChange={e => setF({ ...f, full_name: e.target.value })} /></label>
+        <label className={label}>Department<select className={input} value={f.department} onChange={e => setF({ ...f, department: e.target.value })}><option value="">Optional</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></label>
+        <label className={label}>Event name<input required className={input} value={f.event_name} onChange={e => setF({ ...f, event_name: e.target.value })} /></label>
+        <label className={label}>Event date<input required type="date" className={input} value={f.event_date} onChange={e => setF({ ...f, event_date: e.target.value })} /></label>
+        <label className={label}>Hours claimed<input required type="number" min="0" step="any" className={input} value={f.hours} onChange={e => setF({ ...f, hours: e.target.value })} /></label>
+        <label className={label}>People impacted<input required type="number" min="0" step="1" className={input} value={f.people_impacted} onChange={e => setF({ ...f, people_impacted: e.target.value })} /></label>
       </div>
-      <div className="p-5 space-y-4">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className={label}>Full name</label>
-            <input className={input} value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} />
-          </div>
-          <div>
-            <label className={label}>Department</label>
-            <select className={input} value={f.department} onChange={(e) => setF({ ...f, department: e.target.value })}>
-              <option value="">—</option>
-              {DEPARTMENTS.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className={label}>Name of the event</label>
-          <input
-            className={input}
-            placeholder="e.g. Chem Tutoring · Food Bank Volunteering"
-            value={f.event_name}
-            onChange={(e) => setF({ ...f, event_name: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className={label}>What did you do? (be descriptive)</label>
-          <textarea rows={3} className={textarea} value={f.what_you_did} onChange={(e) => setF({ ...f, what_you_did: e.target.value })} />
-        </div>
-
-        <div>
-          <label className={label}>How was this impactful to our community? (2-3 sentences max)</label>
-          <textarea rows={3} className={textarea} value={f.impact} onChange={(e) => setF({ ...f, impact: e.target.value })} />
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-4">
-          <div>
-            <label className={label}>Hours you did</label>
-            <input type="number" step="0.5" min="0" className={input} value={f.hours} onChange={(e) => setF({ ...f, hours: e.target.value })} />
-          </div>
-          <div>
-            <label className={label}>Date of event</label>
-            <input type="date" className={input} value={f.event_date} onChange={(e) => setF({ ...f, event_date: e.target.value })} />
-          </div>
-          <div>
-            <label className={label}>People impacted</label>
-            <input type="number" min="0" className={input} value={f.people_impacted} onChange={(e) => setF({ ...f, people_impacted: e.target.value })} />
-          </div>
-        </div>
-        <p className="text-xs text-ink-soft">
-          Enter the full hours you did. A maximum of 6 individual outreach hours count toward your total.
-        </p>
-
-        <div>
-          <label className={label}>Visual proof (required · up to 5 images or videos)</label>
-          <input
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, MAX_FILES))}
-            className="text-sm"
-          />
-          {files.length > 0 && (
-            <ul className="mt-2 text-xs text-ink-soft font-mono space-y-0.5">
-              {files.map((file) => (
-                <li key={file.name}>{file.name}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <button onClick={submit} disabled={busy} className={btn}>
-          {busy ? 'Submitting…' : 'Submit for review'}
-        </button>
-      </div>
-      {Toast}
-    </section>
-  )
+      <label className={label}>What you did<textarea required className={textarea} value={f.what_you_did} onChange={e => setF({ ...f, what_you_did: e.target.value })} /></label>
+      <label className={label}>Community impact<textarea required className={textarea} value={f.impact} onChange={e => setF({ ...f, impact: e.target.value })} /></label>
+      <label className={label}>Visual proof (1–5 images/videos, up to 50 MiB each)<input key={success ? 'submitted' : 'editing'} required type="file" multiple accept={VISUAL_TYPES.join(',')} className={input} onChange={e => setFiles(Array.from(e.target.files || []))} /></label>
+      {files.length > 0 && <ul className="text-sm text-ink-soft">{files.map((file, index) => <li key={`${file.name}-${index}`}>{file.name}</li>)}</ul>}
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+      {success && <p role="status" className="text-sm text-accent">Submitted for review. <Link to="/outreach/history" className="underline">View your history</Link>.</p>}
+      <button type="submit" className={btn} disabled={busy || !seasonId}>{busy ? 'Submitting…' : 'Submit for review'}</button>
+    </form>{Toast}
+  </section>
 }

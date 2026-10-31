@@ -2,7 +2,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '~/lib/auth'
 import { supabase } from '~/lib/supabase'
-import { can, isAdmin, isOwner, ROLE_LABEL, type Role } from '~/lib/rbac'
+import { can, hasAdminAccess, isAdmin, isOwner, ROLE_LABEL, type Role } from '~/lib/rbac'
 import type { Permission } from '~/lib/types'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -11,26 +11,28 @@ const NAV: [string, string][] = [
   ['/build', 'Build'],
   ['/outreach', 'Outreach'],
   ['/tasks', 'Tasks'],
+  ['/groups', 'Groups'],
   ['/scouting', 'Scouting'],
   ['/opi', 'OPI'],
   ['/purchases', 'Purchases'],
   ['/hours', 'Hours'],
 ]
 
-// Third entry: the permission needed (any one of a list), or null for every admin.
-type AdminItem = [string, string, Permission | Permission[] | null]
+// Members accepts account authority; generic organization settings remain President-only.
+type AdminItem = [string, string, Permission | Permission[] | 'president' | null]
 const ADMIN_NAV: AdminItem[] = [
-  ['/admin/members', 'Members', 'manage_accounts'],
+  ['/admin/members', 'Members', null],
   ['/admin/setup', 'Setup', ['manage_seasons', 'manage_invitations', 'manage_groups', 'manage_tasks']],
   ['/admin/build/schedule', 'Build schedule', 'manage_build_hours'],
   ['/admin/build/attendance', 'Build attendance', 'manage_build_hours'],
   ['/admin/outreach/events', 'Outreach events', 'manage_outreach_events'],
+  ['/admin/outreach/attendance', 'Outreach attendance', 'manage_outreach_attendance'],
   ['/admin/outreach/individual', 'Individual outreach', 'manage_outreach_attendance'],
   ['/admin/opi', 'OPI review', 'manage_opis'],
   ['/scouting/manage', 'Scouting', 'manage_scouting'],
-  ['/admin/purchases', 'Purchases', null],
+  ['/admin/purchases', 'Purchases', 'manage_purchases'],
   ['/admin/reports/hours', 'Reports', 'export_records'],
-  ['/admin/settings', 'Settings', null],
+  ['/admin/settings', 'Settings', 'president'],
 ]
 
 const TABS: [string, string, ReactNode][] = [
@@ -43,7 +45,7 @@ const TABS: [string, string, ReactNode][] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, profile, role, signOut } = useAuth()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const admin = isAdmin(role)
+  const admin = hasAdminAccess(profile)
   const owner = isOwner(role)
   const [open, setOpen] = useState(false)
 
@@ -70,13 +72,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [user?.id, pathname])
 
-  // Same rule as the DB's has_perm(): owners/officers see every admin page.
   const hasPerm = (p: AdminItem[2]) =>
-    p === null || (Array.isArray(p) ? p.some((x) => can(profile, x)) : can(profile, p))
+    p === 'president' ? owner : p === null ? (isAdmin(role) || can(profile, 'manage_accounts')) : (Array.isArray(p) ? p.some((x) => can(profile, x)) : can(profile, p))
   const visibleAdmin = admin ? ADMIN_NAV.filter(([, , p]) => hasPerm(p)) : []
   const topItems: [string, string][] = [...NAV]
   if (visibleAdmin.length > 0) topItems.push(['/admin', 'Admin'])
-  if (owner) topItems.push(['/owner', 'Owner'])
+  if (owner) topItems.push(['/owner', 'President'])
 
   const topLinkCls = (active: boolean) =>
     `px-3 py-1 h-8 my-1 inline-flex items-center text-[12px] font-mono uppercase tracking-[0.08em] rounded-lg whitespace-nowrap transition-all duration-150 ${
@@ -204,6 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div
         className={`sm:hidden fixed inset-0 z-50 ${open ? '' : 'pointer-events-none'}`}
         aria-hidden={!open}
+        inert={!open}
       >
         <div
           onClick={() => setOpen(false)}

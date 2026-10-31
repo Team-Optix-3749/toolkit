@@ -1,117 +1,27 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { supabase } from '~/lib/supabase'
-import { useToast } from '~/lib/toast'
-import { fmtDateTime, hoursFromMinutes } from '~/lib/format'
-import { Badge } from '~/components/Badge'
-import type { BuildRecord, ProfileRow } from '~/lib/types'
-import { card, cardHead, cardTitle, btnGhost } from '~/lib/ui'
-
-export const Route = createFileRoute('/_app/admin/build/attendance')({
-  component: AttendancePage,
-})
-
-function AttendancePage() {
-  const { flash, Toast } = useToast()
-  const [rows, setRows] = useState<BuildRecord[]>([])
-  const [names, setNames] = useState<Record<string, string>>({})
-
-  async function load() {
-    const [{ data, error }, { data: p }] = await Promise.all([
-      supabase.from('build_records').select('*').order('check_in', { ascending: false }).limit(200),
-      supabase.from('profiles').select('id, display_name'),
-    ])
-    if (error) return flash('Load failed: ' + error.message, true)
-    setRows((data as BuildRecord[]) || [])
-    setNames(Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '-'])))
-  }
-  useEffect(() => {
-    load()
-  }, [])
-
-  async function correctMinutes(r: BuildRecord, minutes: number) {
-    const { error } = await supabase.rpc('build_action', {
-      payload: { action: 'correct', id: r.id, check_in: r.check_in, check_out: r.check_out },
-    })
-    if (error) return flash(error.message, true)
-    flash('Record updated')
-    load()
-  }
-
-  async function closeOpen(r: BuildRecord) {
-    const { error } = await supabase.rpc('build_action', {
-      payload: { action: 'check_out', id: r.id },
-    })
-    if (error) return flash(error.message, true)
-    flash('Closed')
-    load()
-  }
-
-  return (
-    <section className={card}>
-      <div className={cardHead}>
-        <span className={cardTitle}>Build attendance</span>
-        <button onClick={load} className={btnGhost}>
-          Refresh
-        </button>
-      </div>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-ink-soft">
-            {['Member', 'Check-in', 'Status', 'Minutes', ''].map((h) => (
-              <th
-                key={h}
-                className="py-2 px-5 font-mono text-[11px] uppercase tracking-[0.06em] border-b border-line text-left"
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} className="border-b border-line">
-              <td className="py-2 px-5">{names[r.member_id] || r.member_id.slice(0, 8)}</td>
-              <td className="py-2 px-5 font-mono text-ink-soft">{fmtDateTime(r.check_in)}</td>
-              <td className="py-2 px-5">
-                {r.check_out ? (
-                  <Badge label="closed" tone="APPROVED" />
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <Badge label="open" tone="accent" />
-                    {new Date(r.check_in).getTime() < Date.now() - 12 * 60 * 60 * 1000 && (
-                      <Badge label="stale" tone="REJECTED" />
-                    )}
-                  </div>
-                )}
-              </td>
-              <td className="py-2 px-5">
-                <span className="text-xs font-mono text-ink-soft">
-                  {r.credited_minutes != null ? `${r.credited_minutes} min (${hoursFromMinutes(r.credited_minutes)}h)` : '-'}
-                </span>
-              </td>
-              <td className="py-2 px-5 text-right">
-                {!r.check_out && (
-                  <button
-                    onClick={() => closeOpen(r)}
-                    className="text-xs font-mono uppercase border border-line px-2 py-1 hover:bg-canvas"
-                  >
-                    Close
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={5} className="py-6 text-center text-ink-soft text-sm">
-                No check-ins.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-      {Toast}
-    </section>
-  )
+import {createFileRoute} from '@tanstack/react-router'
+import {useEffect,useState} from 'react'
+import {supabase} from '~/lib/supabase'
+import {fmtDateTime,hoursFromMinutes} from '~/lib/format'
+import {teamInput,teamDateTime} from '~/lib/time'
+import {TeamDateTimeInput,type TimeDisambiguation} from '~/components/TeamDateTimeInput'
+import type {BuildRecord,BuildSession} from '~/lib/types'
+import {card,cardHead,cardTitle,label,input,btn,btnGhost} from '~/lib/ui'
+export const Route=createFileRoute('/_app/admin/build/attendance')({component:Attendance})
+function Attendance(){
+ const [rows,setRows]=useState<BuildRecord[]>([]),[sessions,setSessions]=useState<BuildSession[]>([]),[people,setPeople]=useState<{id:string;display_name:string}[]>([])
+ const [id,setId]=useState(''),[sessionId,setSessionId]=useState(''),[memberId,setMemberId]=useState(''),[arrival,setArrival]=useState(teamInput()),[departure,setDeparture]=useState(teamInput())
+ const [arrivalChoice,setArrivalChoice]=useState<TimeDisambiguation>('reject'),[departureChoice,setDepartureChoice]=useState<TimeDisambiguation>('reject')
+ const [override,setOverride]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('')
+ async function load(){
+  const [r,s,p]=await Promise.all([supabase.from('build_records').select('*').order('check_in',{ascending:false}),supabase.from('build_sessions').select('*').order('opens_at',{ascending:false}),supabase.from('historical_profiles').select('id,display_name').order('display_name')])
+  if(r.error||s.error||p.error){setError((r.error||s.error||p.error)!.message);return}setRows(r.data as BuildRecord[]);setSessions(s.data as BuildSession[]);setPeople(p.data as {id:string;display_name:string}[])
+ }
+ useEffect(()=>{void load()},[])
+ async function save(){
+  setBusy(true);setError('');setMessage('')
+  try{const payload={action:id?'correct':'add_record',...(id?{id}:{session_id:sessionId,member_id:memberId}),check_in:teamDateTime(arrival,arrivalChoice),check_out:teamDateTime(departure,departureChoice),credit_override:override};const {error}=await supabase.rpc('build_action',{payload});if(error)throw error;setId('');setMessage('Actual timestamps saved. Credit recalculated by the server.');await load()}catch(cause){setError(cause&&typeof cause==='object'&&'message'in cause?String(cause.message):String(cause))}finally{setBusy(false)}
+ }
+ return <section className={card}><div className={cardHead}><h1 className={cardTitle}>Build attendance</h1><button onClick={()=>void load()} className={btnGhost}>Refresh</button></div><div className="p-5 space-y-4"><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th>Member</th><th>Check-in</th><th>Checkout</th><th>Hours</th><th>Method</th><th>Action</th></tr></thead><tbody>{rows.map(row=><tr key={row.id} className="border-t border-line"><td>{people.find(p=>p.id===row.member_id)?.display_name??row.member_id}</td><td>{fmtDateTime(row.check_in)}</td><td>{row.check_out?fmtDateTime(row.check_out):'Open — reserved, zero credit'}</td><td>{hoursFromMinutes(row.credited_minutes).toFixed(2)}</td><td>{row.checkout_method}{row.automatically_closed?' · automatically closed':''}</td><td><button className={btnGhost} onClick={()=>{setId(row.id);setSessionId(row.session_id??'');setMemberId(row.member_id);setArrival(teamInput(row.check_in));setDeparture(teamInput(row.check_out??undefined));setOverride(row.credit_override===true)}}>Correct timestamps</button></td></tr>)}</tbody></table></div>
+ <h2>{id?'Correct record':'Add missing attendance'}</h2><label className={label}>Session<select disabled={!!id} className={input} value={sessionId} onChange={e=>setSessionId(e.target.value)}><option value="">Choose session</option>{sessions.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select></label><label className={label}>Member<select disabled={!!id} className={input} value={memberId} onChange={e=>setMemberId(e.target.value)}><option value="">Choose member</option>{people.map(p=><option key={p.id} value={p.id}>{p.display_name}</option>)}</select></label>
+ <TeamDateTimeInput label="Actual check-in" value={arrival} onChange={setArrival} disambiguation={arrivalChoice} onDisambiguationChange={setArrivalChoice}/><TeamDateTimeInput label="Actual checkout" value={departure} onChange={setDeparture} disambiguation={departureChoice} onDisambiguationChange={setDepartureChoice}/><label className="flex gap-2"><input type="checkbox" checked={override} onChange={e=>setOverride(e.target.checked)}/>Explicitly restore credit for a cancelled-session record (overlap rules still apply)</label><button className={btn} disabled={busy||!sessionId||!memberId} onClick={()=>void save()}>Save actual timestamps</button>{id&&<button className={btnGhost} onClick={()=>setId('')}>Add another record</button>}{error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}</div></section>
 }

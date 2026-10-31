@@ -48,8 +48,7 @@ function ManageScouting() {
   const [pool, setPool] = useState<string[]>([])
 
   useEffect(() => {
-    supabase
-      .from('profiles')
+    supabase.from('public_directory')
       .select('id, display_name, role')
       .eq('account_status', 'active')
       .neq('role', 'PENDING')

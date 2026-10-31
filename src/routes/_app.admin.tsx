@@ -1,6 +1,9 @@
 import { createFileRoute, Outlet, Link, useRouterState } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
 import { RequireAdmin } from '~/components/Guards'
+import { useAuth } from '~/lib/auth'
+import { can, isAdmin } from '~/lib/rbac'
+import type { Permission } from '~/lib/types'
 
 type AdminItem = { to: string; label: string; icon: React.ReactNode }
 
@@ -10,6 +13,8 @@ const ADMIN_NAV: AdminItem[] = [
   { to: '/admin/setup', label: 'Setup', icon: <SlidersIcon /> },
   { to: '/admin/build/schedule', label: 'Build', icon: <WrenchIcon /> },
   { to: '/admin/outreach/events', label: 'Outreach', icon: <MegaphoneIcon /> },
+  { to: '/admin/outreach/attendance', label: 'Attendance', icon: <PeopleIcon /> },
+  { to: '/admin/outreach/individual', label: 'Individual review', icon: <SlidersIcon /> },
   { to: '/admin/opi', label: 'OPI', icon: <SparkIcon /> },
   { to: '/admin/purchases', label: 'Purchases', icon: <CartIcon /> },
   { to: '/admin/reports/hours', label: 'Reports', icon: <ChartIcon /> },
@@ -18,13 +23,28 @@ const ADMIN_NAV: AdminItem[] = [
 
 function AdminLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const { profile, role } = useAuth()
+  const allowed = (path: string) => {
+    if (path === '/admin' || path === '/admin/') return true
+    if (path.startsWith('/admin/members')) return isAdmin(role) || can(profile, 'manage_accounts')
+    const rules: [string, Permission[]][] = [
+      ['/admin/setup', ['manage_groups','manage_tasks','manage_seasons','manage_invitations']],
+      ['/admin/build', ['manage_build_hours']], ['/admin/outreach/events', ['manage_outreach_events']],
+      ['/admin/cron-jobs', ['manage_build_hours']],
+      ['/admin/outreach', ['manage_outreach_attendance']], ['/admin/opi', ['manage_opis']],
+      ['/admin/purchases', ['manage_purchases']], ['/admin/reports', ['export_records']],
+    ]
+    const rule = rules.find(([prefix]) => path.startsWith(prefix))
+    return rule ? rule[1].some(permission => can(profile,permission)) : role === 'OWNER'
+  }
+  const navigation = ADMIN_NAV.filter(item => allowed(item.to))
   const [mobileOpen, setMobileOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const isActive = (to: string) =>
     to === '/admin' ? pathname === '/admin' || pathname === '/admin/' : pathname.startsWith(to)
 
-  const current = ADMIN_NAV.find(({ to }) => isActive(to)) ?? ADMIN_NAV[0]
+  const current = navigation.find(({ to }) => isActive(to)) ?? ADMIN_NAV[0]
 
   useEffect(() => {
     if (!mobileOpen) return
@@ -43,7 +63,7 @@ function AdminLayout() {
       <div className="hidden sm:block mb-5">
         <div className="relative">
           <div className="flex items-center gap-1.5 overflow-x-auto bg-panel backdrop-blur-xl border border-white/8 rounded-2xl p-1.5 shadow-[0_2px_16px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.06)]">
-            {ADMIN_NAV.map(({ to, label, icon }) => {
+            {navigation.map(({ to, label, icon }) => {
               const active = isActive(to)
               return (
                 <Link
@@ -92,7 +112,7 @@ function AdminLayout() {
         </button>
         {mobileOpen && (
           <div className="absolute inset-x-0 top-full mt-2 z-30 bg-panel backdrop-blur-xl border border-white/8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden">
-            {ADMIN_NAV.map(({ to, label, icon }) => {
+            {navigation.map(({ to, label, icon }) => {
               const active = isActive(to)
               return (
                 <Link
@@ -114,7 +134,7 @@ function AdminLayout() {
         )}
       </div>
 
-      <Outlet />
+      {allowed(pathname) ? <Outlet /> : <p role="alert">You do not have permission to access this workflow.</p>}
     </RequireAdmin>
   )
 }

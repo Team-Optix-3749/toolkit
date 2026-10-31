@@ -32,16 +32,18 @@ function NotificationsFeed() {
   }, [])
 
   async function markRead(id: string) {
-    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id)
+    const {error}=await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id)
+    if(error)return flash('Mark read failed: '+error.message,true)
     notifyUnreadChanged()
     load()
   }
   async function markAll() {
     const unread = rows.filter((r) => !r.read_at).map((r) => r.id)
     if (!unread.length) return
-    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', unread)
+    const {error}=await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', unread)
+    if(error)return flash('Mark loaded notifications failed: '+error.message,true)
     notifyUnreadChanged()
-    flash('All marked read')
+    flash('Loaded notifications marked read')
     load()
   }
 
@@ -51,7 +53,7 @@ function NotificationsFeed() {
         <span className={cardTitle}>Notifications</span>
         <div className="flex items-center gap-3">
           <button onClick={markAll} className={btnGhost}>
-            Mark all read
+            Mark loaded notifications read
           </button>
           <Link to="/notifications/preferences" className="text-[11px] font-mono uppercase text-accent hover:underline">
             Preferences →

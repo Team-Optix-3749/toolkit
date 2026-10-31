@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useAuth } from '~/lib/auth'
 import { supabase } from '~/lib/supabase'
+import { profileAction } from '~/lib/actions'
 import { card, cardHead, cardTitle, label, input, textarea, btn } from '~/lib/ui'
 import { ROLES, ROLE_LABEL, roleLevel, type Role } from '~/lib/rbac'
 import { DEPARTMENTS } from '~/lib/types'
@@ -46,17 +47,15 @@ function ProfilePage() {
     if (!form.display_name.trim()) return setMsg('Display name is required')
     setBusy(true)
     setMsg(null)
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        display_name: form.display_name.trim(),
-        department: form.department || null,
-        grade: form.grade || null,
-        avatar_url: form.avatar_url || null,
-        bio: form.bio || null,
-        displayed_role: form.displayed_role || null,
-      })
-      .eq('id', user!.id)
+    const { error } = await profileAction({
+      action: 'edit_self',
+      display_name: form.display_name.trim(),
+      department: form.department || null,
+      grade: form.grade || null,
+      avatar_url: form.avatar_url || null,
+      bio: form.bio || null,
+      displayed_role: form.displayed_role || null,
+    })
     setBusy(false)
     setMsg(error ? 'Save failed: ' + error.message : 'Saved')
     if (!error) refresh()
@@ -81,8 +80,10 @@ function ProfilePage() {
               <input className={input} value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
             </div>
             <div>
-              <label className={label}>Department</label>
+              <label htmlFor="profile-department" className={label}>Department</label>
               <Select
+                id="profile-department"
+                aria-label="Department"
                 value={form.department}
                 onChange={(v) => setForm({ ...form, department: v })}
                 options={[{ value: '', label: '—' }, ...DEPARTMENTS.map((d) => ({ value: d, label: d }))]}
@@ -104,8 +105,10 @@ function ProfilePage() {
 
           {roleLevel(role) > roleLevel('MEMBER') && (
             <div className="mt-4">
-              <label className={label}>Displayed role</label>
+              <label htmlFor="profile-displayed-role" className={label}>Displayed role</label>
               <Select
+                id="profile-displayed-role"
+                aria-label="Displayed role"
                 value={form.displayed_role}
                 onChange={(v) => setForm({ ...form, displayed_role: v })}
                 options={[

@@ -32,6 +32,7 @@ import { Route as AppOwnerIndexRouteImport } from './routes/_app.owner.index'
 import { Route as AppOutreachIndexRouteImport } from './routes/_app.outreach.index'
 import { Route as AppOpiIndexRouteImport } from './routes/_app.opi.index'
 import { Route as AppNotificationsIndexRouteImport } from './routes/_app.notifications.index'
+import { Route as AppGroupsIndexRouteImport } from './routes/_app.groups.index'
 import { Route as AppBuildIndexRouteImport } from './routes/_app.build.index'
 import { Route as AppAdminIndexRouteImport } from './routes/_app.admin.index'
 import { Route as AppTasksNewRouteImport } from './routes/_app.tasks.new'
@@ -48,10 +49,10 @@ import { Route as AppOwnerMembersRouteImport } from './routes/_app.owner.members
 import { Route as AppOwnerEventsRouteImport } from './routes/_app.owner.events'
 import { Route as AppOutreachLogRouteImport } from './routes/_app.outreach.log'
 import { Route as AppOutreachHistoryRouteImport } from './routes/_app.outreach.history'
-import { Route as AppOutreachCheckInRouteImport } from './routes/_app.outreach.check-in'
 import { Route as AppOpiNewRouteImport } from './routes/_app.opi.new'
 import { Route as AppOpiIdRouteImport } from './routes/_app.opi.$id'
 import { Route as AppNotificationsPreferencesRouteImport } from './routes/_app.notifications.preferences'
+import { Route as AppGroupsIdRouteImport } from './routes/_app.groups.$id'
 import { Route as AppBuildHistoryRouteImport } from './routes/_app.build.history'
 import { Route as AppBuildCheckInRouteImport } from './routes/_app.build.check-in'
 import { Route as AppAdminSetupRouteImport } from './routes/_app.admin.setup'
@@ -68,7 +69,6 @@ import { Route as AppAdminReportsPurchasesRouteImport } from './routes/_app.admi
 import { Route as AppAdminReportsOpiRouteImport } from './routes/_app.admin.reports.opi'
 import { Route as AppAdminReportsHoursRouteImport } from './routes/_app.admin.reports.hours'
 import { Route as AppAdminOutreachAttendanceRouteImport } from './routes/_app.admin.outreach.attendance'
-import { Route as AppAdminNotificationsTemplatesRouteImport } from './routes/_app.admin.notifications.templates'
 import { Route as AppAdminMembersPendingRouteImport } from './routes/_app.admin.members.pending'
 import { Route as AppAdminMembersIdRouteImport } from './routes/_app.admin.members.$id'
 import { Route as AppAdminBuildZonesRouteImport } from './routes/_app.admin.build.zones'
@@ -197,6 +197,11 @@ const AppNotificationsIndexRoute = AppNotificationsIndexRouteImport.update({
   path: '/notifications/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGroupsIndexRoute = AppGroupsIndexRouteImport.update({
+  id: '/groups/',
+  path: '/groups/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppBuildIndexRoute = AppBuildIndexRouteImport.update({
   id: '/build/',
   path: '/build/',
@@ -277,11 +282,6 @@ const AppOutreachHistoryRoute = AppOutreachHistoryRouteImport.update({
   path: '/outreach/history',
   getParentRoute: () => AppRoute,
 } as any)
-const AppOutreachCheckInRoute = AppOutreachCheckInRouteImport.update({
-  id: '/outreach/check-in',
-  path: '/outreach/check-in',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppOpiNewRoute = AppOpiNewRouteImport.update({
   id: '/opi/new',
   path: '/opi/new',
@@ -298,6 +298,11 @@ const AppNotificationsPreferencesRoute =
     path: '/notifications/preferences',
     getParentRoute: () => AppRoute,
   } as any)
+const AppGroupsIdRoute = AppGroupsIdRouteImport.update({
+  id: '/groups/$id',
+  path: '/groups/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppBuildHistoryRoute = AppBuildHistoryRouteImport.update({
   id: '/build/history',
   path: '/build/history',
@@ -378,12 +383,6 @@ const AppAdminOutreachAttendanceRoute =
   AppAdminOutreachAttendanceRouteImport.update({
     id: '/outreach/attendance',
     path: '/outreach/attendance',
-    getParentRoute: () => AppAdminRoute,
-  } as any)
-const AppAdminNotificationsTemplatesRoute =
-  AppAdminNotificationsTemplatesRouteImport.update({
-    id: '/notifications/templates',
-    path: '/notifications/templates',
     getParentRoute: () => AppAdminRoute,
   } as any)
 const AppAdminMembersPendingRoute = AppAdminMembersPendingRouteImport.update({
@@ -480,10 +479,10 @@ export interface FileRoutesByFullPath {
   '/admin/setup': typeof AppAdminSetupRoute
   '/build/check-in': typeof AppBuildCheckInRoute
   '/build/history': typeof AppBuildHistoryRoute
+  '/groups/$id': typeof AppGroupsIdRoute
   '/notifications/preferences': typeof AppNotificationsPreferencesRoute
   '/opi/$id': typeof AppOpiIdRoute
   '/opi/new': typeof AppOpiNewRoute
-  '/outreach/check-in': typeof AppOutreachCheckInRoute
   '/outreach/history': typeof AppOutreachHistoryRoute
   '/outreach/log': typeof AppOutreachLogRoute
   '/owner/events': typeof AppOwnerEventsRoute
@@ -500,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/tasks/new': typeof AppTasksNewRoute
   '/admin/': typeof AppAdminIndexRoute
   '/build/': typeof AppBuildIndexRoute
+  '/groups/': typeof AppGroupsIndexRoute
   '/notifications/': typeof AppNotificationsIndexRoute
   '/opi/': typeof AppOpiIndexRoute
   '/outreach/': typeof AppOutreachIndexRoute
@@ -512,7 +512,6 @@ export interface FileRoutesByFullPath {
   '/admin/build/zones': typeof AppAdminBuildZonesRoute
   '/admin/members/$id': typeof AppAdminMembersIdRoute
   '/admin/members/pending': typeof AppAdminMembersPendingRoute
-  '/admin/notifications/templates': typeof AppAdminNotificationsTemplatesRoute
   '/admin/outreach/attendance': typeof AppAdminOutreachAttendanceRoute
   '/admin/reports/hours': typeof AppAdminReportsHoursRoute
   '/admin/reports/opi': typeof AppAdminReportsOpiRoute
@@ -552,10 +551,10 @@ export interface FileRoutesByTo {
   '/admin/setup': typeof AppAdminSetupRoute
   '/build/check-in': typeof AppBuildCheckInRoute
   '/build/history': typeof AppBuildHistoryRoute
+  '/groups/$id': typeof AppGroupsIdRoute
   '/notifications/preferences': typeof AppNotificationsPreferencesRoute
   '/opi/$id': typeof AppOpiIdRoute
   '/opi/new': typeof AppOpiNewRoute
-  '/outreach/check-in': typeof AppOutreachCheckInRoute
   '/outreach/history': typeof AppOutreachHistoryRoute
   '/outreach/log': typeof AppOutreachLogRoute
   '/owner/events': typeof AppOwnerEventsRoute
@@ -572,6 +571,7 @@ export interface FileRoutesByTo {
   '/tasks/new': typeof AppTasksNewRoute
   '/admin': typeof AppAdminIndexRoute
   '/build': typeof AppBuildIndexRoute
+  '/groups': typeof AppGroupsIndexRoute
   '/notifications': typeof AppNotificationsIndexRoute
   '/opi': typeof AppOpiIndexRoute
   '/outreach': typeof AppOutreachIndexRoute
@@ -584,7 +584,6 @@ export interface FileRoutesByTo {
   '/admin/build/zones': typeof AppAdminBuildZonesRoute
   '/admin/members/$id': typeof AppAdminMembersIdRoute
   '/admin/members/pending': typeof AppAdminMembersPendingRoute
-  '/admin/notifications/templates': typeof AppAdminNotificationsTemplatesRoute
   '/admin/outreach/attendance': typeof AppAdminOutreachAttendanceRoute
   '/admin/reports/hours': typeof AppAdminReportsHoursRoute
   '/admin/reports/opi': typeof AppAdminReportsOpiRoute
@@ -628,10 +627,10 @@ export interface FileRoutesById {
   '/_app/admin/setup': typeof AppAdminSetupRoute
   '/_app/build/check-in': typeof AppBuildCheckInRoute
   '/_app/build/history': typeof AppBuildHistoryRoute
+  '/_app/groups/$id': typeof AppGroupsIdRoute
   '/_app/notifications/preferences': typeof AppNotificationsPreferencesRoute
   '/_app/opi/$id': typeof AppOpiIdRoute
   '/_app/opi/new': typeof AppOpiNewRoute
-  '/_app/outreach/check-in': typeof AppOutreachCheckInRoute
   '/_app/outreach/history': typeof AppOutreachHistoryRoute
   '/_app/outreach/log': typeof AppOutreachLogRoute
   '/_app/owner/events': typeof AppOwnerEventsRoute
@@ -648,6 +647,7 @@ export interface FileRoutesById {
   '/_app/tasks/new': typeof AppTasksNewRoute
   '/_app/admin/': typeof AppAdminIndexRoute
   '/_app/build/': typeof AppBuildIndexRoute
+  '/_app/groups/': typeof AppGroupsIndexRoute
   '/_app/notifications/': typeof AppNotificationsIndexRoute
   '/_app/opi/': typeof AppOpiIndexRoute
   '/_app/outreach/': typeof AppOutreachIndexRoute
@@ -660,7 +660,6 @@ export interface FileRoutesById {
   '/_app/admin/build/zones': typeof AppAdminBuildZonesRoute
   '/_app/admin/members/$id': typeof AppAdminMembersIdRoute
   '/_app/admin/members/pending': typeof AppAdminMembersPendingRoute
-  '/_app/admin/notifications/templates': typeof AppAdminNotificationsTemplatesRoute
   '/_app/admin/outreach/attendance': typeof AppAdminOutreachAttendanceRoute
   '/_app/admin/reports/hours': typeof AppAdminReportsHoursRoute
   '/_app/admin/reports/opi': typeof AppAdminReportsOpiRoute
@@ -704,10 +703,10 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/build/check-in'
     | '/build/history'
+    | '/groups/$id'
     | '/notifications/preferences'
     | '/opi/$id'
     | '/opi/new'
-    | '/outreach/check-in'
     | '/outreach/history'
     | '/outreach/log'
     | '/owner/events'
@@ -724,6 +723,7 @@ export interface FileRouteTypes {
     | '/tasks/new'
     | '/admin/'
     | '/build/'
+    | '/groups/'
     | '/notifications/'
     | '/opi/'
     | '/outreach/'
@@ -736,7 +736,6 @@ export interface FileRouteTypes {
     | '/admin/build/zones'
     | '/admin/members/$id'
     | '/admin/members/pending'
-    | '/admin/notifications/templates'
     | '/admin/outreach/attendance'
     | '/admin/reports/hours'
     | '/admin/reports/opi'
@@ -776,10 +775,10 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/build/check-in'
     | '/build/history'
+    | '/groups/$id'
     | '/notifications/preferences'
     | '/opi/$id'
     | '/opi/new'
-    | '/outreach/check-in'
     | '/outreach/history'
     | '/outreach/log'
     | '/owner/events'
@@ -796,6 +795,7 @@ export interface FileRouteTypes {
     | '/tasks/new'
     | '/admin'
     | '/build'
+    | '/groups'
     | '/notifications'
     | '/opi'
     | '/outreach'
@@ -808,7 +808,6 @@ export interface FileRouteTypes {
     | '/admin/build/zones'
     | '/admin/members/$id'
     | '/admin/members/pending'
-    | '/admin/notifications/templates'
     | '/admin/outreach/attendance'
     | '/admin/reports/hours'
     | '/admin/reports/opi'
@@ -851,10 +850,10 @@ export interface FileRouteTypes {
     | '/_app/admin/setup'
     | '/_app/build/check-in'
     | '/_app/build/history'
+    | '/_app/groups/$id'
     | '/_app/notifications/preferences'
     | '/_app/opi/$id'
     | '/_app/opi/new'
-    | '/_app/outreach/check-in'
     | '/_app/outreach/history'
     | '/_app/outreach/log'
     | '/_app/owner/events'
@@ -871,6 +870,7 @@ export interface FileRouteTypes {
     | '/_app/tasks/new'
     | '/_app/admin/'
     | '/_app/build/'
+    | '/_app/groups/'
     | '/_app/notifications/'
     | '/_app/opi/'
     | '/_app/outreach/'
@@ -883,7 +883,6 @@ export interface FileRouteTypes {
     | '/_app/admin/build/zones'
     | '/_app/admin/members/$id'
     | '/_app/admin/members/pending'
-    | '/_app/admin/notifications/templates'
     | '/_app/admin/outreach/attendance'
     | '/_app/admin/reports/hours'
     | '/_app/admin/reports/opi'
@@ -1082,6 +1081,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotificationsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/groups/': {
+      id: '/_app/groups/'
+      path: '/groups'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof AppGroupsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/build/': {
       id: '/_app/build/'
       path: '/build'
@@ -1194,13 +1200,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOutreachHistoryRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/outreach/check-in': {
-      id: '/_app/outreach/check-in'
-      path: '/outreach/check-in'
-      fullPath: '/outreach/check-in'
-      preLoaderRoute: typeof AppOutreachCheckInRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/opi/new': {
       id: '/_app/opi/new'
       path: '/opi/new'
@@ -1220,6 +1219,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications/preferences'
       fullPath: '/notifications/preferences'
       preLoaderRoute: typeof AppNotificationsPreferencesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/groups/$id': {
+      id: '/_app/groups/$id'
+      path: '/groups/$id'
+      fullPath: '/groups/$id'
+      preLoaderRoute: typeof AppGroupsIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/build/history': {
@@ -1334,13 +1340,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminOutreachAttendanceRouteImport
       parentRoute: typeof AppAdminRoute
     }
-    '/_app/admin/notifications/templates': {
-      id: '/_app/admin/notifications/templates'
-      path: '/notifications/templates'
-      fullPath: '/admin/notifications/templates'
-      preLoaderRoute: typeof AppAdminNotificationsTemplatesRouteImport
-      parentRoute: typeof AppAdminRoute
-    }
     '/_app/admin/members/pending': {
       id: '/_app/admin/members/pending'
       path: '/members/pending'
@@ -1445,7 +1444,6 @@ interface AppAdminRouteChildren {
   AppAdminBuildZonesRoute: typeof AppAdminBuildZonesRoute
   AppAdminMembersIdRoute: typeof AppAdminMembersIdRoute
   AppAdminMembersPendingRoute: typeof AppAdminMembersPendingRoute
-  AppAdminNotificationsTemplatesRoute: typeof AppAdminNotificationsTemplatesRoute
   AppAdminOutreachAttendanceRoute: typeof AppAdminOutreachAttendanceRoute
   AppAdminReportsHoursRoute: typeof AppAdminReportsHoursRoute
   AppAdminReportsOpiRoute: typeof AppAdminReportsOpiRoute
@@ -1473,7 +1471,6 @@ const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminBuildZonesRoute: AppAdminBuildZonesRoute,
   AppAdminMembersIdRoute: AppAdminMembersIdRoute,
   AppAdminMembersPendingRoute: AppAdminMembersPendingRoute,
-  AppAdminNotificationsTemplatesRoute: AppAdminNotificationsTemplatesRoute,
   AppAdminOutreachAttendanceRoute: AppAdminOutreachAttendanceRoute,
   AppAdminReportsHoursRoute: AppAdminReportsHoursRoute,
   AppAdminReportsOpiRoute: AppAdminReportsOpiRoute,
@@ -1526,10 +1523,10 @@ interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppBuildCheckInRoute: typeof AppBuildCheckInRoute
   AppBuildHistoryRoute: typeof AppBuildHistoryRoute
+  AppGroupsIdRoute: typeof AppGroupsIdRoute
   AppNotificationsPreferencesRoute: typeof AppNotificationsPreferencesRoute
   AppOpiIdRoute: typeof AppOpiIdRoute
   AppOpiNewRoute: typeof AppOpiNewRoute
-  AppOutreachCheckInRoute: typeof AppOutreachCheckInRoute
   AppOutreachHistoryRoute: typeof AppOutreachHistoryRoute
   AppOutreachLogRoute: typeof AppOutreachLogRoute
   AppPurchasesIdRoute: typeof AppPurchasesIdRoute
@@ -1540,6 +1537,7 @@ interface AppRouteChildren {
   AppTasksIdRoute: typeof AppTasksIdRoute
   AppTasksNewRoute: typeof AppTasksNewRoute
   AppBuildIndexRoute: typeof AppBuildIndexRoute
+  AppGroupsIndexRoute: typeof AppGroupsIndexRoute
   AppNotificationsIndexRoute: typeof AppNotificationsIndexRoute
   AppOpiIndexRoute: typeof AppOpiIndexRoute
   AppOutreachIndexRoute: typeof AppOutreachIndexRoute
@@ -1560,10 +1558,10 @@ const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppBuildCheckInRoute: AppBuildCheckInRoute,
   AppBuildHistoryRoute: AppBuildHistoryRoute,
+  AppGroupsIdRoute: AppGroupsIdRoute,
   AppNotificationsPreferencesRoute: AppNotificationsPreferencesRoute,
   AppOpiIdRoute: AppOpiIdRoute,
   AppOpiNewRoute: AppOpiNewRoute,
-  AppOutreachCheckInRoute: AppOutreachCheckInRoute,
   AppOutreachHistoryRoute: AppOutreachHistoryRoute,
   AppOutreachLogRoute: AppOutreachLogRoute,
   AppPurchasesIdRoute: AppPurchasesIdRoute,
@@ -1574,6 +1572,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppTasksIdRoute: AppTasksIdRoute,
   AppTasksNewRoute: AppTasksNewRoute,
   AppBuildIndexRoute: AppBuildIndexRoute,
+  AppGroupsIndexRoute: AppGroupsIndexRoute,
   AppNotificationsIndexRoute: AppNotificationsIndexRoute,
   AppOpiIndexRoute: AppOpiIndexRoute,
   AppOutreachIndexRoute: AppOutreachIndexRoute,

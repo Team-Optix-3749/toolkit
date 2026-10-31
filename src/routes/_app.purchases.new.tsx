@@ -31,23 +31,12 @@ function NewPurchase() {
         setBusy(false)
         return flash('Receipt upload failed: ' + upErr.message, true)
       }
-      receipt_url = supabase.storage.from('receipts').getPublicUrl(path).data.publicUrl
+      receipt_url = path
     }
 
-    const { data, error } = await supabase
-      .from('purchases')
-      .insert({
-        user_id: user!.id,
-        kind: f.kind,
-        description: f.description.trim(),
-        amount,
-        receipt_url,
-        status: 'PENDING',
-      })
-      .select('id')
-      .single()
+    const { data, error } = await supabase.rpc('purchase_action',{payload:{action:'submit',kind:f.kind,description:f.description.trim(),amount,receipt_url}})
     setBusy(false)
-    if (error) return flash('Submit failed: ' + error.message, true)
+    if (error) {if(receipt_url)await supabase.storage.from('receipts').remove([receipt_url]);return flash('Submit failed: '+error.message,true)}
     flash('Request submitted')
     navigate({ to: '/purchases/$id', params: { id: (data as { id: string }).id } })
   }

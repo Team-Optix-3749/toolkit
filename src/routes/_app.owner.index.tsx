@@ -1,127 +1,50 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
-import { card, cardHead, cardTitle } from '~/lib/ui'
+import { accountDirectory } from '~/lib/actions'
+import { card, cardHead, cardTitle, btnGhost } from '~/lib/ui'
 
-export const Route = createFileRoute('/_app/owner/')({
-  component: OwnerOverview,
-})
-
-type Counts = {
-  members: number
-  opis: number
-  purchases: number
-  events: number
-  tasks: number
-  sessions: number
-}
-
+export const Route = createFileRoute('/_app/owner/')({ component: OwnerOverview })
+type Counts = { members: number; opis: number; purchases: number; events: number; tasks: number; sessions: number }
 function OwnerOverview() {
-  const [c, setC] = useState<Counts | null>(null)
-
-  useEffect(() => {
-    ;(async () => {
+  const [counts, setCounts] = useState<Counts | null>(null)
+  const [error, setError] = useState('')
+  async function load() {
+    setError('')
+    setCounts(null)
+    try {
       const [m, o, p, e, t, s] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        accountDirectory(),
         supabase.from('opis').select('id', { count: 'exact', head: true }),
         supabase.from('purchases').select('id', { count: 'exact', head: true }),
         supabase.from('outreach_events').select('id', { count: 'exact', head: true }),
         supabase.from('tasks').select('id', { count: 'exact', head: true }),
         supabase.from('build_sessions').select('id', { count: 'exact', head: true }),
       ])
-      setC({
-        members: m.count ?? 0,
-        opis: o.count ?? 0,
-        purchases: p.count ?? 0,
-        events: e.count ?? 0,
-        tasks: t.count ?? 0,
-        sessions: s.count ?? 0,
-      })
-    })()
-  }, [])
-
-  return (
-    <div className="space-y-5">
-      <section className={card}>
-        <div className={cardHead}>
-          <span className={cardTitle}>Record counts</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-white/5">
-          <StatTile label="Members" value={c?.members} />
-          <StatTile label="OPIs" value={c?.opis} />
-          <StatTile label="Purchases" value={c?.purchases} />
-          <StatTile label="Outreach events" value={c?.events} />
-          <StatTile label="Tasks" value={c?.tasks} />
-          <StatTile label="Build sessions" value={c?.sessions} />
-        </div>
-      </section>
-
-      <section className={card}>
-        <div className={cardHead}>
-          <span className={cardTitle}>Danger zone</span>
-          <span className="text-[11px] text-ink-soft">All deletes here are permanent.</span>
-        </div>
-        <div className="divide-y divide-white/4">
-          <DangerLink to="/owner/members" label="Hard-delete a member" sub="Removes every record they created across all tables." />
-          <DangerLink to="/owner/opis" label="Delete OPIs" sub="Deletes submissions, versions, and feedback." />
-          <DangerLink to="/owner/purchases" label="Delete purchases" sub="Removes approval records and receipts." />
-          <DangerLink to="/owner/events" label="Delete outreach events" sub="Removes attendance and leads." />
-          <DangerLink to="/owner/tasks" label="Delete tasks" sub="Removes assignees, reviewers, evidence, history." />
-        </div>
-      </section>
-
-      <section className={card}>
-        <div className={cardHead}>
-          <span className={cardTitle}>Admin shortcuts</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-white/5">
-          <ShortcutTile to="/admin/settings" label="Settings" sub="Seasons, perms, roles" />
-          <ShortcutTile to="/admin/notifications/templates" label="Email templates" sub="System messages" />
-          <ShortcutTile to="/admin/cron-jobs" label="Cron jobs" sub="Scheduled tasks" />
-          <ShortcutTile to="/admin/reports/hours" label="Hours report" sub="Export CSV" />
-          <ShortcutTile to="/admin/build/zones" label="Build zones" sub="Locations & QR" />
-          <ShortcutTile to="/admin" label="Admin dashboard" sub="Default admin view" />
-        </div>
-      </section>
-    </div>
-  )
+      for (const result of [m, o, p, e, t, s]) if (result.error) throw result.error
+      setCounts({ members: m.data?.length ?? 0, opis: o.count ?? 0, purchases: p.count ?? 0, events: e.count ?? 0, tasks: t.count ?? 0, sessions: s.count ?? 0 })
+    } catch (error) { setError(error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error)) }
+  }
+  useEffect(() => { void load() }, [])
+  return <div className="space-y-5">
+    {error && <div role="alert" className="text-sm text-red-400">{error} <button onClick={load} className={btnGhost}>Retry</button></div>}
+    <section className={card}><div className={cardHead}><span className={cardTitle}>Record counts</span></div><div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-line">{(['members', 'opis', 'purchases', 'events', 'tasks', 'sessions'] as const).map(key => <div key={key} className="bg-panel px-5 py-4"><div className="font-mono text-2xl">{counts ? counts[key] : error ? '—' : '…'}</div><p className="text-xs text-ink-soft mt-1 capitalize">{key === 'members' ? 'Accounts' : key === 'opis' ? 'OPIs' : key}</p></div>)}</div></section>
+    <section className={card}><div className={cardHead}><span className={cardTitle}>Retained records</span></div><p className="px-5 py-3 text-sm text-ink-soft">Browse all retained identities and operational history. Use domain screens for deactivation, cancellation and review; routine hard deletion is not available.</p><div className="divide-y divide-line">
+      <BrowseLink to="/owner/members" label="Accounts" sub="Names and history remain after deactivation." />
+      <BrowseLink to="/owner/opis" label="OPIs" sub="Retained submissions, versions and feedback." />
+      <BrowseLink to="/owner/purchases" label="Purchases" sub="Requests, receipts and decisions." />
+      <BrowseLink to="/owner/events" label="Outreach events" sub="Events and retained attendance." />
+      <BrowseLink to="/owner/tasks" label="Tasks" sub="Calendar and list browsing, with links to task details." />
+    </div></section>
+    <section className={card}><div className={cardHead}><span className={cardTitle}>Administration shortcuts</span></div><div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-line">
+      <Shortcut to="/admin/settings" label="Settings" sub="President configuration" />
+      <Shortcut to="/admin/cron-jobs" label="Cron jobs" sub="Scheduled task status" />
+      <Shortcut to="/admin/reports/hours" label="Hours report" sub="Export records" />
+      <Shortcut to="/admin/build/zones" label="Build locations" sub="Locations and QR" />
+      <Shortcut to="/admin/members" label="Account actions" sub="Admission, permissions and Presidency" />
+      <Shortcut to="/admin" label="Admin dashboard" sub="Authorized workflows" />
+    </div></section>
+  </div>
 }
-
-function StatTile({ label, value }: { label: string; value: number | undefined }) {
-  return (
-    <div className="bg-panel px-5 py-4">
-      {value === undefined ? (
-        <div className="skeleton h-7 w-14 mb-1" />
-      ) : (
-        <div className="font-mono text-2xl tabular-nums">{value}</div>
-      )}
-      <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft mt-1">{label}</div>
-    </div>
-  )
-}
-
-function DangerLink({ to, label, sub }: { to: string; label: string; sub: string }) {
-  return (
-    <Link
-      to={to}
-      className="group flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-[#c0392b]/5 transition-colors duration-150"
-    >
-      <div>
-        <div className="text-sm font-medium group-hover:text-[#f07070] transition-colors">{label}</div>
-        <div className="text-xs text-ink-soft mt-0.5">{sub}</div>
-      </div>
-      <svg className="w-4 h-4 text-ink-soft group-hover:text-[#f07070] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
-    </Link>
-  )
-}
-
-function ShortcutTile({ to, label, sub }: { to: string; label: string; sub: string }) {
-  return (
-    <Link to={to} className="bg-panel px-5 py-3 hover:bg-white/5 transition-colors duration-150">
-      <div className="text-sm font-medium">{label}</div>
-      <div className="text-xs text-ink-soft mt-0.5 truncate">{sub}</div>
-    </Link>
-  )
-}
+function BrowseLink({ to, label, sub }: { to: string; label: string; sub: string }) { return <Link to={to} className="flex justify-between px-5 py-4 hover:bg-white/5"><div><div className="text-sm font-medium">{label}</div><p className="text-xs text-ink-soft mt-1">{sub}</p></div><span className="text-accent">→</span></Link> }
+function Shortcut({ to, label, sub }: { to: string; label: string; sub: string }) { return <Link to={to} className="bg-panel px-5 py-3 hover:bg-white/5"><div className="text-sm font-medium">{label}</div><p className="text-xs text-ink-soft mt-1">{sub}</p></Link> }

@@ -21,13 +21,12 @@ const TYPES: [string, string][] = [
 ]
 const CHANNELS: [string, string][] = [
   ['in_app', 'In-app'],
-  ['email', 'Email'],
 ]
 
 type Prefs = Record<string, Record<string, boolean>>
 
 const defaults = (): Prefs =>
-  Object.fromEntries(TYPES.map(([t]) => [t, { in_app: true, email: false }]))
+  Object.fromEntries(TYPES.map(([t]) => [t, { in_app: true }]))
 
 function Preferences() {
   const { user } = useAuth()
@@ -81,7 +80,7 @@ function Preferences() {
               <td className="py-2.5 px-5">{label}</td>
               {CHANNELS.map(([c]) => (
                 <td key={c} className="py-2.5 px-5 text-center">
-                  <input type="checkbox" checked={!!prefs[t]?.[c]} onChange={() => toggle(t, c)} />
+                  <input aria-label={`${label} in-app notifications`} type="checkbox" checked={!!prefs[t]?.[c]} onChange={() => toggle(t, c)} />
                 </td>
               ))}
             </tr>

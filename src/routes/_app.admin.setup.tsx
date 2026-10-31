@@ -6,7 +6,7 @@ import { useToast } from '~/lib/toast'
 import { can } from '~/lib/rbac'
 import { fmtDate, fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
-import type { ProfileRow, TaskGroup } from '~/lib/types'
+import type { ProfileRow, TaskGroup, Season, SeasonActionPayload } from '~/lib/types'
 import { card, cardHead, cardTitle, btn, btnGhost, input, label } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/admin/setup')({
@@ -44,138 +44,135 @@ type Flash = (text: string, err?: boolean) => void
 
 /* ------------------------------- Seasons -------------------------------- */
 
-type Season = { id: string; created_at: string; name: string; is_current: boolean; outreach_target: number | null; build_target: number | null }
+type SeasonDraft = { name: string; outreach: string; build: string }
 
 function Seasons({ flash }: { flash: Flash }) {
   const [rows, setRows] = useState<Season[]>([])
-  const [name, setName] = useState('')
-  const [outreach, setOutreach] = useState('')
-  const [build, setBuild] = useState('')
-  const [edits, setEdits] = useState<Record<string, { outreach: string; build: string }>>({})
+  const [draft, setDraft] = useState<SeasonDraft>({ name: '', outreach: '0', build: '0' })
+  const [edits, setEdits] = useState<Record<string, SeasonDraft>>({})
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const [error, setError] = useState('')
 
   async function load() {
-    const { data } = await supabase.from('seasons').select('*').order('created_at', { ascending: false })
-    setRows((data as Season[]) || [])
+    setLoading(true)
+    setLoadError('')
+    try {
+      const { data, error } = await supabase.from('seasons')
+        .select('id, created_at, name, is_current, outreach_target, build_target, individual_outreach_cap_minutes')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      setRows((data as Season[]) || [])
+    } catch (cause) {
+      setLoadError(message(cause, 'Could not load seasons. Please retry.'))
+    } finally {
+      setLoading(false)
+    }
   }
-  useEffect(() => {
-    load()
-  }, [])
+  useEffect(() => { void load() }, [])
 
-  const num = (s: string) => (s.trim() === '' ? null : Number(s))
-
-  async function create(e: React.FormEvent) {
-    e.preventDefault()
-    if (!name.trim()) return flash('Season name required', true)
-    const first = rows.length === 0
-    const { error } = await supabase
-      .from('seasons')
-      .insert({ name: name.trim(), outreach_target: num(outreach), build_target: num(build), is_current: first })
-    if (error) return flash(error.message, true)
-    setName('')
-    setOutreach('')
-    setBuild('')
-    flash(first ? 'Season created and set as current' : 'Season created')
-    load()
+  function message(cause: unknown, fallback: string) {
+    return cause && typeof cause === 'object' && 'message' in cause && typeof cause.message === 'string' ? cause.message : fallback
   }
 
-  async function makeCurrent(id: string) {
-    // Only one current season: clear the others first.
-    const { error: e1 } = await supabase.from('seasons').update({ is_current: false }).neq('id', id).eq('is_current', true)
-    const { error: e2 } = await supabase.from('seasons').update({ is_current: true }).eq('id', id)
-    if (e1 || e2) return flash((e1 || e2)!.message, true)
-    flash('Current season updated')
-    load()
+  function values(value: SeasonDraft) {
+    const outreach = Number(value.outreach)
+    const build = Number(value.build)
+    if (!value.name.trim()) throw new Error('Season name is required.')
+    if (!value.outreach.trim() || !value.build.trim() || !Number.isFinite(outreach) || !Number.isFinite(build) || outreach < 0 || build < 0) {
+      throw new Error('Targets must be finite, nonnegative hours. Enter 0 for an unset target.')
+    }
+    return { name: value.name.trim(), outreach_target: outreach, build_target: build }
   }
 
-  async function saveTargets(s: Season) {
-    const ed = edits[s.id]
-    const { error } = await supabase
-      .from('seasons')
-      .update({ outreach_target: num(ed.outreach), build_target: num(ed.build) })
-      .eq('id', s.id)
-    if (error) return flash(error.message, true)
-    setEdits(({ [s.id]: _, ...rest }) => rest)
-    flash('Targets saved')
-    load()
+  async function mutate(payload: SeasonActionPayload, success: string, saved?: () => void) {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      const { error } = await supabase.rpc('season_action', { payload })
+      if (error) throw error
+      saved?.()
+      flash(success)
+      await load()
+    } catch (cause) {
+      const detail = message(cause, 'Season change failed. Please retry.')
+      setError(detail)
+      flash(detail, true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function save(event: React.FormEvent, id?: string) {
+    event.preventDefault()
+    try {
+      const fields = values(id ? edits[id] : draft)
+      void mutate(id ? { action: 'edit', id, ...fields } : { action: 'create', ...fields },
+        id ? 'Season saved' : 'Season created', () => {
+          if (id) setEdits(({ [id]: _, ...rest }) => rest)
+          else setDraft({ name: '', outreach: '0', build: '0' })
+        })
+    } catch (cause) {
+      setError(message(cause, 'Check the season name and targets.'))
+    }
+  }
+
+  function fields(value: SeasonDraft, change: (next: SeasonDraft) => void, prefix: string) {
+    return <>
+      <label className="block sm:col-span-2">
+        <span className={label}>{prefix} name</span>
+        <input required className={input} value={value.name} onChange={(event) => change({ ...value, name: event.target.value })} placeholder="2027 season" />
+      </label>
+      <label className="block">
+        <span className={label}>Outreach target (hours)</span>
+        <input required type="number" min="0" step="any" className={input} value={value.outreach} onChange={(event) => change({ ...value, outreach: event.target.value })} />
+      </label>
+      <label className="block">
+        <span className={label}>Build target (hours)</span>
+        <input required type="number" min="0" step="any" className={input} value={value.build} onChange={(event) => change({ ...value, build: event.target.value })} />
+      </label>
+    </>
   }
 
   return (
-    <section className={card}>
-      <div className={cardHead}>
-        <span className={cardTitle}>Seasons & hour targets</span>
-      </div>
-      <form onSubmit={create} className="p-5 grid sm:grid-cols-4 gap-4 items-end border-b border-white/6">
-        <label className="block sm:col-span-2">
-          <span className={label}>New season</span>
-          <input className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="2027 season" />
-        </label>
-        <label className="block">
-          <span className={label}>Outreach target (hrs)</span>
-          <input className={input} inputMode="decimal" value={outreach} onChange={(e) => setOutreach(e.target.value)} />
-        </label>
-        <label className="block">
-          <span className={label}>Build target (hrs)</span>
-          <input className={input} inputMode="decimal" value={build} onChange={(e) => setBuild(e.target.value)} />
-        </label>
-        <button className={`${btn} sm:col-span-4 sm:w-fit`}>Create season</button>
+    <section className={card} aria-busy={busy || loading}>
+      <div className={cardHead}><span className={cardTitle}>Seasons & hour targets</span></div>
+      <p className="px-5 pt-4 text-sm text-ink-soft">Targets apply uniformly to every member. Seasons have no implied date range: records belong to their explicitly selected season. Changing the current season does not move historical records.</p>
+      {error && <p role="alert" className="px-5 pt-4 text-sm text-red-400">{error}</p>}
+      {loadError && <div role="alert" className="p-5 text-sm"><p>{loadError}</p><button type="button" className={btnGhost} disabled={loading || busy} onClick={() => void load()}>Retry loading seasons</button></div>}
+      <form onSubmit={(event) => save(event)}>
+        <fieldset disabled={busy || loading || !!loadError} className="p-5 grid sm:grid-cols-4 gap-4 items-end border-b border-white/6">
+          {fields(draft, setDraft, 'New season')}
+          <p className="sm:col-span-4 text-xs text-ink-soft">The first season becomes current automatically. New seasons start with an individual outreach cap of 360 minutes (6 hours).</p>
+          <button className={`${btn} sm:col-span-4 sm:w-fit`}>{busy ? 'Saving…' : 'Create season'}</button>
+        </fieldset>
       </form>
       <div className="divide-y divide-white/4">
-        {rows.map((s) => {
-          const ed = edits[s.id]
+        {loading && <p role="status" className="p-5 text-sm text-ink-soft">Loading seasons…</p>}
+        {!loading && !loadError && rows.map((season) => {
+          const edit = edits[season.id]
           return (
-            <div key={s.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
-              <span className="font-medium">{s.name}</span>
-              {s.is_current && <Badge label="current" tone="accent" />}
-              {ed ? (
-                <>
-                  <input
-                    className={`${input} w-28 h-8`}
-                    aria-label={`${s.name} outreach target`}
-                    inputMode="decimal"
-                    value={ed.outreach}
-                    onChange={(e) => setEdits({ ...edits, [s.id]: { ...ed, outreach: e.target.value } })}
-                  />
-                  <input
-                    className={`${input} w-28 h-8`}
-                    aria-label={`${s.name} build target`}
-                    inputMode="decimal"
-                    value={ed.build}
-                    onChange={(e) => setEdits({ ...edits, [s.id]: { ...ed, build: e.target.value } })}
-                  />
-                  <button onClick={() => saveTargets(s)} className={btnGhost}>
-                    Save
-                  </button>
-                </>
-              ) : (
-                <span className="text-xs text-ink-soft font-mono">
-                  outreach {s.outreach_target ?? '—'} h · build {s.build_target ?? '—'} h
+            <div key={season.id} className="px-5 py-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="font-medium">{season.name}</span>
+                {season.is_current && <Badge label="current" tone="accent" />}
+                {!edit && <span className="text-xs text-ink-soft font-mono">outreach {season.outreach_target} h · build {season.build_target} h</span>}
+                <span className="ml-auto flex gap-2">
+                  {!edit && <button type="button" disabled={busy || loading} className={btnGhost} onClick={() => setEdits({ ...edits, [season.id]: { name: season.name, outreach: String(season.outreach_target), build: String(season.build_target) } })}>Edit season</button>}
+                  {!season.is_current && <button type="button" disabled={busy || loading} className={btnGhost} onClick={() => void mutate({ action: 'set_current', id: season.id }, 'Current season updated')}>Make current</button>}
                 </span>
-              )}
-              <span className="ml-auto flex gap-2">
-                {!ed && (
-                  <button
-                    onClick={() =>
-                      setEdits({ ...edits, [s.id]: { outreach: String(s.outreach_target ?? ''), build: String(s.build_target ?? '') } })
-                    }
-                    className={btnGhost}
-                  >
-                    Edit targets
-                  </button>
-                )}
-                {!s.is_current && (
-                  <button onClick={() => makeCurrent(s.id)} className={btnGhost}>
-                    Make current
-                  </button>
-                )}
-              </span>
+              </div>
+              <p className="text-xs text-ink-soft">Individual outreach cap: {season.individual_outreach_cap_minutes} minutes per member. Attendance managers configure this separately from season targets; event outreach is not capped.</p>
+              {edit && <form onSubmit={(event) => save(event, season.id)}><fieldset disabled={busy || loading} className="grid sm:grid-cols-4 gap-3 items-end">
+                {fields(edit, (next) => setEdits({ ...edits, [season.id]: next }), 'Season')}
+                <div className="sm:col-span-4 flex gap-2"><button className={btnGhost}>Save season</button><button type="button" className={btnGhost} onClick={() => setEdits(({ [season.id]: _, ...rest }) => rest)}>Cancel edit</button></div>
+              </fieldset></form>}
             </div>
           )
         })}
-        {rows.length === 0 && (
-          <div className="px-5 py-6 text-center text-sm text-ink-soft">
-            No seasons yet. Create one so hour targets and progress bars work.
-          </div>
-        )}
+        {!loading && !loadError && rows.length === 0 && <p className="px-5 py-6 text-center text-sm text-ink-soft">Season setup required. Create a season before saving season-attributed records.</p>}
       </div>
     </section>
   )
@@ -183,113 +180,49 @@ function Seasons({ flash }: { flash: Flash }) {
 
 /* ----------------------------- Invite links ----------------------------- */
 
-type Invite = { id: string; created_at: string; code: string; expires_at: string; revoked: boolean }
-
-const makeCode = () => {
-  const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789' // no look-alikes (0/o, 1/l/i)
-  const bytes = crypto.getRandomValues(new Uint8Array(10))
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('')
-}
+type Invite = { id: string; created_at: string; expires_at: string; revoked: boolean }
 
 function Invites({ flash }: { flash: Flash }) {
-  const { user } = useAuth()
   const [rows, setRows] = useState<Invite[]>([])
   const [days, setDays] = useState(7)
-
-  const linkFor = (code: string) => `${window.location.origin}${import.meta.env.BASE_URL}invite?code=${code}`
-
+  const [newLink, setNewLink] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
   async function load() {
-    const { data } = await supabase.from('invitations').select('*').order('created_at', { ascending: false }).limit(50)
-    setRows((data as Invite[]) || [])
+    const { data, error } = await supabase.rpc('invitation_action', {payload:{action:'list'}})
+    if (error) {setError(error.message);return}
+    setError('');setRows(data as Invite[])
   }
-  useEffect(() => {
-    load()
-  }, [])
-
+  useEffect(() => {void load()}, [])
   async function create() {
-    const code = makeCode()
-    const expires_at = new Date(Date.now() + days * 864e5).toISOString()
-    const { error } = await supabase.from('invitations').insert({ code, expires_at, created_by: user!.id, revoked: false })
-    if (error) return flash(error.message, true)
-    try {
-      await navigator.clipboard.writeText(linkFor(code))
-      flash('Invite link created and copied')
-    } catch {
-      flash('Invite link created')
-    }
-    load()
+    setBusy(true);setError('')
+    const {data,error} = await supabase.rpc('invitation_action',{payload:{action:'create',expires_at:new Date(Date.now()+days*864e5).toISOString()}})
+    setBusy(false)
+    if(error){setError(error.message);return}
+    const link=`${window.location.origin}${import.meta.env.BASE_URL}invite?code=${encodeURIComponent(data.code)}`
+    setNewLink(link)
+    try {await navigator.clipboard.writeText(link);flash('Invitation created and copied')}catch {flash('Invitation created; copy the displayed link')}
+    await load()
   }
-
-  async function copy(code: string) {
-    try {
-      await navigator.clipboard.writeText(linkFor(code))
-      flash('Link copied')
-    } catch {
-      flash('Copy failed — select the link manually', true)
-    }
+  async function revoke(id:string){
+    setBusy(true)
+    const {error}=await supabase.rpc('invitation_action',{payload:{action:'revoke',id}})
+    setBusy(false)
+    if(error){setError(error.message);return}
+    flash('Invitation revoked');await load()
   }
-
-  async function revoke(id: string) {
-    const { error } = await supabase.from('invitations').update({ revoked: true }).eq('id', id)
-    if (error) return flash(error.message, true)
-    flash('Invite revoked')
-    load()
-  }
-
-  const now = Date.now()
-  return (
-    <section className={card}>
-      <div className={cardHead}>
-        <span className={cardTitle}>Invite links</span>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-ink-soft">Expires in</span>
-          {[1, 7, 30].map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setDays(d)}
-              aria-pressed={days === d}
-              className={`${btnGhost} ${days === d ? 'bg-accent/15 border-accent/40 text-accent' : ''}`}
-            >
-              {d}d
-            </button>
-          ))}
-          <button onClick={create} className={btnGhost}>
-            New link
-          </button>
-        </div>
-      </div>
-      <p className="px-5 pt-3 text-xs text-ink-soft">
-        Anyone with an active link can sign up; their account still waits for approval under Members → Pending.
-      </p>
-      <div className="divide-y divide-white/4 mt-2">
-        {rows.map((r) => {
-          const expired = new Date(r.expires_at).getTime() < now
-          const status = r.revoked ? 'revoked' : expired ? 'expired' : 'active'
-          return (
-            <div key={r.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
-              <code className={`font-mono text-xs break-all ${status === 'active' ? '' : 'text-ink-soft line-through'}`}>{linkFor(r.code)}</code>
-              <Badge label={status} tone={status === 'active' ? 'APPROVED' : 'neutral'} />
-              <span className="text-[11px] text-ink-soft">
-                {status === 'active' ? `expires ${fmtDateTime(r.expires_at)}` : `created ${fmtDate(r.created_at)}`}
-              </span>
-              {status === 'active' && (
-                <span className="ml-auto flex gap-2">
-                  <button onClick={() => copy(r.code)} className={btnGhost}>
-                    Copy
-                  </button>
-                  <button onClick={() => revoke(r.id)} className={`${btnGhost} text-[#f07070]`}>
-                    Revoke
-                  </button>
-                </span>
-              )}
-            </div>
-          )
-        })}
-        {rows.length === 0 && <div className="px-5 py-6 text-center text-sm text-ink-soft">No invite links yet.</div>}
-      </div>
-    </section>
-  )
+  return <section className={card}>
+    <div className={cardHead}><span className={cardTitle}>Reusable invitations</span><div className="flex flex-wrap gap-2">
+      {[1,7,30].map(value=><button key={value} aria-pressed={days===value} onClick={()=>setDays(value)} className={btnGhost}>{value}d</button>)}
+      <button disabled={busy} onClick={()=>void create()} className={btnGhost}>New link</button>
+    </div></div>
+    <div className="p-5 space-y-3"><p className="text-sm text-ink-soft">Verified users may accept an active reusable invitation as ordinary members, without grants. The bearer link is shown only at creation.</p>
+      {newLink && <div><label htmlFor="new-invite-link" className={label}>New invitation — save this link</label><input id="new-invite-link" readOnly value={newLink} className={input} onFocus={event=>event.target.select()} /></div>}
+      {error && <div role="alert"><p>{error}</p><button onClick={()=>void load()}>Retry</button></div>}
+      {rows.map(row=><div key={row.id} className="flex flex-wrap items-center gap-3 border-t border-line py-3"><span className="font-mono text-xs">{row.id}</span><Badge label={row.revoked?'revoked':new Date(row.expires_at).getTime()<=Date.now()?'expired':'active'} /><span>Expires {fmtDateTime(row.expires_at)}</span>{!row.revoked && <button disabled={busy} onClick={()=>void revoke(row.id)} className={btnGhost}>Revoke</button>}</div>)}
+      {!rows.length && <p>No invitations yet.</p>}
+    </div>
+  </section>
 }
 
 /* -------------------------------- Groups -------------------------------- */
@@ -306,7 +239,7 @@ function Groups({ flash }: { flash: Flash }) {
   async function load() {
     const [{ data: g }, { data: m }, { data: l }] = await Promise.all([
       supabase.from('groups').select('id, name').order('name'),
-      supabase.from('profiles').select('id, display_name').eq('account_status', 'active').neq('role', 'PENDING').order('display_name'),
+      supabase.from('public_directory').select('id, display_name').order('display_name'),
       supabase.from('group_members').select('group_id, user_id'),
     ])
     setGroups((g as Group[]) || [])
@@ -320,7 +253,7 @@ function Groups({ flash }: { flash: Flash }) {
   async function create(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
-    const { error } = await supabase.from('groups').insert({ name: name.trim() })
+    const { error } = await supabase.rpc('group_action',{payload:{action:'create',name:name.trim()}})
     if (error) return flash(error.message, true)
     setName('')
     flash('Group created')
@@ -328,17 +261,16 @@ function Groups({ flash }: { flash: Flash }) {
   }
 
   async function toggle(groupId: string, userId: string, inGroup: boolean) {
-    const { error } = inGroup
-      ? await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId)
-      : await supabase.from('group_members').insert({ group_id: groupId, user_id: userId })
+    const member_ids = links.filter(link=>link.group_id===groupId&&(!inGroup||link.user_id!==userId)).map(link=>link.user_id)
+    if(!inGroup) member_ids.push(userId)
+    const { error } = await supabase.rpc('group_action',{payload:{action:'members',id:groupId,member_ids}})
     if (error) return flash(error.message, true)
     load()
   }
 
   async function remove(g: Group) {
     if (!confirm(`Delete the group "${g.name}"? Members stay; only the group is removed.`)) return
-    await supabase.from('group_members').delete().eq('group_id', g.id)
-    const { error } = await supabase.from('groups').delete().eq('id', g.id)
+    const { error } = await supabase.rpc('group_action',{payload:{action:'delete',id:g.id}})
     if (error) return flash(error.message, true)
     flash('Group deleted')
     load()

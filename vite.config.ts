@@ -5,7 +5,7 @@ import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: process.env.GITHUB_ACTIONS ? '/toolkit/' : '/',
+  base: process.env.VITE_BASE_PATH || (process.env.GITHUB_ACTIONS ? '/toolkit/' : '/'),
   server: { port: 5176 },
   resolve: {
     alias: {

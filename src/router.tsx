@@ -4,6 +4,7 @@ import { routeTree } from './routeTree.gen'
 export function getRouter() {
   const router = createRouter({
     routeTree,
+    basepath: import.meta.env.BASE_URL.replace(/\/$/,'') || '/',
     defaultPreload: 'intent',
     scrollRestoration: true,
     defaultStaleTime: 5_000,

@@ -1,156 +1,42 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { supabase } from '~/lib/supabase'
-import { useAuth } from '~/lib/auth'
-import { useToast } from '~/lib/toast'
-import { fmtDate, fmtDateTime } from '~/lib/format'
-import { Badge } from '~/components/Badge'
-import type { IndividualOutreach } from '~/lib/types'
-import { card, cardHead, cardTitle, label, input } from '~/lib/ui'
-
-export const Route = createFileRoute('/_app/admin/outreach/individual/$id/review')({
-  component: IndividualOutreachReview,
-})
-
-const isImage = (u: string) => /\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(u)
-const isVideo = (u: string) => /\.(mp4|mov|webm|m4v|ogg)(\?|$)/i.test(u)
-
-function IndividualOutreachReview() {
-  const { id } = Route.useParams()
-  const { user } = useAuth()
-  const { flash, Toast } = useToast()
-  const [r, setR] = useState<IndividualOutreach | null>(null)
-  const [memberName, setMemberName] = useState<string>('')
-  const [credit, setCredit] = useState('')
-
-  async function load() {
-    const { data, error } = await supabase.from('individual_outreach').select('*').eq('id', id).maybeSingle()
-    if (error) return flash(error.message, true)
-    const row = data as IndividualOutreach
-    setR(row)
-    // Default credited hours to what they claimed, capped at the 6-hour ceiling.
-    const fallback = Math.min(Number(row.hours), 6)
-    setCredit(String(row.credited_hours ?? fallback))
-    if (row?.user_id) {
-      const { data: p } = await supabase.from('profiles').select('display_name').eq('id', row.user_id).maybeSingle()
-      setMemberName((p as { display_name: string | null })?.display_name || '')
-    }
-  }
-  useEffect(() => {
-    load()
-  }, [id])
-
-  async function decide(status: 'APPROVED' | 'REJECTED') {
-    if (!r) return
-    let credited_hours: number | null = null
-    if (status === 'APPROVED') {
-      const n = parseFloat(credit)
-      if (!Number.isFinite(n) || n < 0) return flash('Enter the hours to credit', true)
-      credited_hours = n
-    } else {
-      credited_hours = 0
-    }
-    const { error } = await supabase
-      .from('individual_outreach')
-      .update({ status, credited_hours, reviewer_id: user!.id, decided_at: new Date().toISOString() })
-      .eq('id', id)
-    if (error) return flash('Update failed: ' + error.message, true)
-    // The member is notified by the notify_individual_outreach DB trigger.
-    flash(status === 'APPROVED' ? 'Approved' : 'Rejected')
-    load()
-  }
-
-  if (!r) return <div className="bg-panel border border-line p-8 text-center text-sm text-ink-soft">Loading…</div>
-
-  return (
-    <div className="grid md:grid-cols-2 gap-5">
-      <section className={card}>
-        <div className={cardHead}>
-          <span className={cardTitle}>Submission</span>
-          <Badge label={r.status} tone={r.status} />
-        </div>
-        <div className="p-5 space-y-2 text-sm">
-          <Row k="Member" v={memberName || r.full_name} />
-          <Row k="Full name" v={r.full_name} />
-          <Row k="Department" v={r.department || '—'} />
-          <Row k="Event" v={r.event_name} />
-          <Row k="Date" v={fmtDate(r.event_date)} />
-          <Row k="Hours claimed" v={String(Number(r.hours))} />
-          <Row k="People impacted" v={r.people_impacted == null ? '—' : String(r.people_impacted)} />
-          <Row k="Submitted" v={fmtDateTime(r.created_at)} />
-          <div className="pt-2">
-            <div className="text-ink-soft mb-1">What they did</div>
-            <p className="whitespace-pre-wrap">{r.what_you_did}</p>
-          </div>
-          <div className="pt-2">
-            <div className="text-ink-soft mb-1">Community impact</div>
-            <p className="whitespace-pre-wrap">{r.impact}</p>
-          </div>
-          {r.status !== 'PENDING' && (
-            <Row k="Hours credited" v={r.credited_hours == null ? '—' : String(Number(r.credited_hours))} />
-          )}
-
-          {r.status === 'PENDING' && (
-            <div className="pt-3 border-t border-line space-y-3">
-              <div>
-                <label className={label}>Hours to credit toward their total</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  className={input}
-                  value={credit}
-                  onChange={(e) => setCredit(e.target.value)}
-                />
-                <p className="text-xs text-ink-soft mt-1">
-                  Defaults to the hours claimed (capped at 6). Set to 0 to approve without adding hours. A
-                  member's individual outreach is capped at 6 hours total.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => decide('APPROVED')} className="h-9 px-4 text-sm font-medium bg-accent text-[#06080b] rounded-lg hover:brightness-110 inline-flex items-center justify-center transition-all">
-                  Approve
-                </button>
-                <button onClick={() => decide('REJECTED')} className="h-9 px-4 text-sm font-medium border border-[#c0392b]/30 text-[#f07070] bg-[#c0392b]/10 rounded-lg hover:bg-[#c0392b]/20 inline-flex items-center justify-center transition-all">
-                  Reject
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className={card}>
-        <div className={cardHead}>
-          <span className={cardTitle}>Visual proof · {r.proof_urls.length}</span>
-        </div>
-        <div className="p-5 space-y-4">
-          {r.proof_urls.length === 0 && <p className="text-sm text-ink-soft">No proof attached.</p>}
-          {r.proof_urls.map((url, i) => (
-            <div key={url}>
-              {isImage(url) ? (
-                <img src={url} alt={`proof ${i + 1}`} className="max-w-full border border-line" />
-              ) : isVideo(url) ? (
-                <video src={url} controls className="max-w-full border border-line" />
-              ) : (
-                <a href={url} target="_blank" rel="noreferrer" className="text-sm text-accent hover:underline">
-                  Open file {i + 1} ↗
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-      {Toast}
-    </div>
-  )
-}
-
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <span className="text-ink-soft">{k}</span>
-      <span className="font-mono text-right">{v}</span>
-    </div>
-  )
+import {createFileRoute} from '@tanstack/react-router'
+import {useEffect,useState} from 'react'
+import {supabase} from '~/lib/supabase'
+import {individualCredit,individualOutreachAction} from '~/lib/actions'
+import {fmtDate,fmtDateTime,hoursFromMinutes} from '~/lib/format'
+import {PrivateAttachment} from '~/components/PrivateAttachment'
+import {Badge} from '~/components/Badge'
+import type {IndividualOutreach,IndividualCredit} from '~/lib/types'
+import {card,cardHead,cardTitle,input,label,btn,btnGhost} from '~/lib/ui'
+export const Route=createFileRoute('/_app/admin/outreach/individual/$id/review')({component:Review})
+function Review(){
+ const {id}=Route.useParams()
+ const [request,setRequest]=useState<IndividualOutreach|null>(null)
+ const [summary,setSummary]=useState<IndividualCredit|null>(null)
+ const [credit,setCredit]=useState('')
+ const [error,setError]=useState('')
+ const [loading,setLoading]=useState(true)
+ const [busy,setBusy]=useState(false)
+ async function load(){
+  setLoading(true);setError('')
+  const {data,error}=await supabase.from('individual_outreach').select('*').eq('id',id).maybeSingle()
+  if(error||!data){setError(error?.message??'Request not found');setLoading(false);return}
+  const row=data as IndividualOutreach;setRequest(row);setCredit(String(Number(row.approved_minutes??row.claimed_minutes)/60))
+  const totals=await individualCredit({season_id:row.season_id,member_id:row.user_id})
+  if(totals.error)setError(totals.error.message);else setSummary(totals.data)
+  setLoading(false)
+ }
+ useEffect(()=>{void load()},[id])
+ async function decide(action:'approve'|'reject'){
+  const minutes=Number(credit)*60
+  if(action==='approve'&&(!Number.isFinite(minutes)||minutes<0||minutes>Number(request!.claimed_minutes))){setError('Approved hours must be between zero and claimed hours.');return}
+  setBusy(true);setError('')
+  const {error}=await individualOutreachAction(action==='approve'?{action,id,approved_minutes:minutes}:{action,id})
+  setBusy(false);if(error){setError(error.message);return}await load()
+ }
+ return <div className="space-y-5">{error&&<div role="alert"><p>{error}</p><button onClick={()=>void load()}>Retry request</button></div>}{loading&&<p role="status">Loading request…</p>}{request&&<>
+  <section className={card}><div className={cardHead}><span className={cardTitle}>{request.event_name}</span><Badge label={request.status} tone={request.status}/></div><div className="p-5 space-y-3 text-sm"><p>{request.full_name} · {fmtDate(request.event_date)} · submitted {fmtDateTime(request.created_at)}</p><p className="whitespace-pre-wrap">{request.what_you_did}</p><p className="whitespace-pre-wrap">{request.impact}</p><p>People impacted: {request.people_impacted??'Not recorded'}</p><p>Claimed hours: {hoursFromMinutes(request.claimed_minutes).toFixed(2)}</p><p>Approved uncapped hours: {request.approved_minutes===null?'Not approved':hoursFromMinutes(request.approved_minutes).toFixed(2)}</p>
+  {summary&&<dl className="grid sm:grid-cols-2 gap-2"><dt>Season raw approved individual hours</dt><dd>{hoursFromMinutes(summary.raw_approved_minutes).toFixed(2)}</dd><dt>Season cap</dt><dd>{hoursFromMinutes(summary.cap_minutes).toFixed(2)}</dd><dt>Counted individual hours</dt><dd>{hoursFromMinutes(summary.counted_individual_minutes).toFixed(2)}</dd><dt>Official outreach total including uncapped events</dt><dd>{hoursFromMinutes(summary.official_outreach_minutes).toFixed(2)}</dd></dl>}
+  {request.status==='PENDING'&&<div className="space-y-3"><p>Approve the uncapped amount earned. The seasonal cap is applied dynamically to totals, not to this request.</p><label htmlFor="approved-hours" className={label}>Approved hours</label><input id="approved-hours" type="number" min="0" step="any" max={Number(request.claimed_minutes)/60} value={credit} onChange={event=>setCredit(event.target.value)} className={input}/><div className="flex gap-3"><button disabled={busy} className={btn} onClick={()=>void decide('approve')}>Approve</button><button disabled={busy} className={btnGhost} onClick={()=>void decide('reject')}>Reject</button></div></div>}
+  </div></section><section className={card}><div className={cardHead}><span className={cardTitle}>Visual proof</span></div><div className="p-5 space-y-4">{request.proof_urls.map((reference,index)=><PrivateAttachment key={reference} bucket="outreach-proofs" reference={reference} label={`Proof ${index+1}`}/>)}{!request.proof_urls.length&&<p>No historical proof attached.</p>}</div></section>
+ </>}</div>
 }

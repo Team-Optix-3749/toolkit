@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { label, input, btn } from '~/lib/ui'
 import { AuthShell } from './login'
+import { pendingInvitation, rememberInvitation } from '~/lib/invitation'
 
 export const Route = createFileRoute('/reset-password')({
   component: ResetPasswordPage,
@@ -18,9 +19,18 @@ function ResetPasswordPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event) => {
+    rememberInvitation(pendingInvitation())
+    let active = true
+    const {data:{subscription}} = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setReady(true)
     })
+    void supabase.auth.getSession().then(({data,error}) => {
+      if (!active) return
+      if (error) setErr(error.message)
+      else if (data.session) setReady(true)
+      else setErr('This recovery link is invalid or expired. Request a new one.')
+    })
+    return () => { active=false; subscription.unsubscribe() }
   }, [])
 
   async function submit(e: React.FormEvent) {
@@ -33,13 +43,16 @@ function ResetPasswordPage() {
     setBusy(false)
     if (error) return setErr(error.message)
     setDone(true)
-    setTimeout(() => navigate({ to: '/dashboard' }), 2000)
+    const code=pendingInvitation()
+    if(code) void navigate({to:'/invite',search:{code}})
+    else void navigate({to:'/dashboard'})
   }
 
   if (!ready && !done) {
     return (
       <AuthShell title="Reset password">
         <div className="space-y-4">
+          {err && <p role="alert" className="text-danger">{err}</p>}
           <p className="text-sm text-ink-soft">
             Verifying your reset link…
           </p>

@@ -1,345 +1,58 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
-import { supabase } from '~/lib/supabase'
-import { useAuth } from '~/lib/auth'
-import { can } from '~/lib/rbac'
-import { useToast } from '~/lib/toast'
-import { Badge } from '~/components/Badge'
-import { fmtDate, fmtDateTime } from '~/lib/format'
-import type { Task, TaskGroup, TaskEvidence, TaskHistory, ProfileRow } from '~/lib/types'
-import { card, cardHead, cardTitle, btn, btnGhost, label, input, textarea } from '~/lib/ui'
-
-export const Route = createFileRoute('/_app/tasks/$id')({
-  component: TaskDetail,
-})
-
-type Assignee = { task_id: string; user_id: string }
-
-// task-evidence is a private bucket. Older rows stored a (non-working) public URL,
-// newer rows store the object path; both resolve to the same path here.
-const evidencePath = (fileUrl: string) => fileUrl.split('/task-evidence/').pop() ?? fileUrl
-
-const STATUS_ACTIONS: Record<string, { label: string; next: string }[]> = {
-  assigned: [{ label: 'Start', next: 'in_progress' }],
-  in_progress: [
-    { label: 'Submit for review', next: 'submitted' },
-    { label: 'Mark complete', next: 'completed' },
-    { label: 'Cancel', next: 'cancelled' },
-  ],
-  submitted: [
-    { label: 'Request changes', next: 'changes_requested' },
-    { label: 'Approve', next: 'completed' },
-  ],
-  changes_requested: [{ label: 'Resubmit', next: 'resubmitted' }],
-  resubmitted: [
-    { label: 'Request changes', next: 'changes_requested' },
-    { label: 'Approve', next: 'completed' },
-  ],
-  completed: [],
-  cancelled: [{ label: 'Reopen', next: 'assigned' }],
-}
-
-function TaskDetail() {
-  const { id } = Route.useParams()
-  const { user, profile } = useAuth()
-  const { flash, Toast } = useToast()
-  const [task, setTask] = useState<Task | null>(null)
-  const [group, setGroup] = useState<TaskGroup | null>(null)
-  const [assignees, setAssignees] = useState<Assignee[]>([])
-  const [reviewers, setReviewers] = useState<Assignee[]>([])
-  const [evidence, setEvidence] = useState<TaskEvidence[]>([])
-  const [history, setHistory] = useState<TaskHistory[]>([])
-  const [profiles, setProfiles] = useState<Record<string, ProfileRow>>({})
-  const [feedback, setFeedback] = useState('')
-  const [newNote, setNewNote] = useState('')
-  const [newLink, setNewLink] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [signed, setSigned] = useState<Record<string, string>>({})
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const uid = user!.id
-  const canManage = can(profile, 'manage_tasks')
-  const isAssignee = assignees.some(a => a.user_id === uid)
-  const isReviewer = reviewers.some(r => r.user_id === uid)
-
-  async function load() {
-    const [{ data: t }, { data: a }, { data: r }, { data: e }, { data: h }] = await Promise.all([
-      supabase.from('tasks').select('*').eq('id', id).single(),
-      supabase.from('task_assignees').select('*').eq('task_id', id),
-      supabase.from('task_reviewers').select('*').eq('task_id', id),
-      supabase.from('task_evidence').select('*').eq('task_id', id).order('created_at'),
-      supabase.from('task_history').select('*').eq('task_id', id).order('created_at'),
-    ])
-    if (t) {
-      setTask(t as Task)
-      if ((t as Task).group_id) {
-        const { data: g } = await supabase.from('task_groups').select('*').eq('id', (t as Task).group_id!).single()
-        setGroup(g as TaskGroup | null)
-      }
-    }
-    setAssignees((a as Assignee[]) || [])
-    setReviewers((r as Assignee[]) || [])
-    setEvidence((e as TaskEvidence[]) || [])
-    const pics = ((e as TaskEvidence[]) || []).filter(x => x.kind === 'picture' && x.file_url)
-    if (pics.length) {
-      const { data: urls } = await supabase.storage
-        .from('task-evidence')
-        .createSignedUrls(pics.map(x => evidencePath(x.file_url!)), 60 * 60)
-      setSigned(Object.fromEntries(pics.map((x, i) => [x.id, urls?.[i]?.signedUrl ?? ''])))
-    }
-    setHistory((h as TaskHistory[]) || [])
-
-    const userIds = new Set<string>()
-    ;(a as Assignee[] || []).forEach(x => userIds.add(x.user_id))
-    ;(r as Assignee[] || []).forEach(x => userIds.add(x.user_id))
-    ;(h as TaskHistory[] || []).forEach(x => { if (x.user_id) userIds.add(x.user_id) })
-    ;(e as TaskEvidence[] || []).forEach(x => { if (x.user_id) userIds.add(x.user_id) })
-    if (userIds.size > 0) {
-      const { data: p } = await supabase.from('profiles').select('id, display_name, role, avatar_url').in('id', [...userIds])
-      if (p) setProfiles(Object.fromEntries((p as ProfileRow[]).map(x => [x.id, x])))
-    }
-  }
-
-  useEffect(() => { load() }, [id])
-
-  async function transition(next: string) {
-    if (!task) return
-    if ((next === 'changes_requested' || next === 'cancelled') && !feedback.trim()) {
-      return flash('Please provide feedback', true)
-    }
-    setBusy(true)
-    const { error } = await supabase.from('tasks').update({ status: next, updated_at: new Date().toISOString() }).eq('id', id)
-    if (error) { setBusy(false); return flash(error.message, true) }
-    await supabase.from('task_history').insert({
-      task_id: id,
-      user_id: uid,
-      from_status: task.status,
-      to_status: next,
-      feedback: feedback.trim() || null,
-    })
-    setFeedback('')
-    setBusy(false)
-    flash(`Task → ${next.replace(/_/g, ' ')}`)
-    load()
-  }
-
-  async function addNote() {
-    if (!newNote.trim()) return
-    setBusy(true)
-    const { error } = await supabase.from('task_evidence').insert({
-      task_id: id, user_id: uid, kind: 'note', content: newNote.trim(),
-    })
-    setBusy(false)
-    if (error) return flash(error.message, true)
-    setNewNote('')
-    load()
-  }
-
-  async function addLink() {
-    if (!newLink.trim()) return
-    setBusy(true)
-    const { error } = await supabase.from('task_evidence').insert({
-      task_id: id, user_id: uid, kind: 'link', content: newLink.trim(),
-    })
-    setBusy(false)
-    if (error) return flash(error.message, true)
-    setNewLink('')
-    load()
-  }
-
-  async function uploadPicture(file: File) {
-    setBusy(true)
-    const path = `${uid}/${id}/${Date.now()}-${file.name}`
-    const { error: upErr } = await supabase.storage.from('task-evidence').upload(path, file)
-    if (upErr) { setBusy(false); return flash('Upload failed: ' + upErr.message, true) }
-    const { error } = await supabase.from('task_evidence').insert({
-      task_id: id, user_id: uid, kind: 'picture', content: file.name, file_url: path,
-    })
-    setBusy(false)
-    if (error) return flash(error.message, true)
-    load()
-  }
-
-  if (!task) {
-    return <div className="text-center text-ink-soft text-sm py-12">Loading…</div>
-  }
-
-  const actions = STATUS_ACTIONS[task.status] || []
-  const filteredActions = actions.filter(a => {
-    if (a.next === 'submitted' || a.next === 'resubmitted') return task.requires_review && (isAssignee || canManage)
-    if (a.next === 'in_progress') return isAssignee || canManage
-    if (a.next === 'completed' && task.requires_review && (task.status === 'submitted' || task.status === 'resubmitted')) return isReviewer || canManage
-    if (a.next === 'completed') return !task.requires_review && (isAssignee || canManage)
-    if (a.next === 'changes_requested') return isReviewer || canManage
-    if (a.next === 'cancelled' || a.next === 'assigned') return canManage
-    return canManage
-  })
-
-  const needsFeedback = filteredActions.some(a => a.next === 'changes_requested' || a.next === 'cancelled')
-  const overdue = task.deadline && new Date(task.deadline) < new Date() && !['completed', 'cancelled'].includes(task.status)
-  const getName = (uid: string | null) => uid ? profiles[uid]?.display_name ?? '—' : '—'
-
-  return (
-    <>
-      <div className="flex items-center gap-2 text-sm text-ink-soft">
-        <Link to="/tasks" className="hover:text-accent">Tasks</Link>
-        <span>/</span>
-        <span className="text-ink">{task.title}</span>
-      </div>
-
-      <section className={card}>
-        <div className={cardHead}>
-          <div className="flex items-center gap-3">
-            <span className={cardTitle}>Task detail</span>
-            <Badge label={task.status.replace(/_/g, ' ')} tone={task.status} />
-            {overdue && <span className="text-[11px] font-mono text-[#c0392b]">OVERDUE</span>}
-          </div>
-        </div>
-        <div className="p-5 space-y-4">
-          <h2 className="text-lg font-semibold">{task.title}</h2>
-          {task.description && <p className="text-sm text-ink-soft whitespace-pre-wrap">{task.description}</p>}
-
-          <div className="grid sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <div className="text-[11px] font-mono uppercase text-ink-soft mb-1">Deadline</div>
-              <div className={overdue ? 'text-[#c0392b] font-medium' : ''}>{task.deadline ? fmtDate(task.deadline) : '—'}</div>
-            </div>
-            {group && (
-              <div>
-                <div className="text-[11px] font-mono uppercase text-ink-soft mb-1">Group</div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: group.color }} />
-                  {group.name}
-                </div>
-              </div>
-            )}
-            <div>
-              <div className="text-[11px] font-mono uppercase text-ink-soft mb-1">Assignees</div>
-              <div>{assignees.length > 0 ? assignees.map(a => getName(a.user_id)).join(', ') : '—'}</div>
-            </div>
-            {task.requires_review && (
-              <div>
-                <div className="text-[11px] font-mono uppercase text-ink-soft mb-1">Reviewers</div>
-                <div>{reviewers.length > 0 ? reviewers.map(r => getName(r.user_id)).join(', ') : '—'}</div>
-              </div>
-            )}
-            <div>
-              <div className="text-[11px] font-mono uppercase text-ink-soft mb-1">Review required</div>
-              <div>{task.requires_review ? 'Yes' : 'No'}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-mono uppercase text-ink-soft mb-1">Created</div>
-              <div>{fmtDateTime(task.created_at)}</div>
-            </div>
-          </div>
-
-          {filteredActions.length > 0 && (
-            <div className="border-t border-line pt-4 space-y-3">
-              {needsFeedback && (
-                <div>
-                  <label className={label}>Feedback</label>
-                  <textarea
-                    className={textarea}
-                    rows={2}
-                    value={feedback}
-                    onChange={e => setFeedback(e.target.value)}
-                    placeholder="Required for changes requested or cancellation"
-                  />
-                </div>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {filteredActions.map(a => (
-                  <button
-                    key={a.next}
-                    onClick={() => transition(a.next)}
-                    disabled={busy}
-                    className={a.next === 'cancelled' ? btnGhost : btn}
-                  >
-                    {a.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Evidence */}
-      <section className={card}>
-        <div className={cardHead}>
-          <span className={cardTitle}>Evidence</span>
-        </div>
-        <div className="divide-y divide-line">
-          {evidence.map(e => (
-            <div key={e.id} className="px-5 py-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Badge label={e.kind} tone="neutral" />
-                <span className="text-xs text-ink-soft">{getName(e.user_id)} · {fmtDateTime(e.created_at)}</span>
-              </div>
-              {e.kind === 'link' ? (
-                <a href={e.content} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline break-all">
-                  {e.content}
-                </a>
-              ) : e.kind === 'picture' && e.file_url ? (
-                signed[e.id] ? (
-                  <a href={signed[e.id]} target="_blank" rel="noopener noreferrer" className="block w-fit">
-                    <img src={signed[e.id]} alt={e.content} className="max-h-48 rounded-lg border border-white/10 mt-1" />
-                  </a>
-                ) : (
-                  <span className="text-sm text-ink-soft">{e.content} (unavailable)</span>
-                )
-              ) : (
-                <p className="text-sm whitespace-pre-wrap">{e.content}</p>
-              )}
-            </div>
-          ))}
-          {evidence.length === 0 && (
-            <div className="px-5 py-6 text-center text-ink-soft text-sm">No evidence added yet.</div>
-          )}
-        </div>
-
-        {(isAssignee || canManage) && (
-          <div className="border-t border-line p-5 space-y-3">
-            <div className="flex gap-2">
-              <input className={`flex-1 ${input}`} placeholder="Add a note…" value={newNote} onChange={e => setNewNote(e.target.value)} />
-              <button onClick={addNote} disabled={busy || !newNote.trim()} className={btnGhost}>Add note</button>
-            </div>
-            <div className="flex gap-2">
-              <input className={`flex-1 ${input}`} placeholder="Add a link…" value={newLink} onChange={e => setNewLink(e.target.value)} />
-              <button onClick={addLink} disabled={busy || !newLink.trim()} className={btnGhost}>Add link</button>
-            </div>
-            <div>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) uploadPicture(e.target.files[0]) }} />
-              <button onClick={() => fileRef.current?.click()} disabled={busy} className={btnGhost}>Upload picture</button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* History */}
-      <section className={card}>
-        <div className={cardHead}>
-          <span className={cardTitle}>History</span>
-        </div>
-        <div className="divide-y divide-line">
-          {history.map(h => (
-            <div key={h.id} className="px-5 py-3">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="font-medium">{getName(h.user_id)}</span>
-                <span className="text-ink-soft">→</span>
-                <Badge label={h.to_status.replace(/_/g, ' ')} tone={h.to_status} />
-                <span className="text-xs text-ink-soft ml-auto">{fmtDateTime(h.created_at)}</span>
-              </div>
-              {h.feedback && <p className="text-sm text-ink-soft mt-1 whitespace-pre-wrap">{h.feedback}</p>}
-            </div>
-          ))}
-          {history.length === 0 && (
-            <div className="px-5 py-6 text-center text-ink-soft text-sm">No history yet.</div>
-          )}
-        </div>
-      </section>
-
-      {Toast}
-    </>
-  )
+import {createFileRoute} from '@tanstack/react-router'
+import {useEffect,useState} from 'react'
+import {supabase} from '~/lib/supabase'
+import {useAuth} from '~/lib/auth'
+import {can} from '~/lib/rbac'
+import {taskOverviews} from '~/lib/task-overviews'
+import {legalTaskActions,TASK_ACTION_LABEL,type TaskOperation} from '~/lib/tasks'
+import {isOverdue} from '~/lib/time'
+import {fmtDate,fmtDateTime} from '~/lib/format'
+import {PrivateAttachment} from '~/components/PrivateAttachment'
+import {Badge} from '~/components/Badge'
+import {TaskEditor} from '~/components/TaskEditor'
+import {ConfirmDialog} from '~/components/ConfirmDialog'
+import type {TaskOverview,TaskEvidence,TaskHistory,Group} from '~/lib/types'
+import {card,cardHead,cardTitle,input,textarea,label,btn,btnGhost} from '~/lib/ui'
+export const Route=createFileRoute('/_app/tasks/$id')({component:TaskDetail})
+function TaskDetail(){
+ const {id}=Route.useParams();const {user,profile}=useAuth();const manager=can(profile,'manage_tasks')
+ const [task,setTask]=useState<TaskOverview|null>(null),[evidence,setEvidence]=useState<TaskEvidence[]>([]),[history,setHistory]=useState<TaskHistory[]>([]),[submissions,setSubmissions]=useState<{id:string;author_id:string;submitted_at:string}[]>([]),[names,setNames]=useState<Record<string,string>>({}),[groups,setGroups]=useState<Group[]>([])
+ const [work,setWork]=useState(false),[note,setNote]=useState(''),[link,setLink]=useState(''),[feedback,setFeedback]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false)
+ const [confirmOperation,setConfirmOperation]=useState<TaskOperation|null>(null)
+ async function load(){
+  setLoading(true);setError('')
+  try{
+   const row=(await taskOverviews()).find(row=>row.id===id);if(!row)throw new Error('Task not found')
+   setTask(row);const allowed=row.is_assignee||row.is_reviewer||manager;setWork(allowed)
+   const [g,p]=await Promise.all([supabase.from('groups').select('*'),supabase.from('historical_profiles').select('id,display_name')]);setGroups(g.data as Group[]??[]);setNames(Object.fromEntries((p.data??[]).map(row=>[row.id,row.display_name])))
+   if(allowed){const [e,h,s]=await Promise.all([supabase.from('task_evidence').select('*').eq('task_id',id).order('created_at'),supabase.from('task_history').select('*').eq('task_id',id).order('created_at'),supabase.from('task_submissions').select('*').eq('task_id',id).order('submitted_at')]);const failure=e.error||h.error||s.error;if(failure)throw failure;setEvidence(e.data as TaskEvidence[]);setHistory(h.data as TaskHistory[]);setSubmissions(s.data as {id:string;author_id:string;submitted_at:string}[])}else{setEvidence([]);setHistory([]);setSubmissions([])}
+  }catch(cause){setError(cause&&typeof cause==='object'&&'message'in cause?String(cause.message):String(cause))}finally{setLoading(false)}
+ }
+ useEffect(()=>{void load()},[id,profile?.permissions])
+ async function action(operation:TaskOperation| 'evidence'|'move_group'|'remove_file',fields:Record<string,unknown>={}){
+  setBusy(true);setError('');const {data,error}=await supabase.rpc('task_action',{payload:{action:operation,id,expected_status:task!.status,...fields,...(operation==='request_changes'?{feedback}:{})}});setBusy(false);if(error){setError(error.message);return}
+  if(operation==='remove_file'&&data.removed_path){const removal=await supabase.storage.from('task-evidence').remove([data.removed_path]);if(removal.error)setError('Metadata marked removed; object cleanup failed: '+removal.error.message)}
+  setNote('');setLink('');setFeedback('');await load()
+ }
+ async function upload(file:File){
+  const policy=await supabase.rpc('task_evidence_settings',{payload:{action:'get'}})
+  if(policy.error){setError(policy.error.message);return}
+  if(!policy.data.mime_types.includes(file.type)||file.size>policy.data.max_bytes){setError('Picture violates the configured task evidence MIME or size policy.');return}
+  setBusy(true);const path=`${user!.id}/${id}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`
+  const result=await supabase.storage.from('task-evidence').upload(path,file,{contentType:file.type})
+  if(result.error){setError(result.error.message);setBusy(false);return}
+  const registered=await supabase.rpc('task_action',{payload:{action:'evidence',id,kind:'picture',content:file.name,file_url:path}})
+  if(registered.error){await supabase.storage.from('task-evidence').remove([path]);setError(registered.error.message)}else await load()
+  setBusy(false)
+ }
+ if(loading&&!task)return <p role="status">Loading task…</p>
+ if(!task)return <div role="alert">{error||'Task unavailable'}<button onClick={()=>void load()}>Retry task</button></div>
+ const confirmation=<ConfirmDialog open={!!confirmOperation} title={confirmOperation?TASK_ACTION_LABEL[confirmOperation]:'Confirm task action'} description="Current group membership, selected-reviewer authority and task state are rechecked before commit." busy={busy} onCancel={()=>setConfirmOperation(null)} onConfirm={()=>{if(confirmOperation){void action(confirmOperation);setConfirmOperation(null)}}}/>
+ const actions=legalTaskActions(task,task.is_assignee,task.is_reviewer,manager)
+ return <div className="space-y-5">{confirmation}{error&&<p role="alert">{error}</p>}<section className={card}><div className={cardHead}><h1 className={cardTitle}>{task.title}</h1><Badge label={task.status} tone={task.status}/></div><div className="p-5 space-y-3"><p className="whitespace-pre-wrap">{task.description}</p><p>Owning group: {task.owner_group_name}</p><p>Current assignees: {task.assignee_names.join(', ')||'No current members'}</p><p>Category: {task.category_name??'None'} · {task.requires_review?'Review required':'No review required'}</p><p>{task.deadline?`Due ${fmtDate(task.deadline)} at Los Angeles end of day`:'No deadline'}{isOverdue(task.deadline,task.status)?' · Overdue':''}</p>{manager&&<label className={label}>Move whole task to owning group<select className={input} value={task.owner_group_id} disabled={busy} onChange={e=>void action('move_group',{owner_group_id:e.target.value})}>{groups.map(group=><option key={group.id} value={group.id}>{group.name}</option>)}</select></label>}
+ {actions.includes('request_changes')&&<label className={label}>Required change feedback<textarea className={textarea} value={feedback} onChange={e=>setFeedback(e.target.value)}/></label>}<div className="flex flex-wrap gap-3">{actions.map(operation=><button key={operation} disabled={busy} className={btnGhost} onClick={()=>setConfirmOperation(operation)}>{TASK_ACTION_LABEL[operation]}</button>)}</div></div></section>
+ {manager&&<TaskEditor task={task} onSaved={()=>void load()}/>}
+ {work?<><section className={card}><div className={cardHead}><h2 className={cardTitle}>Private work and evidence</h2></div><div className="p-5 space-y-4">{evidence.map(row=><div key={row.id} className="border-t border-line py-3"><p className="text-xs text-ink-soft">{names[row.user_id??'']??'Retained author'} · {fmtDateTime(row.created_at)}</p>{row.removed?<p>File removed; metadata and submitted history retained.</p>:row.kind==='picture'&&row.file_url?<PrivateAttachment bucket="task-evidence" reference={row.file_url} label={row.content}/>:row.kind==='link'?<a href={row.content} target="_blank" rel="noopener noreferrer" className="text-accent">{row.content}</a>:<p>{row.content}</p>}{manager&&row.file_url&&!row.removed&&<button className={btnGhost} onClick={()=>void action('remove_file',{evidence_id:row.id})}>Remove file, retain history</button>}</div>)}
+ {task.is_assignee&&!['submitted','resubmitted','completed','cancelled'].includes(task.status)&&<div className="space-y-3"><label className={label}>Optional work note<textarea className={textarea} value={note} onChange={e=>setNote(e.target.value)}/></label><button disabled={busy||!note.trim()} className={btn} onClick={()=>void action('evidence',{kind:'note',content:note})}>Add note</button><label className={label}>Optional HTTP(S) link<input className={input} value={link} onChange={e=>setLink(e.target.value)}/></label><button disabled={busy||!link} className={btnGhost} onClick={()=>void action('evidence',{kind:'link',content:link})}>Add link</button><label className={label}>Optional picture<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e=>{if(e.target.files?.[0])void upload(e.target.files[0])}}/></label></div>}
+ </div></section><section className={card}><div className={cardHead}><h2 className={cardTitle}>Retained submissions and review</h2></div><div className="p-5 space-y-3">{submissions.map(row=><p key={row.id}>Submitted by {names[row.author_id]??'Retained author'} · {fmtDateTime(row.submitted_at)}</p>)}{history.map(row=><div key={row.id}><p>{names[row.user_id??'']??'Retained reviewer'} · {row.to_status} · {fmtDateTime(row.created_at)}</p><p className="whitespace-pre-wrap">{row.feedback}</p></div>)}</div></section></>:<p>Overview only. Evidence, submission history and reviewer feedback are private to current task participants and task managers.</p>}</div>
 }

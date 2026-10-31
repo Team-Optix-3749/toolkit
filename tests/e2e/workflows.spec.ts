@@ -1,0 +1,23 @@
+import {test,expect} from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
+test('mobile Hours and shared task filters remain accessible and URL-persistent',async({page})=>{
+ await page.setViewportSize({width:390,height:844})
+ await page.goto('/login')
+ await page.locator('input[type=email]').fill('member-a@example.test')
+ await page.locator('input[type=password]').fill('Optix-local-only-3749!')
+ await page.getByRole('button',{name:'Sign in',exact:true}).click()
+ await page.waitForURL('**/dashboard')
+ await page.goto('/hours?type=build')
+ await expect(page.getByRole('columnheader',{name:'Build hours',exact:true})).toBeVisible()
+ await expect(page.locator('th')).toHaveCount(3)
+ expect((await new AxeBuilder({page}).analyze()).violations).toEqual([])
+ await page.goto('/tasks?view=kanban&groups=60000000-0000-4000-8000-000000000001,60000000-0000-4000-8000-000000000002')
+ await expect(page.getByRole('checkbox',{name:'Local Software',exact:true})).toBeChecked()
+ await expect(page.getByRole('checkbox',{name:'Local Outreach',exact:true})).toBeChecked()
+ await page.getByRole('checkbox',{name:'Local Outreach',exact:true}).uncheck()
+ await page.reload()
+ await expect(page.getByRole('checkbox',{name:'Local Outreach',exact:true})).not.toBeChecked()
+ await page.getByRole('button',{name:'Clear all',exact:true}).click()
+ await expect(page.getByText('Select a group to see tasks',{exact:true})).toBeVisible()
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+})

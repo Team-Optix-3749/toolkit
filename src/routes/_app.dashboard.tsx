@@ -2,21 +2,23 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
-import { fmtDateTime } from '~/lib/format'
+import { fmtDateTime, fmtDate } from '~/lib/format'
+import { isOverdue } from '~/lib/time'
 import { Badge } from '~/components/Badge'
 import type { BuildRecord, BuildSession, Notification, Opi, Task, OutreachEvent } from '~/lib/types'
+import { taskOverviews } from '~/lib/task-overviews'
 import { card, cardHead, cardTitle, btn, btnGhost } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/dashboard')({
   component: Dashboard,
 })
 
-type Summary = { build_hours: number; outreach_hours: number; total_hours: number }
+type Summary = { build_hours: number; outreach_hours: number }
 type Targets = { build: number; outreach: number }
 
 function Dashboard() {
   const { user, profile } = useAuth()
-  const [summary, setSummary] = useState<Summary>({ build_hours: 0, outreach_hours: 0, total_hours: 0 })
+  const [summary, setSummary] = useState<Summary>({ build_hours: 0, outreach_hours: 0 })
   const [targets, setTargets] = useState<Targets>({ build: 0, outreach: 0 })
   const [sessions, setSessions] = useState<BuildSession[]>([])
   const [notifs, setNotifs] = useState<Notification[]>([])
@@ -25,33 +27,35 @@ function Dashboard() {
   const [myTasks, setMyTasks] = useState<Task[]>([])
   const [reviewTasks, setReviewTasks] = useState<Task[]>([])
   const [upcomingOutreach, setUpcomingOutreach] = useState<OutreachEvent[]>([])
+  const [hoursError,setHoursError]=useState('')
+  const [seasonId,setSeasonId]=useState('')
   const [loading, setLoading] = useState(true)
+  const [panelErrors,setPanelErrors]=useState<string[]>([])
 
   useEffect(() => {
     const uid = user!.id
     ;(async () => {
       const [
-        { data: s },
-        { data: season },
-        { data: sched },
-        { data: n },
-        { data: o },
-        { data: checkin },
-        { data: assignedIds },
-        { data: reviewerIds },
-        { data: outreach },
+        totals,
+        { data: season,error:seasonError },
+        { data: sched,error:scheduleError },
+        { data: n,error:notificationError },
+        { data: o,error:opiError },
+        { data: checkin,error:buildError },
+        { data: outreach,error:outreachError },
       ] = await Promise.all([
-        supabase.from('hours_summary').select('build_hours, outreach_hours, total_hours').eq('user_id', uid).maybeSingle(),
+        supabase.rpc('season_hours',{payload:{}}),
         supabase.from('seasons').select('outreach_target, build_target').eq('is_current', true).maybeSingle(),
         supabase.from('build_sessions').select('*').gte('opens_at', new Date().toISOString()).order('opens_at').limit(10),
         supabase.from('notifications').select('*').eq('user_id', uid).is('read_at', null).order('created_at', { ascending: false }).limit(5),
         supabase.from('opis').select('*').eq('submitter_id', uid).order('created_at', { ascending: false }),
         supabase.from('build_records').select('*').eq('member_id', uid).is('check_out', null).order('check_in', { ascending: false }).limit(1),
-        supabase.from('task_assignees').select('task_id').eq('user_id', uid),
-        supabase.from('task_reviewers').select('task_id').eq('user_id', uid),
         supabase.from('outreach_events').select('*').gte('starts_at', new Date().toISOString()).eq('cancelled', false).order('starts_at').limit(5),
       ])
-      if (s) setSummary(s as Summary)
+      setPanelErrors([seasonError,scheduleError,notificationError,opiError,buildError,outreachError].filter(Boolean).map(error=>error!.message))
+      if(totals.error)setHoursError(totals.error.message)
+      else if(!totals.data.season)setHoursError('Season setup is required.')
+      else {const row=totals.data.members.find((member:{id:string})=>member.id===uid);setSummary({build_hours:Number(row?.build_minutes??0)/60,outreach_hours:Number(row?.outreach_minutes??0)/60});setSeasonId(totals.data.season.id)}
       if (season) setTargets({ outreach: Number((season as { outreach_target: number }).outreach_target) || 0, build: Number((season as { build_target: number }).build_target) || 0 })
       setSessions((sched as BuildSession[]) || [])
       setNotifs((n as Notification[]) || [])
@@ -59,32 +63,16 @@ function Dashboard() {
       setActiveCheckin((checkin as BuildRecord[])?.[0] ?? null)
       setUpcomingOutreach((outreach as OutreachEvent[]) || [])
 
-      const assignedTaskIds = (assignedIds as { task_id: string }[] || []).map(r => r.task_id)
-      const reviewerTaskIds = (reviewerIds as { task_id: string }[] || []).map(r => r.task_id)
-
-      if (assignedTaskIds.length > 0) {
-        const { data: tasks } = await supabase
-          .from('tasks').select('*')
-          .in('id', assignedTaskIds)
-          .in('status', ['assigned', 'in_progress', 'changes_requested'])
-          .order('deadline', { ascending: true, nullsFirst: false })
-        setMyTasks((tasks as Task[]) || [])
-      }
-
-      if (reviewerTaskIds.length > 0) {
-        const { data: tasks } = await supabase
-          .from('tasks').select('*')
-          .in('id', reviewerTaskIds)
-          .in('status', ['submitted', 'resubmitted'])
-        setReviewTasks((tasks as Task[]) || [])
-      }
+      const overview = await taskOverviews()
+      setMyTasks(overview.filter(task=>task.is_assignee&&['assigned','in_progress','changes_requested'].includes(task.status)))
+      setReviewTasks(overview.filter(task=>task.is_reviewer&&['submitted','resubmitted'].includes(task.status)))
 
       setLoading(false)
-    })()
+    })().catch(cause=>{setHoursError(cause instanceof Error?cause.message:String(cause));setLoading(false)})
   }, [])
 
   const pendingOpi = opis.filter((o) => o.status === 'SUBMITTED' || o.status === 'RESUBMITTED' || o.status === 'CHANGES_REQUESTED')
-  const overdueTasks = myTasks.filter(t => t.deadline && new Date(t.deadline) < new Date())
+  const overdueTasks = myTasks.filter(task => isOverdue(task.deadline,task.status))
   const firstName = profile?.display_name?.split(' ')[0] || 'there'
 
   return (
@@ -103,6 +91,7 @@ function Dashboard() {
         </div>
       </div>
 
+      {panelErrors.length>0&&<div role="alert">Some dashboard panels could not be loaded: {panelErrors.join('; ')}. Empty panels below are not proof of no activity. Reload to retry.</div>}
       {/* Active check-in */}
       {activeCheckin && (
         <section className="bg-lime/10 border border-lime/30 rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
@@ -122,12 +111,7 @@ function Dashboard() {
 
       {/* Hours */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <HoursTile label="Build hrs" value={summary.build_hours} target={targets.build} loading={loading} />
-        <HoursTile label="Outreach hrs" value={summary.outreach_hours} target={targets.outreach} loading={loading} />
-        <div className="bg-panel backdrop-blur-xl border border-white/8 rounded-2xl px-4 py-4">
-          {loading ? <div className="skeleton h-7 w-12 mb-1" /> : <div className="font-mono text-2xl tabular-nums">{summary.total_hours}</div>}
-          <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft mt-1">Total hrs</div>
-        </div>
+        {hoursError?<p role="alert">{hoursError}</p>:<><Link to="/hours" search={{type:'build',season:seasonId}}><HoursTile label="Build hrs" value={summary.build_hours} target={targets.build} loading={loading}/></Link><Link to="/hours" search={{type:'outreach',season:seasonId}}><HoursTile label="Outreach hrs" value={summary.outreach_hours} target={targets.outreach} loading={loading}/></Link></>}
         <div className="bg-panel backdrop-blur-xl border border-white/8 rounded-2xl px-4 py-4">
           {loading ? <div className="skeleton h-7 w-8 mb-1" /> : <div className="font-mono text-2xl tabular-nums">{pendingOpi.length}</div>}
           <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft mt-1">Open OPIs</div>
@@ -166,14 +150,14 @@ function Dashboard() {
           </div>
           <div className="divide-y divide-white/4">
             {myTasks.slice(0, 5).map((t) => {
-              const overdue = t.deadline && new Date(t.deadline) < new Date()
+              const overdue = isOverdue(t.deadline,t.status)
               return (
                 <Link key={t.id} to="/tasks/$id" params={{ id: t.id }} className="px-5 py-2.5 flex items-center justify-between gap-2 hover:bg-white/[0.03] transition-colors duration-150">
                   <span className={`text-sm truncate ${overdue ? 'text-danger font-medium' : ''}`}>{t.title}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     {t.deadline && (
                       <span className={`text-xs font-mono ${overdue ? 'text-danger' : 'text-ink-soft'}`}>
-                        {new Date(t.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {fmtDate(t.deadline)}
                       </span>
                     )}
                     <Badge label={t.status.replace('_', ' ')} tone={t.status} />
@@ -273,7 +257,7 @@ function HoursTile({ label, value, target, loading }: {
       ) : (
         <>
           <div className="flex items-baseline gap-1.5">
-            <span className="font-mono text-2xl tabular-nums">{value}</span>
+            <span className="font-mono text-2xl tabular-nums">{Number(value).toFixed(2)}</span>
             {target > 0 && (
               <span className="text-xs font-mono text-ink-soft">/ {target}</span>
             )}

@@ -34,14 +34,14 @@ function OwnerLayout() {
 
   return (
     <>
-      {/* Owner banner */}
+      {/* President browsing banner */}
       <div className="flex items-center gap-2 mb-4">
         <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
         <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent">
-          Owner console
+          President console
         </span>
         <span className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-soft ml-auto">
-          God mode · destructive actions enabled
+          Retained records · domain actions only
         </span>
       </div>
 

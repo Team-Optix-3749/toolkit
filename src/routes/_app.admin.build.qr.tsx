@@ -50,12 +50,15 @@ function QRManager() {
 
   useEffect(() => {
     if (!token || !canvasRef.current) return
-    QRCode.toCanvas(canvasRef.current, token, {
+    const link = new URL(`${import.meta.env.BASE_URL}build/check-in`,window.location.origin)
+    link.searchParams.set('session_id',sessionId)
+    link.searchParams.set('token',token)
+    QRCode.toCanvas(canvasRef.current, link.href, {
       width: 280,
       margin: 2,
       color: { dark: '#06080b', light: '#ffffff' },
     })
-  }, [token])
+  }, [token,sessionId])
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current)

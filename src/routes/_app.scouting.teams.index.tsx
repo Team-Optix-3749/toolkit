@@ -45,7 +45,7 @@ function TeamsTable() {
         setEntries(rows)
         const ids = [...new Set(rows.map((r) => r.scout_id))]
         if (ids.length) {
-          const { data: p } = await supabase.from('profiles').select('id, display_name').in('id', ids)
+          const { data: p } = await supabase.from('historical_profiles').select('id, display_name').in('id', ids)
           setNames(Object.fromEntries(((p as { id: string; display_name: string | null }[]) || []).map((x) => [x.id, x.display_name ?? ''])))
         }
       })
@@ -74,28 +74,12 @@ function TeamsTable() {
 
   function exportRaw() {
     const keys = MATCH_SECTIONS.flatMap((s) => s.fields.map((f) => f.key))
-    downloadCsv(
-      `scouting-${event?.event_code || event?.name || 'event'}.csv`,
-      entries
-        .slice()
-        .sort((a, b) => a.match_number - b.match_number || a.team_number - b.team_number)
-        .map((e) => ({
-          match_type: e.match_type,
-          match: e.match_number,
-          team: e.team_number,
-          alliance: e.alliance ?? '',
-          scout: names[e.scout_id] ?? e.scout_id,
-          ...Object.fromEntries(
-            keys.map((k) => {
-              const v = e.data[k]
-              // Drawn paths export as JSON so they survive a round-trip through a spreadsheet.
-              return [k, v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : v]
-            }),
-          ),
-          notes: e.notes ?? '',
-          submitted: e.updated_at,
-        })),
-    )
+    downloadCsv(`scouting-${event?.event_code||event?.name||'event'}.csv`,
+      ['match_type','match','team','alliance','scout',...keys,'notes','submitted'],
+      entries.slice().sort((a,b)=>a.match_number-b.match_number||a.team_number-b.team_number).map(entry=>[
+        entry.match_type,entry.match_number,entry.team_number,entry.alliance??'',names[entry.scout_id]??entry.scout_id,
+        ...keys.map(key=>{const value=entry.data[key];return value==null?'':typeof value==='object'?JSON.stringify(value):value}),entry.notes??'',entry.updated_at,
+      ]))
   }
 
   return (

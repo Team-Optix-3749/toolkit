@@ -1,90 +1,80 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
-import { useToast } from '~/lib/toast'
-import { toISO } from '~/lib/format'
-import { card, cardHead, cardTitle, label, input, textarea, btn } from '~/lib/ui'
+import { useAuth } from '~/lib/auth'
+import { can } from '~/lib/rbac'
+import { outreachAction } from '~/lib/actions'
+import { teamDateTime, teamInput } from '~/lib/time'
+import { TeamDateTimeInput, type TimeDisambiguation } from '~/components/TeamDateTimeInput'
+import type { Season } from '~/lib/types'
+import { card, cardHead, cardTitle, label, input, textarea, btn, btnGhost } from '~/lib/ui'
 
-export const Route = createFileRoute('/_app/admin/outreach/events/new')({
-  component: NewEvent,
-})
-
-const blank = { title: '', description: '', location: '', latitude: '', longitude: '', starts_at: '', ends_at: '' }
+export const Route = createFileRoute('/_app/admin/outreach/events/new')({ component: NewEvent })
 
 function NewEvent() {
-  const { flash, Toast } = useToast()
+  const { profile } = useAuth()
   const navigate = useNavigate()
-  const [f, setF] = useState(blank)
+  const [f, setF] = useState(() => ({ title: '', description: '', location: '', latitude: '', longitude: '', starts_at: teamInput(), ends_at: '', season_id: '' }))
+  const [seasons, setSeasons] = useState<Season[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [startsChoice, setStartsChoice] = useState<TimeDisambiguation>('reject')
+  const [endsChoice, setEndsChoice] = useState<TimeDisambiguation>('reject')
 
-  async function create() {
-    if (!f.title.trim()) return flash('Title required', true)
-    if (!f.starts_at) return flash('Start time required', true)
-    if (f.latitude && isNaN(Number(f.latitude))) return flash('Latitude must be a number', true)
-    if (f.longitude && isNaN(Number(f.longitude))) return flash('Longitude must be a number', true)
+  async function load() {
+    setLoading(true)
+    setLoadError('')
+    try {
+      const result = await supabase.from('seasons').select('*').order('name')
+      if (result.error) throw result.error
+      const rows = (result.data || []) as Season[]
+      setSeasons(rows)
+      setF((old) => ({ ...old, season_id: old.season_id || rows.find((s) => s.is_current)?.id || '' }))
+    } catch (e) { setLoadError(e instanceof Error ? e.message : 'Could not load seasons.') }
+    finally { setLoading(false) }
+  }
+  useEffect(() => { void load() }, [])
+
+  async function create(event: React.FormEvent) {
+    event.preventDefault()
+    setError('')
     setBusy(true)
-    const { error } = await supabase.rpc('outreach_action', {
-      payload: {
-        action: 'create',
-        title: f.title.trim(),
-        description: f.description || null,
-        location: f.location || null,
-        latitude: f.latitude ? Number(f.latitude) : null,
-        longitude: f.longitude ? Number(f.longitude) : null,
-        starts_at: toISO(f.starts_at),
-        ends_at: f.ends_at ? toISO(f.ends_at) : null,
-      },
-    })
-    setBusy(false)
-    if (error) return flash('Create failed: ' + error.message, true)
-    flash('Event created')
-    navigate({ to: '/admin/outreach/events' })
+    try {
+      if (!f.title.trim() || !f.description.trim() || !f.location.trim()) throw new Error('Title, description and location are required.')
+      if (!f.season_id) throw new Error('Select an existing season before creating an event.')
+      if (!f.starts_at || !f.ends_at) throw new Error('Start and end are required.')
+      const starts_at = teamDateTime(f.starts_at, startsChoice)
+      const ends_at = teamDateTime(f.ends_at, endsChoice)
+      if (Date.parse(ends_at) <= Date.parse(starts_at)) throw new Error('End must be later than start.')
+      const latitude = f.latitude === '' ? null : Number(f.latitude)
+      const longitude = f.longitude === '' ? null : Number(f.longitude)
+      if ((latitude === null) !== (longitude === null) || (latitude !== null && (!Number.isFinite(latitude) || Math.abs(latitude) > 90)) || (longitude !== null && (!Number.isFinite(longitude) || Math.abs(longitude) > 180))) throw new Error('Provide both valid coordinates or leave both empty.')
+      const result = await outreachAction({ action: 'create', title: f.title.trim(), description: f.description.trim(), location: f.location.trim(), season_id: f.season_id, starts_at, ends_at, latitude, longitude })
+      if (result.error) throw result.error
+      await navigate({ to: '/admin/outreach/events' })
+    } catch (e) { setError(e instanceof Error ? e.message : 'Event creation failed. Please retry.') }
+    finally { setBusy(false) }
   }
 
-  return (
-    <section className={card}>
-      <div className={cardHead}>
-        <span className={cardTitle}>New outreach event</span>
+  if (!can(profile, 'manage_outreach_events')) return <p role="alert">You do not have permission to create outreach events.</p>
+  return <section className={card}>
+    <div className={cardHead}><h1 className={cardTitle}>New outreach event</h1></div>
+    {loading ? <p className="p-5" role="status">Loading seasons…</p> : loadError ? <div className="p-5" role="alert">{loadError} <button className={btnGhost} onClick={load}>Retry</button></div> : <form onSubmit={create} className="p-5 space-y-4">
+      {!seasons.length && <p role="alert">Setup required: a season manager must create a season before events can be saved.</p>}
+      <label className={label}>Season<select required className={input} value={f.season_id} onChange={(e) => setF({ ...f, season_id: e.target.value })}><option value="">Select a season</option>{seasons.map((s) => <option key={s.id} value={s.id}>{s.name}{s.is_current ? ' (current)' : ''}</option>)}</select></label>
+      <label className={label}>Title<input required className={input} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></label>
+      <label className={label}>Description<textarea required className={textarea} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></label>
+      <label className={label}>Location<input required className={input} value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} /></label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TeamDateTimeInput label="Start" value={f.starts_at} disambiguation={startsChoice} onChange={(v) => setF({ ...f, starts_at: v })} onDisambiguationChange={setStartsChoice} />
+        <TeamDateTimeInput label="End" value={f.ends_at} disambiguation={endsChoice} onChange={(v) => setF({ ...f, ends_at: v })} onDisambiguationChange={setEndsChoice} />
       </div>
-      <div className="p-5">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className={label}>Title</label>
-            <input className={input} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
-          </div>
-          <div>
-            <label className={label}>Location name</label>
-            <input className={input} value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} />
-          </div>
-          <div>
-            <label className={label}>Starts</label>
-            <input type="datetime-local" className={input} value={f.starts_at} onChange={(e) => setF({ ...f, starts_at: e.target.value })} />
-          </div>
-          <div>
-            <label className={label}>Ends</label>
-            <input type="datetime-local" className={input} value={f.ends_at} onChange={(e) => setF({ ...f, ends_at: e.target.value })} />
-          </div>
-          <div>
-            <label className={label}>Latitude (for check-in)</label>
-            <input className={input} placeholder="e.g. 33.0144" value={f.latitude} onChange={(e) => setF({ ...f, latitude: e.target.value })} />
-          </div>
-          <div>
-            <label className={label}>Longitude (for check-in)</label>
-            <input className={input} placeholder="e.g. -117.1222" value={f.longitude} onChange={(e) => setF({ ...f, longitude: e.target.value })} />
-          </div>
-        </div>
-        <div className="mt-4">
-          <label className={label}>Description</label>
-          <textarea rows={3} className={textarea} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
-        </div>
-        <p className="text-xs text-ink-soft mt-2">
-          Latitude and longitude are required for members to self-check-in at the event location. Members must be within 1 mile.
-        </p>
-        <button onClick={create} disabled={busy} className={`mt-5 ${btn}`}>
-          {busy ? 'Creating…' : 'Create event'}
-        </button>
-      </div>
-      {Toast}
-    </section>
-  )
+      <p className="text-sm text-ink-soft">Optional coordinates describe the location only. Outreach attendance is recorded by event leads or attendance managers, not GPS self-check-in.</p>
+      <div className="grid gap-4 sm:grid-cols-2">{(['latitude', 'longitude'] as const).map((key) => <label key={key} className={label}>{key === 'latitude' ? 'Latitude (optional)' : 'Longitude (optional)'}<input type="number" step="any" min={key === 'latitude' ? -90 : -180} max={key === 'latitude' ? 90 : 180} className={input} value={f[key]} onChange={(e) => setF({ ...f, [key]: e.target.value })} /></label>)}</div>
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+      <button disabled={busy || !seasons.length} className={btn} type="submit">{busy ? 'Creating…' : 'Create event'}</button>
+    </form>}
+  </section>
 }

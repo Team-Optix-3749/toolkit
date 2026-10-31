@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '~/lib/auth'
 import { isRemembered } from '~/lib/supabase'
 import { isApproved } from '~/lib/rbac'
+import { pendingInvitation } from '~/lib/invitation'
 import { label, input, btn } from '~/lib/ui'
 import { ThemeToggle } from '~/components/ThemeToggle'
 
@@ -11,7 +12,7 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
-  const { user, role, profile, loading, signInPassword, signInOAuth } = useAuth()
+  const { user, role, profile, profileError, loading, refresh, signOut, signInPassword, signInOAuth } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,7 +24,9 @@ function LoginPage() {
 
   useEffect(() => {
     if (!loading && user && profile) {
-      navigate({ to: isApproved(role) ? '/dashboard' : '/pending-approval' })
+      if (profile.account_status === 'active' && profile.verified && !isApproved(role) && pendingInvitation()) {
+        void navigate({to:'/invite',search:{code:pendingInvitation()}})
+      } else void navigate({ to: profile.account_status !== 'active' ? '/account-blocked' : !profile.verified ? '/resend-verification' : isApproved(role) ? '/dashboard' : '/pending-approval' })
     }
   }, [loading, user, role, profile, navigate])
 
@@ -59,6 +62,7 @@ function LoginPage() {
           Remember me on this device
         </label>
         {err && <p className="text-sm text-danger">{err}</p>}
+        {profileError && <div role="alert" className="space-y-2 text-sm text-danger"><p>{profileError}</p><button type="button" onClick={() => void refresh()}>Retry account access</button><button type="button" onClick={() => void signOut()} className="ml-4">Clear sign-in</button></div>}
         <button disabled={busy} className={`w-full ${btn}`}>
           {busy ? '…' : 'Sign in'}
         </button>
@@ -108,20 +112,23 @@ export function AuthShell({ title, children }: { title: string; children: React.
   )
 }
 
-export function OAuthButtons({ onClick }: { onClick: (p: 'google' | 'discord') => void }) {
+export function OAuthButtons({ onClick }: { onClick: (p: 'google' | 'discord') => void | Promise<void> }) {
+  const [error,setError] = useState('')
+  const [busy,setBusy] = useState(false)
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div><div className="grid grid-cols-2 gap-3">
       {(['google', 'discord'] as const).map((p) => (
         <button
           key={p}
           type="button"
-          onClick={() => onClick(p)}
+          disabled={busy}
+          onClick={async () => {setBusy(true);setError('');try {await onClick(p)}catch(failure){setError(failure instanceof Error ? failure.message : 'Provider sign-in failed. Retry.')}finally{setBusy(false)}}}
           className="h-10 border border-white/10 bg-white/5 rounded-lg text-sm font-medium hover:bg-white/10 capitalize transition-all"
         >
           {p}
         </button>
       ))}
-    </div>
+    </div>{error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}</div>
   )
 }
 

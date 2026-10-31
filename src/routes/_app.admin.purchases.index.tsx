@@ -26,7 +26,7 @@ function PurchaseQueue() {
     setRows(list)
     const ids = [...new Set(list.map((r) => r.user_id))]
     if (ids.length) {
-      const { data: p } = await supabase.from('profiles').select('id, display_name').in('id', ids)
+      const { data: p } = await supabase.from('historical_profiles').select('id, display_name').in('id', ids)
       setNames(Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '-'])))
     }
   }

@@ -1,177 +1,23 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { supabase } from '~/lib/supabase'
-import { useToast } from '~/lib/toast'
-import { downloadCsv } from '~/lib/csv'
-import type { Season } from '~/lib/types'
-import { card, cardHead, cardTitle, label, input, btn, btnGhost } from '~/lib/ui'
-
-export const Route = createFileRoute('/_app/admin/reports/hours')({
-  component: ExportPage,
-})
-
-type Profile = { id: string; display_name: string | null }
-
-function isoLocal(d: Date) {
-  const off = d.getTimezoneOffset()
-  const sign = off <= 0 ? '+' : '-'
-  const hh = String(Math.floor(Math.abs(off) / 60)).padStart(2, '0')
-  const mm = String(Math.abs(off) % 60).padStart(2, '0')
-  return d.toISOString().replace('Z', `${sign}${hh}:${mm}`)
-}
-
-function ExportPage() {
-  const { flash, Toast } = useToast()
-  const [seasons, setSeasons] = useState<Season[]>([])
-  const [members, setMembers] = useState<Profile[]>([])
-  const [seasonId, setSeasonId] = useState('')
-  const [memberId, setMemberId] = useState('')
-  const [tab, setTab] = useState<'outreach' | 'build'>('outreach')
-  const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    ;(async () => {
-      const [{ data: s }, { data: m }] = await Promise.all([
-        supabase.from('seasons').select('*').order('created_at', { ascending: false }),
-        supabase.from('profiles').select('id, display_name').neq('role', 'PENDING').order('display_name'),
-      ])
-      setSeasons((s as Season[]) || [])
-      setMembers((m as Profile[]) || [])
-    })()
-  }, [])
-
-  const nameMap = Object.fromEntries(members.map((m) => [m.id, m.display_name || m.id.slice(0, 8)]))
-
-  async function exportOutreach() {
-    setBusy(true)
-    let q = supabase.from('outreach_attendance').select('*, outreach_events!inner(title, season_id, cancelled, starts_at)')
-    if (seasonId) q = q.eq('outreach_events.season_id', seasonId)
-    if (memberId) q = q.eq('member_id', memberId)
-    const { data, error } = await q.order('arrival', { ascending: false })
-    setBusy(false)
-    if (error) return flash(error.message, true)
-    if (!data?.length) return flash('No records to export', true)
-
-    const season = (id: string) => seasons.find((s) => s.id === id)?.name ?? id
-    const rows = data.map((r: any) => ({
-      Season: season(r.outreach_events.season_id),
-      Event: r.outreach_events.title,
-      'Member name': nameMap[r.member_id] ?? r.member_id,
-      Arrival: r.arrival ? isoLocal(new Date(r.arrival)) : '',
-      Departure: r.departure ? isoLocal(new Date(r.departure)) : '',
-      'Credited minutes': r.credited_minutes ?? '',
-      'Attendance status': r.departure ? 'completed' : 'present',
-      'Event status': r.outreach_events.cancelled ? 'cancelled' : 'active',
-    }))
-    downloadCsv('outreach-attendance.csv', rows)
-    flash(`Exported ${rows.length} rows`)
-  }
-
-  async function exportBuild() {
-    setBusy(true)
-    let q = supabase.from('build_records').select('*, build_sessions!inner(title, season_id, opens_at, location_id, cancelled)')
-    if (seasonId) q = q.eq('build_sessions.season_id', seasonId)
-    if (memberId) q = q.eq('member_id', memberId)
-    const { data, error } = await q.order('check_in', { ascending: false })
-    setBusy(false)
-    if (error) return flash(error.message, true)
-    if (!data?.length) return flash('No records to export', true)
-
-    const season = (id: string) => seasons.find((s) => s.id === id)?.name ?? id
-    const rows = data.map((r: any) => ({
-      Season: season(r.build_sessions.season_id),
-      'Build session': r.build_sessions.title,
-      'Member name': nameMap[r.member_id] ?? r.member_id,
-      'Check-in': r.check_in ? isoLocal(new Date(r.check_in)) : '',
-      'Check-out': r.check_out ? isoLocal(new Date(r.check_out)) : '',
-      'Credited minutes': r.credited_minutes ?? '',
-      'Checkout method': r.checkout_method ?? '',
-      'Session status': r.build_sessions.cancelled ? 'cancelled' : 'active',
-    }))
-    downloadCsv('build-attendance.csv', rows)
-    flash(`Exported ${rows.length} rows`)
-  }
-
-  return (
-    <>
-      <section className={card}>
-        <div className={cardHead}>
-          <span className={cardTitle}>Export records</span>
-        </div>
-        <div className="p-5 space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className={label}>Season</label>
-              <select className={input} value={seasonId} onChange={(e) => setSeasonId(e.target.value)}>
-                <option value="">All seasons</option>
-                {seasons.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={label}>Member</label>
-              <select className={input} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
-                <option value="">All members</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.display_name || m.id.slice(0, 8)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="inline-flex border border-line text-sm">
-            {(['outreach', 'build'] as const).map((t, i) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`h-9 px-5 uppercase font-mono text-xs ${i ? 'border-l border-line' : ''} ${
-                  tab === t ? 'bg-brand text-white' : 'bg-panel hover:bg-canvas'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          <button onClick={tab === 'outreach' ? exportOutreach : exportBuild} disabled={busy} className={btn}>
-            {busy ? 'Exporting…' : `Export ${tab} CSV`}
-          </button>
-        </div>
-      </section>
-
-      <section className={card}>
-        <div className={cardHead}>
-          <span className={cardTitle}>Quick export: Team hours summary</span>
-        </div>
-        <div className="p-5">
-          <button
-            onClick={async () => {
-              const { data, error } = await supabase.from('hours_summary').select('*').order('total_hours', { ascending: false })
-              if (error) return flash(error.message, true)
-              if (!data?.length) return flash('No data', true)
-              downloadCsv(
-                'hours-summary.csv',
-                data.map((r: any) => ({
-                  'Member name': r.display_name ?? r.user_id,
-                  'Build hours': r.build_hours,
-                  'Outreach hours': r.outreach_hours,
-                  'Total hours': r.total_hours,
-                })),
-              )
-              flash(`Exported ${data.length} rows`)
-            }}
-            className={btnGhost}
-          >
-            Download hours summary CSV
-          </button>
-        </div>
-      </section>
-      {Toast}
-    </>
-  )
+import {createFileRoute} from '@tanstack/react-router'
+import {useEffect,useState} from 'react'
+import {supabase} from '~/lib/supabase'
+import {downloadCsv,isoOffset} from '~/lib/csv'
+import {teamDateTime,deadlineInstant} from '~/lib/time'
+import type {Season} from '~/lib/types'
+import {card,cardHead,cardTitle,input,btn} from '~/lib/ui'
+export const Route=createFileRoute('/_app/admin/reports/hours')({component:Reports})
+const COLUMNS={outreach:['Season','Event','Member name','Arrival','Departure','Credited minutes','Attendance status','Event status'],build:['Season','Build location','Build session','Member name','Check-in','Check-out','Credited minutes','Checkout method','Session status'],individual:['Season','Member name','Request','Event date','Claimed minutes','Approved minutes','Status']}
+function Reports(){
+ const [seasons,setSeasons]=useState<Season[]>([]),[season,setSeason]=useState(''),[member,setMember]=useState(''),[event,setEvent]=useState(''),[session,setSession]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false)
+ useEffect(()=>{void supabase.from('seasons').select('*').then(({data})=>setSeasons(data as Season[]??[]))},[])
+ async function exportRows(kind:keyof typeof COLUMNS){
+  setBusy(true);setError('');setMessage('')
+  try{
+   const rows:Record<string,unknown>[]=[];let cursor:{at:string;id:string}|null=null
+   do{const payload={record_type:kind,...(season?{season_id:season}:{}),...(member?{member_id:member}:{}),...(kind==='outreach'&&event?{event_id:event}:{}),...(kind==='build'&&session?{session_id:session}:{}),...(from?{from:teamDateTime(`${from}T00:00`)}:{}),...(to?{to:deadlineInstant(to)}:{}),...(cursor?{cursor}:{})};const result=await supabase.rpc('export_records',{payload});if(result.error)throw result.error;const page:{rows:Record<string,unknown>[];next_cursor:{at:string;id:string}|null}=result.data;rows.push(...page.rows);cursor=page.next_cursor}while(cursor)
+   downloadCsv(kind==='individual'?'individual-outreach.csv':`${kind}-attendance.csv`,COLUMNS[kind],rows.map(row=>COLUMNS[kind].map(column=>['Arrival','Departure','Check-in','Check-out'].includes(column)?isoOffset(row[column] as string|null):row[column])));setMessage(`Exported ${rows.length} complete rows; zero-row files retain headers.`)
+  }catch(cause){setError(cause&&typeof cause==='object'&&'message'in cause?String(cause.message):String(cause))}finally{setBusy(false)}
+ }
+ async function summary(){setBusy(true);const {data,error}=await supabase.rpc('season_hours',{payload:{...(season?{season_id:season}:{}),include_inactive:true}});setBusy(false);if(error){setError(error.message);return}downloadCsv('season-hours-summary.csv',['Member name','Outreach hours','Build hours','Individual outreach approved minutes','Individual outreach counted minutes','Individual outreach cap minutes'],data.members.map((row:{display_name:string;build_minutes:number;outreach_minutes:number;individual_approved_minutes:number;individual_counted_minutes:number})=>[row.display_name,Number(row.outreach_minutes)/60,Number(row.build_minutes)/60,row.individual_approved_minutes,row.individual_counted_minutes,data.season.individual_outreach_cap_minutes]))}
+ return <section className={card}><div className={cardHead}><h1 className={cardTitle}>Season attendance exports</h1></div><div className="p-5 space-y-4"><p>Export permission is checked for every page. Date bounds include the whole entered end day in Los Angeles; wire filters use the corresponding half-open interval. Empty bounds mean all matching records.</p><label>Season<select className={input} value={season} onChange={e=>setSeason(e.target.value)}><option value="">All seasons</option>{seasons.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label><div className="grid sm:grid-cols-2 gap-3">{[['Member UUID',member,setMember],['Event UUID',event,setEvent],['Session UUID',session,setSession]].map(([text,value,set])=><label key={String(text)}>{String(text)}<input className={input} value={String(value)} onChange={e=>(set as (value:string)=>void)(e.target.value)}/></label>)}<label>From date (Los Angeles)<input type="date" className={input} value={from} onChange={e=>setFrom(e.target.value)}/></label><label>Through date, inclusive (Los Angeles)<input type="date" className={input} value={to} onChange={e=>setTo(e.target.value)}/></label></div><div className="flex flex-wrap gap-3">{(['outreach','build','individual']as const).map(kind=><button key={kind} className={btn} disabled={busy} onClick={()=>void exportRows(kind)}>Export {kind}</button>)}<button className={btn} disabled={busy} onClick={()=>void summary()}>Download separate build/outreach summary</button></div>{error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}</div></section>
 }

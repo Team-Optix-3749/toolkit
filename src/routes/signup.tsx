@@ -14,6 +14,7 @@ function SignupPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [accountType, setAccountType] = useState<'member' | 'mentor'>('member')
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -21,12 +22,12 @@ function SignupPage() {
     e.preventDefault()
     setBusy(true)
     setMsg(null)
-    const { error } = await signUp(email, password, name)
+    const { error } = await signUp(email, password, name, accountType)
     setBusy(false)
     if (error) return setMsg({ type: 'err', text: error })
     setMsg({
       type: 'ok',
-      text: 'Account created. You can sign in once your account has been approved.',
+      text: 'Check your email to verify your identity, then sign in. Team admission is required before protected access.',
     })
   }
 
@@ -40,6 +41,13 @@ function SignupPage() {
         <div>
           <label className={label}>Full name</label>
           <input type="text" required className={input} value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div>
+          <label htmlFor="account-type" className={label}>Account type</label>
+          <select id="account-type" value={accountType} onChange={event => setAccountType(event.target.value as 'member' | 'mentor')} className={input}>
+            <option value="member">Student member</option>
+            <option value="mentor">Mentor</option>
+          </select>
         </div>
         <div>
           <label className={label}>Email</label>

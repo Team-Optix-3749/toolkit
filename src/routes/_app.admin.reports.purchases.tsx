@@ -22,7 +22,7 @@ function PurchasesReport() {
     setRows(list)
     const ids = [...new Set(list.map((r) => r.user_id))]
     if (ids.length) {
-      const { data: p } = await supabase.from('profiles').select('id, display_name').in('id', ids)
+      const { data: p } = await supabase.from('historical_profiles').select('id, display_name').in('id', ids)
       setNames(Object.fromEntries(((p as ProfileRow[]) || []).map((x) => [x.id, x.display_name || '-'])))
     }
   }
@@ -51,13 +51,8 @@ function PurchasesReport() {
             onClick={() =>
               downloadCsv(
                 'purchases-report.csv',
-                rows.map((r) => ({
-                  member: names[r.user_id] ?? r.user_id,
-                  kind: r.kind,
-                  amount: r.amount,
-                  status: r.status,
-                  description: r.description,
-                })),
+                ['member','kind','amount','status','description'],
+                rows.map(row=>[names[row.user_id]??row.user_id,row.kind,Number(row.amount),row.status,row.description]),
               )
             }
             className={btnGhost}
