@@ -1,11 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
 import { can } from '~/lib/rbac'
 import { fmtDateTime } from '~/lib/format'
 import { Badge } from '~/components/Badge'
+import { CheckInQr } from '~/components/CheckInQr'
+import { checkinUrl } from '~/components/QrScanner'
 import type { OutreachEvent, OutreachAttendance, OutreachLead, ProfileRow } from '~/lib/types'
 import { card, cardHead, cardTitle, btn, btnGhost } from '~/lib/ui'
 
@@ -59,6 +61,17 @@ function EventDetail() {
   const iRsvped = rsvps.includes(uid)
   const isLead = leads.includes(uid)
   const canManageAttendance = isLead || can(profile, 'manage_outreach_attendance')
+  const canShowQr = canManageAttendance || can(profile, 'manage_outreach_events')
+  const [qrFixed, setQrFixed] = useState(false)
+
+  const issueQr = useCallback(async () => {
+    const { data, error } = await supabase.rpc('outreach_action', {
+      payload: { action: 'qr', event_id: id, fixed: qrFixed },
+    })
+    if (error) { flash('QR failed: ' + error.message, true); return null }
+    return data as { token: string; expires_at: string }
+  }, [id, qrFixed])
+  const qrUrl = useCallback((token: string) => checkinUrl('outreach/check-in', 'event', id, token), [id])
 
   async function toggleRsvp() {
     setBusy(true)
@@ -128,6 +141,39 @@ function EventDetail() {
           )}
         </div>
       </section>
+
+      {canShowQr && !ev.cancelled && !(ev.ends_at && new Date(ev.ends_at) < new Date()) && (
+        <section className={card}>
+          <div className={cardHead}>
+            <span className={cardTitle}>Check-in QR</span>
+            <div className="flex gap-1 p-0.5 rounded-lg bg-white/5 border border-white/10">
+              {[
+                { v: false, l: 'Rotating' },
+                { v: true, l: 'Printable' },
+              ].map((o) => (
+                <button
+                  key={o.l}
+                  type="button"
+                  onClick={() => setQrFixed(o.v)}
+                  className={`h-7 px-3 rounded-md text-xs transition-colors ${
+                    qrFixed === o.v ? 'bg-accent/15 text-accent' : 'text-ink-soft hover:text-ink'
+                  }`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="p-5 flex flex-col items-center gap-3">
+            <CheckInQr key={String(qrFixed)} issue={issueQr} urlFor={qrUrl} rotating={!qrFixed} onError={(m) => flash(m, true)} />
+            <p className="text-xs text-ink-soft text-center max-w-md">
+              {qrFixed
+                ? 'One code that works until the event ends — print it or post it at the venue. Anyone with the code can check in, so keep it on-site.'
+                : 'Show this on your phone or a screen at the venue. Members scan it with their camera to check in. It refreshes every 60 seconds so it cannot be shared remotely.'}
+            </p>
+          </div>
+        </section>
+      )}
 
       <section className={card}>
         <div className={cardHead}>

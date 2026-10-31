@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useAuth } from '~/lib/auth'
 import { isApproved } from '~/lib/rbac'
+import { takeLoginRedirect } from '~/components/Guards'
 
 export const Route = createFileRoute('/auth/callback')({
   component: CallbackPage,
@@ -16,7 +17,11 @@ function CallbackPage() {
   useEffect(() => {
     if (loading) return
     if (!user) navigate({ to: '/login' })
-    else if (profile) navigate({ to: isApproved(role) ? '/dashboard' : '/pending-approval' })
+    else if (profile) {
+      const back = isApproved(role) ? takeLoginRedirect() : null
+      if (back) navigate({ to: back.to, search: back.search as never })
+      else navigate({ to: isApproved(role) ? '/dashboard' : '/pending-approval' })
+    }
   }, [loading, user, role, profile, navigate])
 
   return (

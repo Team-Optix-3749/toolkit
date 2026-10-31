@@ -1,26 +1,26 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '~/lib/supabase'
 import { useToast } from '~/lib/toast'
 import { fmtDateTime } from '~/lib/format'
-import QRCode from 'qrcode'
+import { Select } from '~/components/Select'
+import { CheckInQr } from '~/components/CheckInQr'
+import { checkinUrl } from '~/components/QrScanner'
 import type { BuildSession } from '~/lib/types'
-import { card, cardHead, cardTitle, label, input, btn, btnGhost } from '~/lib/ui'
+import { card, cardHead, cardTitle, label } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/admin/build/qr')({
+  validateSearch: (s: Record<string, unknown>): { session?: string } => ({
+    session: typeof s.session === 'string' ? s.session : undefined,
+  }),
   component: QRManager,
 })
 
 function QRManager() {
+  const { session } = Route.useSearch()
   const { flash, Toast } = useToast()
   const [sessions, setSessions] = useState<BuildSession[]>([])
-  const [sessionId, setSessionId] = useState('')
-  const [token, setToken] = useState<string | null>(null)
-  const [expiresAt, setExpiresAt] = useState<Date | null>(null)
-  const [countdown, setCountdown] = useState(0)
-  const [autoRotate, setAutoRotate] = useState(false)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [sessionId, setSessionId] = useState(session ?? '')
 
   useEffect(() => {
     const now = new Date().toISOString()
@@ -28,49 +28,25 @@ function QRManager() {
       .from('build_sessions')
       .select('*')
       .eq('cancelled', false)
-      .gte('closes_at', now)
+      .or(`closes_at.is.null,closes_at.gte.${now}`)
       .order('opens_at')
       .then(({ data }) => {
         const list = (data as BuildSession[]) || []
         setSessions(list)
-        if (list[0]) setSessionId(list[0].id)
+        if (!sessionId && list[0]) setSessionId(list[0].id)
       })
   }, [])
 
-  const generate = useCallback(async () => {
-    if (!sessionId) return flash('Pick a session', true)
+  const issue = useCallback(async () => {
+    if (!sessionId) { flash('Pick a session', true); return null }
     const { data, error } = await supabase.rpc('build_action', {
       payload: { action: 'qr', session_id: sessionId },
     })
-    if (error) return flash('Generate failed: ' + error.message, true)
-    const d = data as { token: string; expires_at: string }
-    setToken(d.token)
-    setExpiresAt(new Date(d.expires_at))
+    if (error) { flash('Generate failed: ' + error.message, true); return null }
+    return data as { token: string; expires_at: string }
   }, [sessionId])
 
-  useEffect(() => {
-    if (!token || !canvasRef.current) return
-    QRCode.toCanvas(canvasRef.current, token, {
-      width: 280,
-      margin: 2,
-      color: { dark: '#06080b', light: '#ffffff' },
-    })
-  }, [token])
-
-  useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current)
-    if (!expiresAt) return
-    const tick = () => {
-      const left = Math.max(0, Math.round((expiresAt.getTime() - Date.now()) / 1000))
-      setCountdown(left)
-      if (left <= 0 && autoRotate) generate()
-    }
-    tick()
-    timerRef.current = setInterval(tick, 1000)
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [expiresAt, autoRotate, generate])
-
-  const sess = sessions.find((s) => s.id === sessionId)
+  const urlFor = useCallback((token: string) => checkinUrl('build/check-in', 'session', sessionId, token), [sessionId])
 
   return (
     <section className={card}>
@@ -80,61 +56,22 @@ function QRManager() {
       <div className="p-5 space-y-5">
         <div>
           <label className={label}>Session</label>
-          <select className={input} value={sessionId} onChange={(e) => { setSessionId(e.target.value); setToken(null) }}>
-            {sessions.length === 0 && <option value="">No active sessions</option>}
-            {sessions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.title} — {fmtDateTime(s.opens_at)}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={sessionId}
+            onChange={setSessionId}
+            placeholder={sessions.length === 0 ? 'No active sessions' : 'Select a session'}
+            options={sessions.map((s) => ({ value: s.id, label: `${s.title} — ${fmtDateTime(s.opens_at)}` }))}
+          />
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <button onClick={generate} className={btn}>
-            {token ? 'New code' : 'Generate code'}
-          </button>
-          {token && (
-            <label className="flex items-center gap-2 text-sm text-ink-soft cursor-pointer">
-              <input
-                type="checkbox"
-                checked={autoRotate}
-                onChange={(e) => setAutoRotate(e.target.checked)}
-                className="w-4 h-4"
-              />
-              Auto-rotate every 45s
-            </label>
-          )}
-        </div>
-
-        {token && (
-          <div className="flex flex-col items-center gap-4">
-            <canvas ref={canvasRef} className="border border-line" />
-
-            <div className="text-center space-y-1">
-              <div className="font-mono text-lg tracking-widest select-all">{token}</div>
-              <div className={`text-sm font-mono ${countdown <= 10 ? 'text-[#c0392b]' : 'text-ink-soft'}`}>
-                {countdown > 0 ? `Expires in ${countdown}s` : 'Expired'}
-              </div>
-            </div>
-
-            {sess && (
-              <div className="text-xs text-ink-soft text-center">
-                {sess.title} — {fmtDateTime(sess.opens_at)}
-              </div>
-            )}
-
-            <button
-              onClick={() => { navigator.clipboard.writeText(token); flash('Copied') }}
-              className={btnGhost}
-            >
-              Copy code
-            </button>
+        {sessionId && (
+          <div className="flex justify-center">
+            <CheckInQr key={sessionId} issue={issue} urlFor={urlFor} onError={(m) => flash(m, true)} />
           </div>
         )}
 
         <p className="text-xs text-ink-soft">
-          Display this QR code on a screen at the build location. Members scan it with their camera to check in. Codes expire after 45 seconds. Enable auto-rotate for continuous display.
+          Display this QR on a screen at the build location. Members scan it with their phone camera (or in the app) to check in. The code refreshes every 45 seconds so it can't be shared remotely.
         </p>
       </div>
       {Toast}

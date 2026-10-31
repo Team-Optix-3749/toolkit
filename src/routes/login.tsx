@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '~/lib/auth'
 import { isRemembered } from '~/lib/supabase'
 import { isApproved } from '~/lib/rbac'
+import { takeLoginRedirect } from '~/components/Guards'
 import { label, input, btn } from '~/lib/ui'
 import { ThemeToggle } from '~/components/ThemeToggle'
 
@@ -23,7 +24,11 @@ function LoginPage() {
 
   useEffect(() => {
     if (!loading && user && profile) {
-      navigate({ to: isApproved(role) ? '/dashboard' : '/pending-approval' })
+      {
+      const back = isApproved(role) ? takeLoginRedirect() : null
+      if (back) navigate({ to: back.to, search: back.search as never })
+      else navigate({ to: isApproved(role) ? '/dashboard' : '/pending-approval' })
+    }
     }
   }, [loading, user, role, profile, navigate])
 

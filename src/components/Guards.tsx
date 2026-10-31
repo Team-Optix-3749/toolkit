@@ -1,8 +1,21 @@
 import { useEffect } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { useAuth } from '~/lib/auth'
 import { isApproved, isAdmin, isOwner } from '~/lib/rbac'
 import type { ReactNode } from 'react'
+
+const REDIRECT_KEY = 'postLoginRedirect'
+
+/** Where a signed-out visitor was headed (e.g. a scanned check-in QR), consumed once after login. */
+export function takeLoginRedirect(): { to: string; search: Record<string, unknown> } | null {
+  try {
+    const raw = sessionStorage.getItem(REDIRECT_KEY)
+    sessionStorage.removeItem(REDIRECT_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
 
 function Loading() {
   return (
@@ -16,10 +29,16 @@ function Loading() {
 export function RequireApproved({ children }: { children: ReactNode }) {
   const { loading, user, role, profile } = useAuth()
   const navigate = useNavigate()
+  const location = useRouterState({ select: (s) => s.location })
   const profileReady = !loading && user && profile
   useEffect(() => {
     if (loading) return
-    if (!user) return void navigate({ to: '/login' })
+    if (!user) {
+      try {
+        sessionStorage.setItem(REDIRECT_KEY, JSON.stringify({ to: location.pathname, search: location.search }))
+      } catch {}
+      return void navigate({ to: '/login' })
+    }
     if (!profile) return
     const status = profile.account_status
     if (status === 'deactivated' || status === 'rejected') {

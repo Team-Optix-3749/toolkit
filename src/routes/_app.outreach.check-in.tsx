@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { QrScanner, parseCheckinCode } from '~/components/QrScanner'
+import { Select } from '~/components/Select'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
@@ -8,6 +10,10 @@ import type { OutreachEvent, OutreachAttendance } from '~/lib/types'
 import { card, cardHead, cardTitle, label, input, btn, btnGhost } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/outreach/check-in')({
+  validateSearch: (s: Record<string, unknown>): { event?: string; code?: string } => ({
+    event: typeof s.event === 'string' ? s.event : undefined,
+    code: typeof s.code === 'string' ? s.code : undefined,
+  }),
   component: OutreachCheckIn,
 })
 
@@ -28,8 +34,13 @@ type GeoState = 'checking' | 'ok' | 'too-far' | 'denied' | 'unavailable' | 'no-c
 function OutreachCheckIn() {
   const { user } = useAuth()
   const { flash, Toast } = useToast()
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const deepLinkTried = useRef(false)
   const [events, setEvents] = useState<OutreachEvent[]>([])
-  const [eventId, setEventId] = useState('')
+  const [eventId, setEventId] = useState(search.event ?? '')
+  const [scanning, setScanning] = useState(false)
+  const [code, setCode] = useState('')
   const [myAttendance, setMyAttendance] = useState<Record<string, OutreachAttendance>>({})
   const [busy, setBusy] = useState(false)
 
@@ -98,29 +109,43 @@ function OutreachCheckIn() {
   }
 
   useEffect(() => {
-    load()
+    load().then(() => {
+      // Opened from a scanned QR deep link: check straight in.
+      if (deepLinkTried.current || !search.event || !search.code) return
+      deepLinkTried.current = true
+      navigate({ search: {}, replace: true })
+      checkIn(search.code, search.event)
+    })
   }, [])
 
   const activeRecord = ev ? myAttendance[ev.id] : null
   const isCheckedIn = activeRecord && !activeRecord.departure
   const eventExpired = ev?.ends_at && new Date(ev.ends_at) < new Date()
 
-  async function checkIn() {
-    if (!ev) return flash('Pick an event', true)
-    if (geo !== 'ok') return flash('You must be at the event location to check in.', true)
-    if (eventExpired) return flash('This event has ended.', true)
+  async function checkIn(token?: string, targetId = eventId) {
+    if (!targetId) return flash('Pick an event', true)
+    if (!token && geo !== 'ok') return flash('Be at the event location or scan the event QR to check in.', true)
 
     setBusy(true)
     const { error } = await supabase.rpc('outreach_action', {
       payload: {
         action: 'self_checkin',
-        event_id: ev.id,
+        event_id: targetId,
+        ...(token ? { token } : {}),
       },
     })
     setBusy(false)
     if (error) return flash('Check-in failed: ' + error.message, true)
-    flash('Checked in to ' + ev.title)
+    setEventId(targetId)
+    setScanning(false)
+    setCode('')
+    flash('Checked in')
     load()
+  }
+
+  function onScanned(raw: string) {
+    const parsed = parseCheckinCode(raw)
+    checkIn(parsed.code, parsed.ref ?? eventId)
   }
 
   async function checkOut() {
@@ -155,14 +180,12 @@ function OutreachCheckIn() {
       <div className="p-5 space-y-4">
         <div>
           <label className={label}>Event</label>
-          <select className={input} value={eventId} onChange={(e) => setEventId(e.target.value)}>
-            {events.length === 0 && <option value="">No active events</option>}
-            {events.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.title} — {fmtDateTime(e.starts_at)}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={eventId}
+            onChange={setEventId}
+            placeholder={events.length === 0 ? 'No active events' : 'Select an event'}
+            options={events.map((e) => ({ value: e.id, label: `${e.title} — ${fmtDateTime(e.starts_at)}` }))}
+          />
         </div>
 
         {ev && (
@@ -180,7 +203,7 @@ function OutreachCheckIn() {
 
             {isCheckedIn ? (
               <div className="space-y-3">
-                <div className="px-4 py-3 border border-[#9bd0b0] bg-[#eefaf2] text-sm text-[#1a7f4b]">
+                <div className="px-4 py-3 rounded-lg border border-[#1a7f4b]/30 bg-[#1a7f4b]/10 text-sm text-[#5fd38d]">
                   Checked in since {fmtDateTime(activeRecord!.arrival)}
                   {activeRecord!.arrival && (
                     <span className="ml-2 text-xs">
@@ -193,17 +216,36 @@ function OutreachCheckIn() {
                 </button>
               </div>
             ) : activeRecord?.departure ? (
-              <div className="px-4 py-3 border border-line bg-canvas text-sm text-ink-soft">
+              <div className="px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-sm text-ink-soft">
                 You already attended this event ({hoursFromMinutes(activeRecord.credited_minutes ?? 0)} h logged).
               </div>
             ) : (
-              <button
-                onClick={checkIn}
-                disabled={busy || geo !== 'ok' || !!eventExpired}
-                className={btn}
-              >
-                {busy ? 'Checking in…' : 'Check in'}
-              </button>
+              <div className="space-y-4">
+                {geo === 'ok' && (
+                  <button onClick={() => checkIn()} disabled={busy || !!eventExpired} className={btn}>
+                    {busy ? 'Checking in…' : 'Check in with location'}
+                  </button>
+                )}
+                <div className="space-y-3">
+                  <button onClick={() => setScanning(!scanning)} disabled={!!eventExpired} className={geo === 'ok' ? btnGhost : btn}>
+                    {scanning ? 'Close camera' : 'Scan event QR'}
+                  </button>
+                  {scanning && <QrScanner onScanned={onScanned} onClose={() => setScanning(false)} />}
+                  <div>
+                    <label className={label}>Or enter the code shown by your event lead</label>
+                    <div className="flex gap-2">
+                      <input className={input} placeholder="Event code" value={code} onChange={(e) => setCode(e.target.value)} />
+                      <button
+                        onClick={() => checkIn(parseCheckinCode(code).code)}
+                        disabled={busy || !code.trim() || !!eventExpired}
+                        className={`${btnGhost} h-9 shrink-0`}
+                      >
+                        Go
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </>
         )}
@@ -218,7 +260,7 @@ function LocationBanner({ geo, distance, onRetry, eventName }: {
 }) {
   if (geo === 'checking') {
     return (
-      <div className="flex items-center gap-3 px-4 py-3 border border-line bg-canvas text-sm text-ink-soft">
+      <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-sm text-ink-soft">
         <Spinner />
         Verifying your location…
       </div>
@@ -227,7 +269,7 @@ function LocationBanner({ geo, distance, onRetry, eventName }: {
 
   if (geo === 'ok') {
     return (
-      <div className="flex items-center gap-3 px-4 py-3 border border-[#9bd0b0] bg-[#eefaf2] text-sm text-[#1a7f4b]">
+      <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-[#1a7f4b]/30 bg-[#1a7f4b]/10 text-sm text-[#5fd38d]">
         <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
@@ -238,8 +280,8 @@ function LocationBanner({ geo, distance, onRetry, eventName }: {
 
   if (geo === 'no-coords') {
     return (
-      <div className="px-4 py-3 border border-[#e7c08a] bg-[#fcf6ec] text-sm text-[#b4690e]">
-        This event doesn't have GPS coordinates set. Ask an admin to add coordinates to enable self-check-in.
+      <div className="px-4 py-3 rounded-lg border border-[#e7c08a]/30 bg-[#e7c08a]/10 text-sm text-[#e7c08a]">
+        This event has no GPS coordinates, so location check-in is off. Scan the event QR instead.
       </div>
     )
   }
@@ -251,8 +293,8 @@ function LocationBanner({ geo, distance, onRetry, eventName }: {
   }
 
   return (
-    <div className="px-4 py-3 border border-[#e3a9a1] bg-[#fbeeec] space-y-2">
-      <div className="text-sm text-[#c0392b]">{messages[geo]}</div>
+    <div className="px-4 py-3 rounded-lg border border-[#c0392b]/30 bg-[#c0392b]/10 space-y-2">
+      <div className="text-sm text-[#f07070]">{messages[geo]}</div>
       {geo !== 'denied' && (
         <button onClick={onRetry} className={btnGhost}>Retry location</button>
       )}

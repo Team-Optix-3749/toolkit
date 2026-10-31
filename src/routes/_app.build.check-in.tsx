@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { QrScanner, parseCheckinCode } from '~/components/QrScanner'
 import { supabase } from '~/lib/supabase'
 import { useAuth } from '~/lib/auth'
 import { useToast } from '~/lib/toast'
@@ -8,6 +9,10 @@ import type { BuildSession, BuildRecord } from '~/lib/types'
 import { card, cardHead, cardTitle, label, input, btn, btnGhost } from '~/lib/ui'
 
 export const Route = createFileRoute('/_app/build/check-in')({
+  validateSearch: (s: Record<string, unknown>): { session?: string; code?: string } => ({
+    session: typeof s.session === 'string' ? s.session : undefined,
+    code: typeof s.code === 'string' ? s.code : undefined,
+  }),
   component: CheckInFlow,
 })
 
@@ -31,6 +36,9 @@ type GeoState = 'checking' | 'ok' | 'too-far' | 'denied' | 'unavailable'
 function CheckInFlow() {
   const { user } = useAuth()
   const { flash, Toast } = useToast()
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const deepLinkTried = useRef(false)
   const [sessions, setSessions] = useState<BuildSession[]>([])
   const [open, setOpen] = useState<BuildRecord | null>(null)
   const [sessionId, setSessionId] = useState('')
@@ -98,30 +106,39 @@ function CheckInFlow() {
         })
         setOpen(null)
         setExpired(true)
-        return
+        return null
       }
     }
 
     setOpen(activeRecord)
     if (!sessionId && available[0]) setSessionId(available[0].id)
+    return activeRecord
   }
 
   useEffect(() => {
-    load()
+    load().then((active) => {
+      // Opened from a scanned QR deep link: check straight in.
+      if (deepLinkTried.current || !search.session || !search.code) return
+      deepLinkTried.current = true
+      navigate({ search: {}, replace: true })
+      if (active) return flash('You already have an active check-in. Check out first.', true)
+      setSessionId(search.session)
+      checkIn(search.code, search.session)
+    })
   }, [])
 
-  async function checkIn(scannedToken?: string) {
+  async function checkIn(scannedToken?: string, sid = sessionId) {
     const locationOk = geo === 'ok'
-    const codeValue = scannedToken || token.trim()
+    const codeValue = parseCheckinCode(scannedToken || token).code
 
     if (!locationOk && !codeValue) {
       return flash('Either be at Del Norte HS or scan/enter a QR code to check in.', true)
     }
-    if (!sessionId) return flash('Pick a session', true)
+    if (!sid) return flash('Pick a session', true)
     if (open) return flash('You already have an active check-in. Check out first.', true)
 
     setBusy(true)
-    const payload: Record<string, string> = { action: 'check_in', session_id: sessionId }
+    const payload: Record<string, string> = { action: 'check_in', session_id: sid }
     if (codeValue) payload.token = codeValue
     const { data, error } = await supabase.rpc('build_action', { payload })
     setBusy(false)
@@ -146,10 +163,12 @@ function CheckInFlow() {
     load()
   }
 
-  function onScanned(code: string) {
+  function onScanned(raw: string) {
+    const { code, ref } = parseCheckinCode(raw)
     setToken(code)
     setScanning(false)
-    checkIn(code)
+    if (ref) setSessionId(ref)
+    checkIn(code, ref ?? sessionId)
   }
 
   if (open) {
@@ -302,80 +321,6 @@ function QrSection({ token, setToken, scanning, setScanning, onScanned, busy, se
         </div>
       </div>
     </>
-  )
-}
-
-function QrScanner({ onScanned, onClose }: { onScanned: (code: string) => void; onClose: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let active = true
-
-    async function start() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-        })
-        if (!active) { stream.getTracks().forEach((t) => t.stop()); return }
-        streamRef.current = stream
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          videoRef.current.play()
-        }
-
-        if ('BarcodeDetector' in window) {
-          const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
-          const scan = async () => {
-            if (!active || !videoRef.current) return
-            try {
-              const barcodes = await detector.detect(videoRef.current)
-              if (barcodes.length > 0) {
-                onScanned(barcodes[0].rawValue)
-                return
-              }
-            } catch {}
-            if (active) requestAnimationFrame(scan)
-          }
-          videoRef.current!.onplaying = () => scan()
-        } else {
-          setError('QR scanning not supported in this browser. Enter the code manually.')
-        }
-      } catch {
-        setError('Camera access denied. Enter the code manually.')
-      }
-    }
-
-    start()
-
-    return () => {
-      active = false
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-    }
-  }, [onScanned])
-
-  if (error) {
-    return (
-      <div className="px-4 py-3 border border-[#e7c08a] bg-[#fcf6ec] text-sm text-[#b4690e]">
-        {error}
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative border border-line bg-black">
-      <video ref={videoRef} className="w-full max-h-64 object-cover" playsInline muted />
-      <button
-        onClick={() => { streamRef.current?.getTracks().forEach((t) => t.stop()); onClose() }}
-        className="absolute top-2 right-2 w-8 h-8 bg-black/60 text-white flex items-center justify-center text-lg"
-      >
-        &times;
-      </button>
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-40 h-40 border-2 border-white/40" />
-      </div>
-    </div>
   )
 }
 
