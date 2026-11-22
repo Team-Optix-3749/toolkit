@@ -1,0 +1,20 @@
+{
+  "plugins": {
+    "impeccable": {
+      "version": "4.8.0",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "frontend-design": {
+      "version": "1.1.1",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "ui-ux-pro-max": {
+      "version": "2.15.0",
+      "enabledFeatures": null,
+      "enabled": true
+    }
+  },
+  "settings": {}
+}

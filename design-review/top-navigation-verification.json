@@ -1,0 +1,1276 @@
+{
+  "scope": "Incremental polish; existing top shell and component treatments",
+  "responsive": [
+    {
+      "key": "home",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-groups",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-global",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-review",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-board",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-calendar",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "task",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "task-review",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "task-new",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "activities",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "build",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "checkin",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "outreach",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "event",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "attendance",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "build-attendance",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "activity-history",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "hours",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "team-hours",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "outreach-log",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "submissions",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi-list",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi-new",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi-review",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchases",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchase",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchase-new",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchase-edit",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "notifications",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "notification-preferences",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "onboarding",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "signup",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "invite",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "recovery",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "account-status",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "access",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "more",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "states",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "team",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-maya",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-alex",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-sam",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-jordan",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-riley",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-casey",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-devon",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "members",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-alex",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-sam",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-admission",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-unverified",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-inactive",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-admin",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "setup",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "reviews",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "individual-review",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "reports",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "settings",
+      "width": 1440,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "home",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-groups",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-global",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-review",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-board",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-calendar",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "task",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "task-review",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "task-new",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "activities",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "build",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "checkin",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "outreach",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "event",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "attendance",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "build-attendance",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "activity-history",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "hours",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "team-hours",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "outreach-log",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "submissions",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi-list",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi-new",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi-review",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchases",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchase",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchase-new",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchase-edit",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "notifications",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "notification-preferences",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "onboarding",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "signup",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "invite",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "recovery",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "account-status",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "access",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "more",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "states",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "team",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-maya",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-alex",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-sam",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-jordan",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-riley",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-casey",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-devon",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "members",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-alex",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-sam",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-admission",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-unverified",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-inactive",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-admin",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "setup",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "reviews",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "individual-review",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "reports",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "settings",
+      "width": 768,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "home",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-groups",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-global",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-review",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-board",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "work-calendar",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "task",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "task-review",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "task-new",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "activities",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "build",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "checkin",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "outreach",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "event",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "attendance",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "build-attendance",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "activity-history",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "hours",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "team-hours",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "outreach-log",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "submissions",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi-list",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi-new",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "opi-review",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchases",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchase",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchase-new",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "purchase-edit",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "notifications",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "notification-preferences",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "onboarding",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "signup",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "invite",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "recovery",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "account-status",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "access",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "more",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "states",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "team",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-maya",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-alex",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-sam",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-jordan",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-riley",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-casey",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "profile-devon",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "members",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-alex",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-sam",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-admission",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-unverified",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-inactive",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "member-admin",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "setup",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "reviews",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "individual-review",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "reports",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    },
+    {
+      "key": "settings",
+      "width": 390,
+      "overflow": false,
+      "unlabelled": []
+    }
+  ],
+  "accessibility": [
+    {
+      "key": "home",
+      "width": 1440,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "attendance",
+      "width": 1440,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "setup",
+      "width": 1440,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "hours",
+      "width": 1440,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "work-global",
+      "width": 1440,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "opi-review",
+      "width": 1440,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "home",
+      "width": 390,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "attendance",
+      "width": 390,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "setup",
+      "width": 390,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "hours",
+      "width": 390,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "work-global",
+      "width": 390,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "opi-review",
+      "width": 390,
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "home",
+      "width": 1440,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "attendance",
+      "width": 1440,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "setup",
+      "width": 1440,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "hours",
+      "width": 1440,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "work-global",
+      "width": 1440,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "opi-review",
+      "width": 1440,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "home",
+      "width": 390,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "attendance",
+      "width": 390,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "setup",
+      "width": 390,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "hours",
+      "width": 390,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "work-global",
+      "width": 390,
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "opi-review",
+      "width": 390,
+      "theme": "light",
+      "violations": []
+    }
+  ],
+  "interactions": [
+    "Top navigation routes",
+    "Account menu open/Escape/focus",
+    "Account navigation closes menu",
+    "Role-filtered Reviews link",
+    "Event direct arrival",
+    "QR check-in then GPS check-out"
+  ],
+  "applicationCodeChanged": false
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json",
+  "mcpServers": {
+    "shadcn": {
+      "type": "stdio",
+      "command": "bun",
+      "args": ["--bun", "x", "shadcn@4.23.0", "mcp"]
+    }
+  }
+}

@@ -1,0 +1,182 @@
+[
+  {
+    "key": "home",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "work",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "task",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "checkin",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "attendance",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "hours",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "member",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "setup",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "reviews",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "individual-review",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "reports",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "settings",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "scout-match",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "scout-pit",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "scout-teams",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "scout-team",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "scout-manage",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "onboarding",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "key": "home",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "work",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "task",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "checkin",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "attendance",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "hours",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "member",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "setup",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "reviews",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "individual-review",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "reports",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "settings",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "scout-match",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "scout-pit",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "scout-teams",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "scout-team",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "scout-manage",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "key": "onboarding",
+    "width": 390,
+    "violations": []
+  }
+]

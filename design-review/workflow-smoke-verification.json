@@ -1,0 +1,30 @@
+[
+  {
+    "key": "task-new",
+    "violations": []
+  },
+  {
+    "key": "purchase",
+    "violations": []
+  },
+  {
+    "key": "purchase-edit",
+    "violations": []
+  },
+  {
+    "key": "activity-history",
+    "violations": []
+  },
+  {
+    "key": "member",
+    "violations": []
+  },
+  {
+    "key": "reports",
+    "violations": []
+  },
+  {
+    "key": "scout-match",
+    "violations": []
+  }
+]
